@@ -30,7 +30,7 @@ Call `GPIO::new()` to create a new GPIO with the default settings. In production
 ```rust
 use rppal::gpio;
 
-let mut gpio = GPIO::new().unwrap();
+let mut gpio = gpio::GPIO::new().unwrap();
 ```
 
 ## Example
