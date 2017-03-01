@@ -1,6 +1,6 @@
 [package]
 name = "rppal"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
 description = "Interface for the Raspberry Pi GPIO through /dev/gpiomem or /dev/mem."
 documentation = "https://doc.golemparts.com/rppal"
