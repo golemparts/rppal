@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the Raspberry Pi's BCM273x GPIO peripheral.
+//! Interface for the Raspberry Pi's BCM283x GPIO peripheral.
 //!
 //! The GPIO peripheral interface accesses the appropriate memory registers
 //! through either the `/dev/gpiomem` device, or `/dev/mem` for distributions
