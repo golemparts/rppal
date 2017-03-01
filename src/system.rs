@@ -198,23 +198,23 @@ impl DeviceInfo {
         }
     }
 
-    /// Returns the Raspberry Pi model identified by parsing the contents of `/proc/cpuinfo`.
+    /// Returns a reference to the Raspberry Pi model identified by parsing the contents of `/proc/cpuinfo`.
     pub fn model(&self) -> &Model {
         &self.model
     }
 
-    /// Returns the SoC identified by parsing the contents of `/proc/cpuinfo`.
+    /// Returns a reference to the SoC identified by parsing the contents of `/proc/cpuinfo`.
     pub fn soc(&self) -> &SoC {
         &self.soc
     }
 
     /// Returns the base memory address for the BCM283x peripherals.
-    pub fn peripheral_base(&self) -> &u32 {
-        &self.peripheral_base
+    pub fn peripheral_base(&self) -> u32 {
+        self.peripheral_base
     }
 
     /// Returns the offset memory address for the GPIO section.
-    pub fn gpio_offset(&self) -> &u32 {
-        &self.gpio_offset
+    pub fn gpio_offset(&self) -> u32 {
+        self.gpio_offset
     }
 }
