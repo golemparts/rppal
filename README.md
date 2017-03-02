@@ -1,7 +1,7 @@
 # RPPAL - Raspberry Pi Peripheral Access Library
 
-[![Build Status](https://travis-ci.org/golemparts/rppal.svg?branch=master)](https://travis-ci.org/golemparts/blinkt)
-[![crates.io](http://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/blinkt)
+[![Build Status](https://travis-ci.org/golemparts/rppal.svg?branch=master)](https://travis-ci.org/golemparts/rppal)
+[![crates.io](http://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 RPPAL is a Rust library that provides access to the Raspberry Pi GPIO peripheral through either `/dev/gpiomem` or `/dev/mem`. Support for additional peripherals, as well as useful helper functions, will be added in future updates. The library is compatible with the BCM2835, BCM2836 and BCM2837 SoCs.
