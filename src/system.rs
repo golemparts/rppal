@@ -155,13 +155,13 @@ impl DeviceInfo {
         } else if revision.len() == 4 {
             // Older revisions are 4 characters long
             match &revision[..] {
-                "0007" | "0008" | "0009" => Model::RaspberryPiA,
-                "0002" | "0003" | "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => {
+                "0007" | "0008" | "0009" | "0015" => Model::RaspberryPiA,
+                "Beta" | "0002" | "0003" | "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => {
                     Model::RaspberryPiB
                 }
                 "0012" => Model::RaspberryPiAPlus,
                 "0010" | "0013" => Model::RaspberryPiBPlus,
-                "0011" => Model::RaspberryPiComputeModule,
+                "0011" | "0014" => Model::RaspberryPiComputeModule,
                 _ => Model::Unknown,
             }
         } else {
