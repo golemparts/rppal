@@ -151,9 +151,6 @@ impl GPIOMem {
         // otherwise try /dev/mem instead.
         self.mem_ptr = match self.map_devgpiomem() {
             Ok(ptr) => ptr,
-            Err(e @ Error::DevGPIOMemPermissionDenied) => {
-                return Err(e);
-            }
             Err(_) => {
                 match self.map_devmem() {
                     Ok(ptr) => ptr,
