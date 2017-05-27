@@ -118,6 +118,17 @@ quick_error! {
         }
 /// Unable to memory-map `/dev/mem`.
         DevMemMapFailed { description("/dev/mem map failed") }
+/// Permission denied when opening both `/dev/gpiomem` and `/dev/mem` for read/write access.
+///
+/// Make sure the user has read and write access to `/dev/gpiomem`.
+/// Common causes are either incorrect file permissions on `/dev/gpiomem`, or
+/// the user isn't part of the gpio group.
+///
+/// Getting read and write access to `/dev/mem` is typically
+/// accomplished by executing the program as a privileged user through
+/// `sudo`. A better solution that doesn't require `sudo` would be to
+/// upgrade to a version of Raspbian that implements `/dev/gpiomem`.
+        PermissionDenied { description("/dev/gpiomem and /dev/mem insufficient permissions") }
 /// GPIO isn't initialized.
 ///
 /// You should normally only see this error when you call a method after
@@ -151,12 +162,20 @@ impl GPIOMem {
         // otherwise try /dev/mem instead.
         self.mem_ptr = match self.map_devgpiomem() {
             Ok(ptr) => ptr,
-            Err(e @ Error::DevGPIOMemPermissionDenied) => {
-                return Err(e);
-            }
-            Err(_) => {
+            Err(gpiomem_err) => {
                 match self.map_devmem() {
                     Ok(ptr) => ptr,
+                    // Special case when both /dev/gpiomem and /dev/mem have permission issues
+                    Err(e @ Error::DevMemPermissionDenied) => {
+                        match gpiomem_err {
+                            Error::DevGPIOMemPermissionDenied => {
+                                return Err(Error::PermissionDenied);
+                            }
+                            _ => {
+                                return Err(e);
+                            }
+                        }
+                    },
                     Err(e) => {
                         return Err(e);
                     }
@@ -238,7 +257,8 @@ impl GPIOMem {
                            libc::PROT_READ | libc::PROT_WRITE,
                            libc::MAP_SHARED,
                            mem_file.as_raw_fd(),
-                           (device_info.peripheral_base() + device_info.gpio_offset()) as libc::off_t)
+                           (device_info.peripheral_base() +
+                            device_info.gpio_offset()) as libc::off_t)
             };
 
         if mem_ptr == libc::MAP_FAILED {
