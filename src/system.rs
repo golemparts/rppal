@@ -198,7 +198,8 @@ impl DeviceInfo {
         }
     }
 
-    /// Returns a reference to the Raspberry Pi model identified by parsing the contents of `/proc/cpuinfo`.
+    /// Returns a reference to the Raspberry Pi model identified by parsing the
+    /// contents of `/proc/cpuinfo`.
     pub fn model(&self) -> &Model {
         &self.model
     }
