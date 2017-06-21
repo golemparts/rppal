@@ -54,12 +54,13 @@ use num::FromPrimitive;
 
 use system::DeviceInfo;
 
-const GPIO_MEM_SIZE: usize = 164;       // The BCM2835 has 41 32-bit registers related to
-                                        // the GPIO (datasheet @ 6.1).
-const GPIO_MAX_PINS: u8 = 54;           // Maximum GPIO pins on the BCM2835. The actual
-                                        // number of pins exposed through the Pi's GPIO
-                                        // header depends on the model.
-const GPIO_OFFSET_GPFSEL: usize = 0;    // Offset in 32-bit units
+// The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
+const GPIO_MEM_SIZE: usize = 164;
+// Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
+// depends on the model.
+const GPIO_MAX_PINS: u8 = 54;
+// Offset in 32-bit units
+const GPIO_OFFSET_GPFSEL: usize = 0;
 const GPIO_OFFSET_GPSET: usize = 7;
 const GPIO_OFFSET_GPCLR: usize = 10;
 const GPIO_OFFSET_GPLEV: usize = 13;
@@ -212,12 +213,14 @@ impl GPIOMem {
 
         // Memory-map /dev/gpiomem at offset 0
         let gpiomem_ptr = unsafe {
-            libc::mmap(ptr::null_mut(),
-                       GPIO_MEM_SIZE,
-                       libc::PROT_READ | libc::PROT_WRITE,
-                       libc::MAP_SHARED,
-                       gpiomem_file.as_raw_fd(),
-                       0)
+            libc::mmap(
+                ptr::null_mut(),
+                GPIO_MEM_SIZE,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_SHARED,
+                gpiomem_file.as_raw_fd(),
+                0,
+            )
         };
 
         if gpiomem_ptr == libc::MAP_FAILED {
@@ -250,16 +253,16 @@ impl GPIOMem {
         };
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
-        let mem_ptr =
-            unsafe {
-                libc::mmap(ptr::null_mut(),
-                           GPIO_MEM_SIZE,
-                           libc::PROT_READ | libc::PROT_WRITE,
-                           libc::MAP_SHARED,
-                           mem_file.as_raw_fd(),
-                           (device_info.peripheral_base() +
-                            device_info.gpio_offset()) as libc::off_t)
-            };
+        let mem_ptr = unsafe {
+            libc::mmap(
+                ptr::null_mut(),
+                GPIO_MEM_SIZE,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_SHARED,
+                mem_file.as_raw_fd(),
+                (device_info.peripheral_base() + device_info.gpio_offset()) as libc::off_t,
+            )
+        };
 
         if mem_ptr == libc::MAP_FAILED {
             return Err(Error::DevMemMapFailed);
@@ -274,8 +277,10 @@ impl GPIOMem {
         }
 
         unsafe {
-            libc::munmap(self.mem_ptr as *mut libc::c_void,
-                         GPIO_MEM_SIZE as libc::size_t);
+            libc::munmap(
+                self.mem_ptr as *mut libc::c_void,
+                GPIO_MEM_SIZE as libc::size_t,
+            );
         }
 
         self.mapped = false;
@@ -495,9 +500,11 @@ impl GPIO {
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
 
         let reg_value = self.gpio_mem.read(reg_addr);
-        self.gpio_mem.write(reg_addr,
-                            (reg_value & !(0b111 << ((pin % 10) * 3))) |
-                            ((mode as u32 & 0b111) << ((pin % 10) * 3)));
+        self.gpio_mem.write(
+            reg_addr,
+            (reg_value & !(0b111 << ((pin % 10) * 3))) |
+                ((mode as u32 & 0b111) << ((pin % 10) * 3)),
+        );
     }
 
     /// Reads the current GPIO pin logic level.
@@ -542,14 +549,16 @@ impl GPIO {
 
         let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
-        self.gpio_mem.write(GPIO_OFFSET_GPPUD,
-                            (reg_value & !0b11) | ((pud as u32) & 0b11));
+        self.gpio_mem.write(
+            GPIO_OFFSET_GPPUD,
+            (reg_value & !0b11) | ((pud as u32) & 0b11),
+        );
 
-        sleep(Duration::new(0, 20000));     // 20µs
+        sleep(Duration::new(0, 20000)); // 20µs
 
         self.gpio_mem.write(reg_addr, 1 << (pin % 32));
 
-        sleep(Duration::new(0, 20000));     // 20µs
+        sleep(Duration::new(0, 20000)); // 20µs
 
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
         self.gpio_mem.write(GPIO_OFFSET_GPPUD, (reg_value & !0b11));

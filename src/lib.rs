@@ -24,7 +24,7 @@
 //!
 //! The library is compatible with the BCM2835, BCM2836 and BCM2837 SoCs.
 
-#![recursion_limit="128"]   // Needed for the quick_error! macro
+#![recursion_limit="128"] // Needed for the quick_error! macro
 
 extern crate libc;
 extern crate num;
