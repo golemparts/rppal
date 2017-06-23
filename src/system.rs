@@ -128,7 +128,7 @@ impl DeviceInfo {
         let mut hardware: String = String::new();
         let mut revision: String = String::new();
         for line_result in proc_cpuinfo.lines() {
-            if let Some(line) = line_result.ok() {
+            if let Ok(line) = line_result {
                 if line.starts_with("Hardware\t: ") {
                     hardware = String::from(&line[11..]);
                 } else if line.starts_with("Revision\t: ") {
@@ -194,7 +194,7 @@ impl DeviceInfo {
                     gpio_offset: GPIO_OFFSET,
                 })
             }
-            _ => return Err(Error::UnknownSoC),
+            _ => Err(Error::UnknownSoC),
         }
     }
 
