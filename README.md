@@ -63,9 +63,9 @@ fn main() {
 }
 ```
 
-## Warning
+## Caution
 
-Always be careful when working with the Raspberry Pi's GPIO. Improper use can lead to permanent damage to the Pi or external components.
+Always be careful when working with the Raspberry Pi's GPIO. Improper use can lead to permanently damaging the Pi and/or external components.
 
 ## Copyright and license
 
