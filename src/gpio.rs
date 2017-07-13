@@ -87,21 +87,21 @@ quick_error! {
 ///
 /// Try upgrading to a more recent version of Raspbian (or
 /// equivalent) that implements `/dev/gpiomem`.
-        DevGPIOMemNotFound { description("/dev/gpiomem not found") }
+        DevGpioMemNotFound { description("/dev/gpiomem not found") }
 /// Permission denied when opening `/dev/gpiomem` for read/write access.
 ///
 /// Make sure the user has read and write access to `/dev/gpiomem`.
 /// Common causes are either incorrect file permissions on
 /// `/dev/gpiomem`, or the user isn't part of the gpio group.
-        DevGPIOMemPermissionDenied { description("/dev/gpiomem insufficient permissions") }
+        DevGpioMemPermissionDenied { description("/dev/gpiomem insufficient permissions") }
 /// `/dev/gpiomem` IO error.
-        DevGPIOMemIOError(err: io::Error) {
+        DevGpioMemIoError(err: io::Error) {
             description(err.description())
             display("/dev/gpiomem IO error ({})", error::Error::description(err))
             cause(err)
         }
 /// Unable to memory-map `/dev/gpiomem`.
-        DevGPIOMemMapFailed { description("/dev/gpiomem map failed") }
+        DevGpioMemMapFailed { description("/dev/gpiomem map failed") }
 /// Unable to find `/dev/mem` in the filesystem.
         DevMemNotFound { description("/dev/mem not found") }
 /// Permission denied when opening `/dev/mem` for read/write access.
@@ -112,7 +112,7 @@ quick_error! {
 /// upgrade to a version of Raspbian that implements `/dev/gpiomem`.
         DevMemPermissionDenied { description("/dev/mem insufficient permissions") }
 /// `/dev/mem` IO error.
-        DevMemIOError(err: io::Error) {
+        DevMemIoError(err: io::Error) {
             description(err.description())
             display("/dev/mem IO error ({})", error::Error::description(err))
             cause(err)
@@ -141,14 +141,14 @@ quick_error! {
 /// Result type returned from methods that can have `rppal::gpio::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-struct GPIOMem {
+struct GpioMem {
     mapped: bool,
     mem_ptr: *mut u32,
 }
 
-impl GPIOMem {
-    pub fn new() -> GPIOMem {
-        GPIOMem {
+impl GpioMem {
+    pub fn new() -> GpioMem {
+        GpioMem {
             mapped: false,
             mem_ptr: ptr::null_mut(),
         }
@@ -169,7 +169,7 @@ impl GPIOMem {
                     // Special case when both /dev/gpiomem and /dev/mem have permission issues
                     Err(e @ Error::DevMemPermissionDenied) => {
                         match gpiomem_err {
-                            Error::DevGPIOMemPermissionDenied => {
+                            Error::DevGpioMemPermissionDenied => {
                                 return Err(Error::PermissionDenied);
                             }
                             _ => {
@@ -201,11 +201,11 @@ impl GPIOMem {
             .open("/dev/gpiomem") {
             Err(e) => {
                 match e.kind() {
-                    io::ErrorKind::NotFound => return Err(Error::DevGPIOMemNotFound),
+                    io::ErrorKind::NotFound => return Err(Error::DevGpioMemNotFound),
                     io::ErrorKind::PermissionDenied => {
-                        return Err(Error::DevGPIOMemPermissionDenied)
+                        return Err(Error::DevGpioMemPermissionDenied)
                     }
-                    _ => return Err(Error::DevGPIOMemIOError(e)),
+                    _ => return Err(Error::DevGpioMemIoError(e)),
                 }
             }
             Ok(file) => file,
@@ -224,7 +224,7 @@ impl GPIOMem {
         };
 
         if gpiomem_ptr == libc::MAP_FAILED {
-            return Err(Error::DevGPIOMemMapFailed);
+            return Err(Error::DevGpioMemMapFailed);
         }
 
         Ok(gpiomem_ptr as *mut u32)
@@ -246,7 +246,7 @@ impl GPIOMem {
                 match e.kind() {
                     io::ErrorKind::NotFound => return Err(Error::DevMemNotFound),
                     io::ErrorKind::PermissionDenied => return Err(Error::DevMemPermissionDenied),
-                    _ => return Err(Error::DevMemIOError(e)),
+                    _ => return Err(Error::DevMemIoError(e)),
                 }
             }
             Ok(file) => file,
@@ -305,14 +305,14 @@ impl GPIOMem {
     }
 }
 
-impl Drop for GPIOMem {
+impl Drop for GpioMem {
     fn drop(&mut self) {
         self.close();
     }
 }
 
 // Required because of the raw pointer to our memory-mapped file
-unsafe impl Send for GPIOMem {}
+unsafe impl Send for GpioMem {}
 
 enum_from_primitive! {
     #[derive(Debug, PartialEq, Copy, Clone)]
@@ -399,21 +399,25 @@ impl PinState {
     }
 }
 
+#[allow(non_camel_case_types)]
+#[deprecated(since="0.2.0", note="please use `Gpio` instead")]
+pub type GPIO = Gpio;
+
 /// Provides access to the Raspberry Pi GPIO.
-pub struct GPIO {
+pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,
-    gpio_mem: GPIOMem,
+    gpio_mem: GpioMem,
     orig_pin_state: Vec<PinState>,
 }
 
-impl GPIO {
-    /// Constructs a new `GPIO`.
-    pub fn new() -> Result<GPIO> {
-        let mut gpio = GPIO {
+impl Gpio {
+    /// Constructs a new `Gpio`.
+    pub fn new() -> Result<Gpio> {
+        let mut gpio = Gpio {
             initialized: true,
             clear_on_drop: true,
-            gpio_mem: GPIOMem::new(),
+            gpio_mem: GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
@@ -566,7 +570,7 @@ impl GPIO {
     }
 }
 
-impl Drop for GPIO {
+impl Drop for Gpio {
     fn drop(&mut self) {
         if self.clear_on_drop {
             self.cleanup();

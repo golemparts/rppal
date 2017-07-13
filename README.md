@@ -30,9 +30,9 @@ extern crate rppal;
 Call `GPIO::new()` to create a new GPIO with the default settings. In production code, you'll want to parse the result rather than unwrap it.
 
 ```rust
-use rppal::gpio;
+use rppal::gpio::Gpio;
 
-let mut gpio = gpio::GPIO::new().unwrap();
+let mut gpio = Gpio::new().unwrap();
 ```
 
 ## Example
@@ -43,7 +43,7 @@ extern crate rppal;
 use std::thread;
 use std::time::Duration;
 
-use rppal::gpio::{GPIO, Mode, Level};
+use rppal::gpio::{Gpio, Mode, Level};
 use rppal::system::DeviceInfo;
 
 // The GPIO module uses BCM pin numbering. BCM 18 equates to physical pin 12.
@@ -53,7 +53,7 @@ fn main() {
     let device_info = DeviceInfo::new().unwrap();
     println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
 
-    let mut gpio = GPIO::new().unwrap();
+    let mut gpio = Gpio::new().unwrap();
     gpio.set_mode(GPIO_LED, Mode::Output);
 
     // Blink an LED attached to the pin on and off
