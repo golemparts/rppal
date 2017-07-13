@@ -49,7 +49,7 @@ quick_error! {
 ///
 /// Unable to read the contents of `/proc/cpuinfo`. This could be an issue with permissions, or
 /// a Linux distribution is used that doesn't provide access to this virtual file.
-        CantAccessProcCPUInfo { description("can't access /proc/cpuinfo") }
+        CantAccessProcCpuInfo { description("can't access /proc/cpuinfo") }
     }
 }
 
@@ -93,17 +93,17 @@ impl fmt::Display for Model {
 #[derive(Debug, PartialEq, Copy, Clone)]
 /// Identifiable Raspberry Pi SoCs.
 pub enum SoC {
-    BCM2835,
-    BCM2836,
-    BCM2837,
+    Bcm2835,
+    Bcm2836,
+    Bcm2837,
 }
 
 impl fmt::Display for SoC {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            SoC::BCM2835 => write!(f, "BCM2835"),
-            SoC::BCM2836 => write!(f, "BCM2836"),
-            SoC::BCM2837 => write!(f, "BCM2837"),
+            SoC::Bcm2835 => write!(f, "BCM2835"),
+            SoC::Bcm2836 => write!(f, "BCM2836"),
+            SoC::Bcm2837 => write!(f, "BCM2837"),
         }
     }
 }
@@ -121,7 +121,7 @@ impl DeviceInfo {
     pub fn new() -> Result<DeviceInfo> {
         // Parse hardware/revision from /proc/cpuinfo to figure out model/SoC
         let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
-            Err(_) => return Err(Error::CantAccessProcCPUInfo),
+            Err(_) => return Err(Error::CantAccessProcCpuInfo),
             Ok(file) => file,
         });
 
@@ -173,7 +173,7 @@ impl DeviceInfo {
             "BCM2708" | "BCM2835" => {
                 Ok(DeviceInfo {
                     model: model,
-                    soc: SoC::BCM2835,
+                    soc: SoC::Bcm2835,
                     peripheral_base: BCM2708_PERIPHERAL_BASE,
                     gpio_offset: GPIO_OFFSET,
                 })
@@ -181,7 +181,7 @@ impl DeviceInfo {
             "BCM2709" | "BCM2836" => {
                 Ok(DeviceInfo {
                     model: model,
-                    soc: SoC::BCM2836,
+                    soc: SoC::Bcm2836,
                     peripheral_base: BCM2709_PERIPHERAL_BASE,
                     gpio_offset: GPIO_OFFSET,
                 })
@@ -189,7 +189,7 @@ impl DeviceInfo {
             "BCM2710" | "BCM2837" => {
                 Ok(DeviceInfo {
                     model: model,
-                    soc: SoC::BCM2837,
+                    soc: SoC::Bcm2837,
                     peripheral_base: BCM2710_PERIPHERAL_BASE,
                     gpio_offset: GPIO_OFFSET,
                 })
