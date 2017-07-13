@@ -27,7 +27,7 @@ Link and import `rppal` from your crate root.
 extern crate rppal;
 ```
 
-Call `GPIO::new()` to create a new GPIO with the default settings. In production code, you'll want to parse the result rather than unwrap it.
+Call `Gpio::new()` to create a new Gpio instance with the default settings. In production code, you'll want to parse the result rather than unwrap it.
 
 ```rust
 use rppal::gpio::Gpio;
