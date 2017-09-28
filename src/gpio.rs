@@ -31,7 +31,7 @@
 //! Pins are addressed by their BCM GPIO pin numbers, rather than their
 //! physical location.
 //!
-//! By default, all pins are reset to their original state when `GPIO` goes out
+//! By default, all pins are reset to their original state when `Gpio` goes out
 //! of scope. Use `set_clear_on_drop(false)` to disable this behavior. Note that
 //! drop methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
