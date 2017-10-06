@@ -434,7 +434,7 @@ impl Gpio {
         Ok(gpio)
     }
 
-    /// When enabled, resets all pins to their original state when `GPIO` goes out of scope.
+    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
     ///
     /// Drop methods aren't called when a program is abnormally terminated,
     /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
@@ -448,7 +448,7 @@ impl Gpio {
 
     /// Resets all pins to their original state.
     ///
-    /// Normally, this method is automatically called when `GPIO` goes out of
+    /// Normally, this method is automatically called when `Gpio` goes out of
     /// scope, but you can manually call it to handle early/abnormal termination.
     /// After calling this method, any future calls to other methods won't have any
     /// result.
