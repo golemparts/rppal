@@ -67,11 +67,9 @@ fn main() {
 
 Always be careful when working with the Raspberry Pi's GPIO. Improper use can lead to permanently damaging the Pi and/or external components.
 
-## Cross-compilation
+## Cross compilation
 
-Your development machine most likely will not be Raspberry Pi. In that case, you'll need to cross compile to ARM architecture in order to run your program. 
-If you want to get more in depth information, please go to [github.com/japaric/rust-cross](https://github.com/japaric/rust-cross). For easy, one step cross compilation I recommend
-[cross project](https://github.com/japaric/cross).
+If you're not working directly on a Raspberry Pi, you'll likely need to cross compile your code for the appropriate ARM architecture. Check out [this guide](https://github.com/japaric/rust-cross) for more information, or try the [cross](https://github.com/japaric/cross) project for "zero setup" cross compilation.
 
 ## Copyright and license
 
