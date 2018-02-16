@@ -167,16 +167,14 @@ impl GpioMem {
                 match self.map_devmem() {
                     Ok(ptr) => ptr,
                     // Special case when both /dev/gpiomem and /dev/mem have permission issues
-                    Err(e @ Error::DevMemPermissionDenied) => {
-                        match gpiomem_err {
-                            Error::DevGpioMemPermissionDenied => {
-                                return Err(Error::PermissionDenied);
-                            }
-                            _ => {
-                                return Err(e);
-                            }
+                    Err(e @ Error::DevMemPermissionDenied) => match gpiomem_err {
+                        Error::DevGpioMemPermissionDenied => {
+                            return Err(Error::PermissionDenied);
                         }
-                    }
+                        _ => {
+                            return Err(e);
+                        }
+                    },
                     Err(e) => {
                         return Err(e);
                     }
@@ -198,16 +196,13 @@ impl GpioMem {
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/gpiomem") {
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => return Err(Error::DevGpioMemNotFound),
-                    io::ErrorKind::PermissionDenied => {
-                        return Err(Error::DevGpioMemPermissionDenied)
-                    }
-                    _ => return Err(Error::DevGpioMemIoError(e)),
-                }
-            }
+            .open("/dev/gpiomem")
+        {
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => return Err(Error::DevGpioMemNotFound),
+                io::ErrorKind::PermissionDenied => return Err(Error::DevGpioMemPermissionDenied),
+                _ => return Err(Error::DevGpioMemIoError(e)),
+            },
             Ok(file) => file,
         };
 
@@ -241,14 +236,13 @@ impl GpioMem {
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/mem") {
-            Err(e) => {
-                match e.kind() {
-                    io::ErrorKind::NotFound => return Err(Error::DevMemNotFound),
-                    io::ErrorKind::PermissionDenied => return Err(Error::DevMemPermissionDenied),
-                    _ => return Err(Error::DevMemIoError(e)),
-                }
-            }
+            .open("/dev/mem")
+        {
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => return Err(Error::DevMemNotFound),
+                io::ErrorKind::PermissionDenied => return Err(Error::DevMemPermissionDenied),
+                _ => return Err(Error::DevMemIoError(e)),
+            },
             Ok(file) => file,
         };
 
@@ -400,7 +394,7 @@ impl PinState {
 }
 
 #[allow(non_camel_case_types)]
-#[deprecated(since="0.2.0", note="please use `Gpio` instead")]
+#[deprecated(since = "0.2.0", note = "please use `Gpio` instead")]
 pub type GPIO = Gpio;
 
 /// Provides access to the Raspberry Pi GPIO.
@@ -506,8 +500,8 @@ impl Gpio {
         let reg_value = self.gpio_mem.read(reg_addr);
         self.gpio_mem.write(
             reg_addr,
-            (reg_value & !(0b111 << ((pin % 10) * 3))) |
-                ((mode as u32 & 0b111) << ((pin % 10) * 3)),
+            (reg_value & !(0b111 << ((pin % 10) * 3)))
+                | ((mode as u32 & 0b111) << ((pin % 10) * 3)),
         );
     }
 
@@ -565,7 +559,7 @@ impl Gpio {
         sleep(Duration::new(0, 20000)); // 20µs
 
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
-        self.gpio_mem.write(GPIO_OFFSET_GPPUD, (reg_value & !0b11));
+        self.gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 }

@@ -26,7 +26,7 @@
 
 use std::fmt;
 use std::fs::File;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 use std::result;
 
 const BCM2708_PERIPHERAL_BASE: u32 = 0x20000000;
@@ -170,30 +170,24 @@ impl DeviceInfo {
 
         // Make sure we're actually running on a supported SoC
         match &hardware[..] {
-            "BCM2708" | "BCM2835" => {
-                Ok(DeviceInfo {
-                    model: model,
-                    soc: SoC::Bcm2835,
-                    peripheral_base: BCM2708_PERIPHERAL_BASE,
-                    gpio_offset: GPIO_OFFSET,
-                })
-            }
-            "BCM2709" | "BCM2836" => {
-                Ok(DeviceInfo {
-                    model: model,
-                    soc: SoC::Bcm2836,
-                    peripheral_base: BCM2709_PERIPHERAL_BASE,
-                    gpio_offset: GPIO_OFFSET,
-                })
-            }
-            "BCM2710" | "BCM2837" => {
-                Ok(DeviceInfo {
-                    model: model,
-                    soc: SoC::Bcm2837,
-                    peripheral_base: BCM2710_PERIPHERAL_BASE,
-                    gpio_offset: GPIO_OFFSET,
-                })
-            }
+            "BCM2708" | "BCM2835" => Ok(DeviceInfo {
+                model: model,
+                soc: SoC::Bcm2835,
+                peripheral_base: BCM2708_PERIPHERAL_BASE,
+                gpio_offset: GPIO_OFFSET,
+            }),
+            "BCM2709" | "BCM2836" => Ok(DeviceInfo {
+                model: model,
+                soc: SoC::Bcm2836,
+                peripheral_base: BCM2709_PERIPHERAL_BASE,
+                gpio_offset: GPIO_OFFSET,
+            }),
+            "BCM2710" | "BCM2837" => Ok(DeviceInfo {
+                model: model,
+                soc: SoC::Bcm2837,
+                peripheral_base: BCM2710_PERIPHERAL_BASE,
+                gpio_offset: GPIO_OFFSET,
+            }),
             _ => Err(Error::UnknownSoC),
         }
     }
