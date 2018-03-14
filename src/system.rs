@@ -29,9 +29,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
-const BCM2708_PERIPHERAL_BASE: u32 = 0x20000000;
-const BCM2709_PERIPHERAL_BASE: u32 = 0x3f000000;
-const BCM2710_PERIPHERAL_BASE: u32 = 0x3f000000;
+const PERIPHERAL_BASE_RPI: u32 = 0x20000000;
+const PERIPHERAL_BASE_RPI2: u32 = 0x3f000000;
 const GPIO_OFFSET: u32 = 0x200000;
 
 quick_error! {
@@ -172,23 +171,34 @@ impl DeviceInfo {
         };
 
         // Make sure we're actually running on a supported SoC
-        match &hardware[..] {
-            "BCM2708" | "BCM2835" => Ok(DeviceInfo {
+        let soc = match &hardware[..] {
+            "BCM2708" | "BCM2835" => SoC::Bcm2835,
+            "BCM2709" | "BCM2836" => SoC::Bcm2836,
+            "BCM2710" | "BCM2837" => SoC::Bcm2837,
+            _ => return Err(Error::UnknownSoC),
+        };
+
+        // Set memory offsets based on hardware model
+        match model {
+            Model::RaspberryPiA
+            | Model::RaspberryPiAPlus
+            | Model::RaspberryPiB
+            | Model::RaspberryPiBPlus
+            | Model::RaspberryPiComputeModule
+            | Model::RaspberryPiZero
+            | Model::RaspberryPiZeroW => Ok(DeviceInfo {
                 model: model,
-                soc: SoC::Bcm2835,
-                peripheral_base: BCM2708_PERIPHERAL_BASE,
+                soc: soc,
+                peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
             }),
-            "BCM2709" | "BCM2836" => Ok(DeviceInfo {
+            Model::RaspberryPi2B
+            | Model::RaspberryPi3B
+            | Model::RaspberryPi3BPlus
+            | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
                 model: model,
-                soc: SoC::Bcm2836,
-                peripheral_base: BCM2709_PERIPHERAL_BASE,
-                gpio_offset: GPIO_OFFSET,
-            }),
-            "BCM2710" | "BCM2837" => Ok(DeviceInfo {
-                model: model,
-                soc: SoC::Bcm2837,
-                peripheral_base: BCM2710_PERIPHERAL_BASE,
+                soc: soc,
+                peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
             _ => Err(Error::UnknownSoC),
