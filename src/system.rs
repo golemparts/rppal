@@ -37,12 +37,15 @@ quick_error! {
     #[derive(Debug)]
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
     pub enum Error {
+/// Unknown model.
+///
+/// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi
+/// model.
+        UnknownModel { description("unknown Raspberry Pi model") }
 /// Unknown SoC.
 ///
 /// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the SoC used by the
-/// Raspberry Pi. While running the library on an unknown Raspberry Pi model is acceptable,
-/// identifying the SoC is required because the memory address for the GPIO peripheral
-/// depends on it.
+/// Raspberry Pi.
         UnknownSoC { description("unknown SoC") }
 /// Can't access `/proc/cpuinfo`.
 ///
@@ -69,7 +72,6 @@ pub enum Model {
     RaspberryPiComputeModule3,
     RaspberryPiZero,
     RaspberryPiZeroW,
-    Unknown,
 }
 
 impl fmt::Display for Model {
@@ -86,7 +88,6 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
-            Model::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -152,7 +153,7 @@ impl DeviceInfo {
                 "0a" => Model::RaspberryPiComputeModule3,
                 "0c" => Model::RaspberryPiZeroW,
                 "0d" => Model::RaspberryPi3BPlus,
-                _ => Model::Unknown,
+                _ => return Err(Error::UnknownModel),
             }
         } else if revision.len() == 4 {
             // Older revisions are 4 characters long
@@ -164,10 +165,10 @@ impl DeviceInfo {
                 "0012" => Model::RaspberryPiAPlus,
                 "0010" | "0013" => Model::RaspberryPiBPlus,
                 "0011" | "0014" => Model::RaspberryPiComputeModule,
-                _ => Model::Unknown,
+                _ => return Err(Error::UnknownModel),
             }
         } else {
-            Model::Unknown
+            return Err(Error::UnknownModel);
         };
 
         // Make sure we're actually running on a supported SoC
@@ -201,7 +202,6 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            _ => Err(Error::UnknownSoC),
         }
     }
 
