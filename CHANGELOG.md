@@ -1,9 +1,14 @@
+# 0.3.0 (Mar 16, 2018)
+
+* DeviceInfo: Add support for Raspberry Pi 3 B+.
+* DeviceInfo: Set memory offsets based on model info rather than SoC.
+
 # 0.2.0 (Oct 6, 2017)
 
 * To adhere to Rust's naming conventions, several structs and enums that
 had GPIO, IO, BCM or CPU somewhere in their name have been changed to
 Gpio, Io, Bcm and Cpu respectively.
-* GPIO has been added as a temporary (deprecated) type alias for Gpio. 
+* GPIO has been added as a temporary (deprecated) type alias for Gpio.
 * Minor version bump due to incompatible API changes in a 0.x.x release.
 
 # 0.1.3 (May 27, 2017)
