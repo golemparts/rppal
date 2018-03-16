@@ -22,7 +22,8 @@
 //! through either `/dev/gpiomem` or `/dev/mem`. Support for additional peripherals,
 //! as well as useful helper functions, will be added in future updates.
 //!
-//! The library is compatible with the BCM2835, BCM2836 and BCM2837 SoCs.
+//! The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute,
+//! Compute 3, Zero and Zero W.
 
 #![recursion_limit = "128"] // Needed for the quick_error! macro
 
