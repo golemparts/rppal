@@ -173,7 +173,7 @@ impl DeviceInfo {
             "BCM2708" | "BCM2835" => SoC::Bcm2835,
             "BCM2709" | "BCM2836" => SoC::Bcm2836,
             "BCM2710" | "BCM2837" => SoC::Bcm2837,
-            _ => Soc::Unknown,
+            _ => SoC::Unknown,
         };
 
         // Set memory offsets based on hardware model
