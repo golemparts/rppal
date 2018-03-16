@@ -42,11 +42,6 @@ quick_error! {
 /// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi
 /// model.
         UnknownModel { description("unknown Raspberry Pi model") }
-/// Unknown SoC.
-///
-/// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the SoC used by the
-/// Raspberry Pi.
-        UnknownSoC { description("unknown SoC") }
 /// Can't access `/proc/cpuinfo`.
 ///
 /// Unable to read the contents of `/proc/cpuinfo`. This could be an issue with permissions, or
@@ -98,6 +93,7 @@ pub enum SoC {
     Bcm2835,
     Bcm2836,
     Bcm2837,
+    Unknown,
 }
 
 impl fmt::Display for SoC {
@@ -106,6 +102,7 @@ impl fmt::Display for SoC {
             SoC::Bcm2835 => write!(f, "BCM2835"),
             SoC::Bcm2836 => write!(f, "BCM2836"),
             SoC::Bcm2837 => write!(f, "BCM2837"),
+            SoC::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -171,12 +168,12 @@ impl DeviceInfo {
             return Err(Error::UnknownModel);
         };
 
-        // Make sure we're actually running on a supported SoC
+        // Allow unknown SoCs
         let soc = match &hardware[..] {
             "BCM2708" | "BCM2835" => SoC::Bcm2835,
             "BCM2709" | "BCM2836" => SoC::Bcm2836,
             "BCM2710" | "BCM2837" => SoC::Bcm2837,
-            _ => return Err(Error::UnknownSoC),
+            _ => Soc::Unknown,
         };
 
         // Set memory offsets based on hardware model
