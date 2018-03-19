@@ -187,7 +187,7 @@ impl GpioMem {
         Ok(())
     }
 
-    fn map_devgpiomem(&mut self) -> Result<*mut u32> {
+    fn map_devgpiomem(&self) -> Result<*mut u32> {
         // Open /dev/gpiomem with read/write/sync flags. This might fail if
         // /dev/gpiomem doesn't exist (< Raspbian Jessie), or /dev/gpiomem
         // doesn't have the appropriate permissions, or the current user is
@@ -225,7 +225,7 @@ impl GpioMem {
         Ok(gpiomem_ptr as *mut u32)
     }
 
-    fn map_devmem(&mut self) -> Result<*mut u32> {
+    fn map_devmem(&self) -> Result<*mut u32> {
         // Identify which SoC we're using, so we know what offset to start at
         let device_info = match DeviceInfo::new() {
             Ok(s) => s,
@@ -280,7 +280,7 @@ impl GpioMem {
         self.mapped = false;
     }
 
-    pub fn read(&mut self, offset: usize) -> u32 {
+    pub fn read(&self, offset: usize) -> u32 {
         if !self.mapped || offset >= GPIO_MEM_SIZE {
             return 0;
         }
@@ -462,7 +462,7 @@ impl Gpio {
     }
 
     /// Reads the current GPIO pin mode.
-    pub fn mode(&mut self, pin: u8) -> Result<Mode> {
+    pub fn mode(&self, pin: u8) -> Result<Mode> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }
@@ -506,7 +506,7 @@ impl Gpio {
     }
 
     /// Reads the current GPIO pin logic level.
-    pub fn read(&mut self, pin: u8) -> Result<Level> {
+    pub fn read(&self, pin: u8) -> Result<Level> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }
@@ -540,7 +540,7 @@ impl Gpio {
     }
 
     /// Enables/disables the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&mut self, pin: u8, pud: PullUpDown) {
+    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
         if !self.initialized || (pin >= GPIO_MAX_PINS) {
             return;
         }
