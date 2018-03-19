@@ -18,7 +18,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.3"
+rppal = "0.4"
 ```
 
 Link and import `rppal` from your crate root.
