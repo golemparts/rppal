@@ -1,3 +1,7 @@
+# 0.4.0 (Mar 19, 2018)
+
+* Gpio: Replace &mut self with &self where possible.
+
 # 0.3.0 (Mar 16, 2018)
 
 * DeviceInfo: Add support for Raspberry Pi 3 B+.
