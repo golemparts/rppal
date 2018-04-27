@@ -220,10 +220,6 @@ impl PinState {
     }
 }
 
-#[allow(non_camel_case_types)]
-#[deprecated(since = "0.2.0", note = "please use `Gpio` instead")]
-pub type GPIO = Gpio;
-
 /// Provides access to the Raspberry Pi GPIO.
 pub struct Gpio {
     initialized: bool,
