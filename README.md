@@ -78,7 +78,7 @@ fn main() {
 
 ## Caution
 
-Always be careful when working with the Raspberry Pi's GPIO. Improper use can lead to permanently damaging the Pi and/or external components.
+Always be careful when working with the Raspberry Pi's peripherals, especially if you attach any external components to the GPIO pins. Improper use can lead to permanent damage.
 
 ## Cross compilation
 
