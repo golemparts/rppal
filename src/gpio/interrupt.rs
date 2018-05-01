@@ -186,7 +186,7 @@ impl Interrupt {
 
 pub struct AsyncInterrupt {
     base: InterruptBase,
-    callback: Box<FnMut(Level) + Send>,
+    callback: Box<FnMut(Level) + Send + 'static>,
 }
 
 impl AsyncInterrupt {
