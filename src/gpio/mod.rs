@@ -50,6 +50,8 @@ mod interrupt;
 mod mem;
 mod sysfs;
 
+pub use gpio::interrupt::Interrupt;
+
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
 const GPIO_MAX_PINS: u8 = 54;
@@ -421,9 +423,19 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 
-    fn poll_interrupts(&mut self) {}
+    pub fn interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<Interrupt> {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
 
-    pub fn set_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        Ok(Interrupt::new(pin, trigger)?)
+    }
+
+    pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
     where
         C: FnMut(Level) + Send + 'static,
     {
@@ -437,12 +449,10 @@ impl Gpio {
 
         self.poll_interrupts.set_interrupt(pin, trigger, callback)?;
 
-        // Do set_mode Input here, so we can keep track of the change we made
-
         Ok(())
     }
 
-    pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
+    pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }

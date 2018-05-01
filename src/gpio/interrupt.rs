@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// TODO: Doc comments, unexport interrupts from main thread, add synchronous interrupt polling
+// TODO: Doc comments, unexport interrupts from main thread
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -28,6 +28,7 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::mpsc::TryRecvError;
 use std::thread;
+use std::time::Duration;
 
 use mio::event::Evented;
 use mio::unix::{EventedFd, UnixReady};
@@ -43,6 +44,8 @@ quick_error! {
     #[derive(Debug)]
 /// Errors that can occur while working with interrupts.
     pub enum Error {
+/// Time out.
+        TimeOut { description("interrupt polling timed out while waiting for a trigger") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
 /// Sysfs error.
@@ -68,61 +71,46 @@ pub type Result<T> = result::Result<T, Error>;
 
 const TOKEN_RX: usize = 1000;
 
-pub struct Interrupt {
+struct InterruptBase {
     pin: u8,
     trigger: Trigger,
-    callback: Box<FnMut(Level) + Send>,
     sysfs_value: File,
 }
 
-impl Interrupt {
-    pub fn new<C>(pin: u8, trigger: Trigger, callback: C) -> Result<Interrupt>
-    where
-        C: FnMut(Level) + Send + 'static,
-    {
+impl InterruptBase {
+    fn new(pin: u8, trigger: Trigger) -> Result<InterruptBase> {
         // Export the GPIO pin so we can configure it through sysfs, set its mode to
         // input, and set the trigger type.
         sysfs::export(pin)?;
         sysfs::set_direction(pin, Direction::In)?;
         sysfs::set_edge(pin, trigger)?;
 
-        Ok(Interrupt {
+        Ok(InterruptBase {
             pin: pin,
             trigger: trigger,
-            callback: Box::new(callback),
             sysfs_value: sysfs::open_value(pin)?,
         })
     }
 
-    pub fn reset(&mut self) -> Result<Level> {
+    fn level(&mut self) -> Result<Level> {
         let mut buffer = [0; 1];
         self.sysfs_value.read(&mut buffer)?;
         self.sysfs_value.seek(SeekFrom::Start(0))?;
 
         match &buffer {
             b"0" => Ok(Level::Low),
-            _ => Ok(Level::High)
+            _ => Ok(Level::High),
         }
     }
-
-    pub fn callback(&mut self, level: Level) {
-        (self.callback)(level);
-    }
-
-    pub fn cleanup(&mut self) -> Result<()> {
-        sysfs::unexport(self.pin)?;
-
-        Ok(())
-    }
 }
 
-impl Drop for Interrupt {
+impl Drop for InterruptBase {
     fn drop(&mut self) {
-        self.cleanup().ok();
+        sysfs::unexport(self.pin).ok();
     }
 }
 
-impl Evented for Interrupt {
+impl Evented for InterruptBase {
     fn register(
         &self,
         poll: &Poll,
@@ -148,8 +136,81 @@ impl Evented for Interrupt {
     }
 }
 
+pub struct Interrupt {
+    base: InterruptBase,
+    poll: Poll,
+    events: Events,
+}
+
+impl Interrupt {
+    pub fn new(pin: u8, trigger: Trigger) -> Result<Interrupt> {
+        let mut base = InterruptBase::new(pin, trigger)?;
+        let poll = Poll::new()?;
+        let events = Events::with_capacity(1);
+
+        base.level()?;
+        poll.register(
+            &base,
+            Token(0),
+            Ready::readable() | UnixReady::error(),
+            PollOpt::edge(),
+        )?;
+
+        Ok(Interrupt {
+            base: base,
+            poll: poll,
+            events: events,
+        })
+    }
+
+    pub fn poll(&mut self, timeout: Option<Duration>) -> Result<Level> {
+        // Loop until we get the event we're waiting for, or a timeout occurs
+        loop {
+            self.poll.poll(&mut self.events, timeout)?;
+
+            // No events means a timeout occurred
+            if self.events.is_empty() {
+                return Err(Error::TimeOut);
+            }
+
+            for event in &self.events {
+                if event.token() == Token(0) && event.readiness().is_readable()
+                    && UnixReady::from(event.readiness()).is_error()
+                {
+                    return Ok(self.base.level()?);
+                }
+            }
+        }
+    }
+}
+
+pub struct AsyncInterrupt {
+    base: InterruptBase,
+    callback: Box<FnMut(Level) + Send>,
+}
+
+impl AsyncInterrupt {
+    pub fn new<C>(pin: u8, trigger: Trigger, callback: C) -> Result<AsyncInterrupt>
+    where
+        C: FnMut(Level) + Send + 'static,
+    {
+        Ok(AsyncInterrupt {
+            base: InterruptBase::new(pin, trigger)?,
+            callback: Box::new(callback),
+        })
+    }
+
+    pub fn callback(&mut self, level: Level) {
+        (self.callback)(level);
+    }
+
+    pub fn level(&mut self) -> Result<Level> {
+        Ok(self.base.level()?)
+    }
+}
+
 enum ControlMsg {
-    Add(u8, Interrupt),
+    Add(u8, AsyncInterrupt),
     Remove(u8),
     Stop,
 }
@@ -182,9 +243,12 @@ impl EventLoop {
                         loop {
                             match rx.try_recv() {
                                 Ok(ControlMsg::Add(pin, mut interrupt)) => {
-                                    interrupt.reset().expect("unable to reset Interrupt");
+                                    interrupt
+                                        .base
+                                        .level()
+                                        .expect("unable to read Interrupt level");
                                     poll.register(
-                                        &interrupt,
+                                        &interrupt.base,
                                         Token(pin as usize),
                                         Ready::readable() | UnixReady::error(),
                                         PollOpt::edge(),
@@ -193,7 +257,7 @@ impl EventLoop {
                                 }
                                 Ok(ControlMsg::Remove(pin)) => {
                                     if let Some(interrupt) = interrupts.get(&(pin as usize)) {
-                                        poll.deregister(interrupt)
+                                        poll.deregister(&interrupt.base)
                                             .expect("unable to deregister Interrupt");
                                     }
 
@@ -214,8 +278,9 @@ impl EventLoop {
                         if event.readiness().is_readable()
                             && UnixReady::from(event.readiness()).is_error()
                         {
-                            let current_value = interrupt.reset().expect("unable to reset Interrupt");
-                            interrupt.callback(current_value);
+                            let interrupt_value = interrupt.base.level().expect("unable to read Interrupt level");
+
+                            interrupt.callback(interrupt_value);
                         }
                     }
                 }
@@ -239,7 +304,7 @@ impl EventLoop {
 
         tx.send(ControlMsg::Add(
             pin,
-            Interrupt::new(pin, trigger, callback)?,
+            AsyncInterrupt::new(pin, trigger, callback)?,
         ))?;
 
         Ok(())

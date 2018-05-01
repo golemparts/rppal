@@ -18,17 +18,15 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use std::fmt;
-use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::os::linux::fs::MetadataExt;
+use std::path::Path;
 use std::result;
 use std::thread;
 use std::time::Duration;
-use std::path::Path;
 
 use users;
 
