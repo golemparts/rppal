@@ -250,7 +250,7 @@ pub struct Gpio {
     clear_on_drop: bool,
     gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
-    poll_interrupts: interrupt::EventLoop,
+    async_interrupts: interrupt::EventLoop,
 }
 
 impl Gpio {
@@ -261,7 +261,7 @@ impl Gpio {
             clear_on_drop: true,
             gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
-            poll_interrupts: interrupt::EventLoop::new(),
+            async_interrupts: interrupt::EventLoop::new(),
         };
 
         try!(gpio.gpio_mem.open());
@@ -297,7 +297,7 @@ impl Gpio {
     /// result.
     pub fn cleanup(&mut self) {
         if self.initialized {
-            self.poll_interrupts.stop().ok();
+            self.async_interrupts.stop().ok();
 
             // Use a cloned copy, because set_mode() will try to change
             // the contents of the original vector.
@@ -447,7 +447,7 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        self.poll_interrupts.set_interrupt(pin, trigger, callback)?;
+        self.async_interrupts.set_interrupt(pin, trigger, callback)?;
 
         Ok(())
     }
@@ -461,7 +461,7 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        self.poll_interrupts.clear_interrupt(pin)?;
+        self.async_interrupts.clear_interrupt(pin)?;
 
         Ok(())
     }
