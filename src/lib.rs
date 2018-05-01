@@ -30,9 +30,12 @@
 #[macro_use]
 extern crate enum_primitive;
 extern crate libc;
+extern crate mio;
+extern crate mio_extras;
 extern crate num;
 #[macro_use]
 extern crate quick_error;
+extern crate users;
 
 pub mod gpio;
 pub mod system;

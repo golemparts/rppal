@@ -46,9 +46,9 @@ use std::result;
 use std::thread::sleep;
 use std::time::Duration;
 
+mod interrupt;
 mod mem;
-
-use gpio::mem::GpioMem;
+mod sysfs;
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
@@ -129,6 +129,8 @@ quick_error! {
 /// You should normally only see this error when you call a method after
 /// running `cleanup()`.
         NotInitialized { description("not initialized") }
+/// Interrupt error.
+        Interrupt(err: interrupt::Error) { description(err.description()) from() }
     }
 }
 
@@ -203,6 +205,26 @@ impl fmt::Display for PullUpDown {
     }
 }
 
+/// Interrupt trigger type.
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Trigger {
+    Disabled,
+    RisingEdge,
+    FallingEdge,
+    Both,
+}
+
+impl fmt::Display for Trigger {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Trigger::Disabled => write!(f, "Disabled"),
+            Trigger::RisingEdge => write!(f, "RisingEdge"),
+            Trigger::FallingEdge => write!(f, "FallingEdge"),
+            Trigger::Both => write!(f, "Both"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 struct PinState {
     pin: u8,
@@ -224,8 +246,9 @@ impl PinState {
 pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,
-    gpio_mem: GpioMem,
+    gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
+    poll_interrupts: interrupt::EventLoop,
 }
 
 impl Gpio {
@@ -234,8 +257,9 @@ impl Gpio {
         let mut gpio = Gpio {
             initialized: true,
             clear_on_drop: true,
-            gpio_mem: GpioMem::new(),
+            gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
+            poll_interrupts: interrupt::EventLoop::new(),
         };
 
         try!(gpio.gpio_mem.open());
@@ -271,6 +295,8 @@ impl Gpio {
     /// result.
     pub fn cleanup(&mut self) {
         if self.initialized {
+            self.poll_interrupts.stop().ok();
+
             // Use a cloned copy, because set_mode() will try to change
             // the contents of the original vector.
             for pin_state in &self.orig_pin_state.clone() {
@@ -368,22 +394,66 @@ impl Gpio {
             return;
         }
 
-        let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
+        // Set the control signal in GPPUD, while leaving the other 30
+        // bits unchanged.
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
         self.gpio_mem.write(
             GPIO_OFFSET_GPPUD,
             (reg_value & !0b11) | ((pud as u32) & 0b11),
         );
 
-        sleep(Duration::new(0, 20000)); // 20µs
+        // Set-up time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
 
+        // Select the first GPPUDCLK register for the first 32 pins, and
+        // the second register for the remaining pins.
+        let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
+
+        // Clock the control signal into the selected pin.
         self.gpio_mem.write(reg_addr, 1 << (pin % 32));
 
-        sleep(Duration::new(0, 20000)); // 20µs
+        // Hold time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
 
+        // Remove the control signal and clock.
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
         self.gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
+    }
+
+    fn poll_interrupts(&mut self) {}
+
+    pub fn set_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
+    where
+        C: FnMut(Level) + Send + 'static,
+    {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
+
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        self.poll_interrupts.set_interrupt(pin, trigger, callback)?;
+
+        // Do set_mode Input here, so we can keep track of the change we made
+
+        Ok(())
+    }
+
+    pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
+
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        self.poll_interrupts.clear_interrupt(pin)?;
+
+        Ok(())
     }
 }
 
