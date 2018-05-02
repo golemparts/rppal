@@ -36,7 +36,6 @@ extern crate num;
 #[macro_use]
 extern crate quick_error;
 extern crate users;
-extern crate fnv;
 
 pub mod gpio;
 pub mod system;
