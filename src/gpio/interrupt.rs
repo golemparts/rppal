@@ -20,7 +20,6 @@
 
 // TODO: Doc comments, unexport interrupts from main thread
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
@@ -30,6 +29,7 @@ use std::sync::mpsc::TryRecvError;
 use std::thread;
 use std::time::Duration;
 
+use fnv::FnvHashMap;
 use mio::event::Evented;
 use mio::unix::{EventedFd, UnixReady};
 use mio::{Events, Poll, PollOpt, Ready, Token};
@@ -228,7 +228,7 @@ impl EventLoop {
         let (tx, rx) = channel::channel();
 
         thread::spawn(move || {
-            let mut interrupts = HashMap::new();
+            let mut interrupts = FnvHashMap::default();
             let poll = Poll::new().expect("unable to create Poll instance");
             let mut events = Events::with_capacity(1024);
 
@@ -253,15 +253,15 @@ impl EventLoop {
                                         Ready::readable() | UnixReady::error(),
                                         PollOpt::edge(),
                                     ).expect("unable to register Interrupt");
-                                    interrupts.insert(pin as usize, interrupt);
+                                    interrupts.insert(pin, interrupt);
                                 }
                                 Ok(ControlMsg::Remove(pin)) => {
-                                    if let Some(interrupt) = interrupts.get(&(pin as usize)) {
+                                    if let Some(interrupt) = interrupts.get(&pin) {
                                         poll.deregister(&interrupt.base)
                                             .expect("unable to deregister Interrupt");
                                     }
 
-                                    interrupts.remove(&(pin as usize));
+                                    interrupts.remove(&pin);
                                 }
                                 Ok(ControlMsg::Stop) => {
                                     return;
@@ -274,7 +274,7 @@ impl EventLoop {
                                 }
                             }
                         }
-                    } else if let Some(interrupt) = interrupts.get_mut(&event.token().0) {
+                    } else if let Some(interrupt) = interrupts.get_mut(&(event.token().0 as u8)) {
                         if event.readiness().is_readable()
                             && UnixReady::from(event.readiness()).is_error()
                         {
