@@ -226,52 +226,47 @@ impl EventLoop {
     fn spawn_pollthread(&mut self) -> &channel::Sender<ControlMsg> {
         let (tx, rx) = channel::channel();
 
-        thread::spawn(move || {
+        thread::spawn(move || -> Result<()> {
             // Circumvent the Copy/Clone requirement vec/array init normally requires
             let mut interrupts = Vec::with_capacity(256);
             for _ in 0..interrupts.capacity() {
                 interrupts.push(None);
             }
 
-            let poll = Poll::new().expect("unable to create Poll instance");
+            let poll = Poll::new()?;
             let mut events = Events::with_capacity(256);
 
-            poll.register(&rx, Token(TOKEN_RX), Ready::readable(), PollOpt::edge())
-                .expect("unable to register Receiver");
+            poll.register(&rx, Token(TOKEN_RX), Ready::readable(), PollOpt::edge())?;
 
             loop {
-                poll.poll(&mut events, None).expect("unable to poll events");
+                poll.poll(&mut events, None)?;
 
                 for event in &events {
                     if event.token() == Token(TOKEN_RX) {
                         loop {
                             match rx.try_recv() {
                                 Ok(ControlMsg::Add(pin, mut interrupt)) => {
-                                    interrupt
-                                        .base
-                                        .level()
-                                        .expect("unable to read Interrupt level");
+                                    interrupt.base.level()?;
                                     poll.register(
                                         &interrupt.base,
                                         Token(pin as usize),
                                         Ready::readable() | UnixReady::error(),
                                         PollOpt::edge(),
-                                    ).expect("unable to register Interrupt");
+                                    )?;
                                     interrupts[pin as usize] = Some(interrupt);
                                 }
                                 Ok(ControlMsg::Remove(pin)) => {
                                     if let Some(ref mut interrupt) = interrupts[pin as usize] {
-                                        poll.deregister(&interrupt.base)
-                                            .expect("unable to deregister Interrupt");
+                                        poll.deregister(&interrupt.base)?;
                                     }
 
                                     interrupts[pin as usize] = None;
                                 }
                                 Ok(ControlMsg::Stop) => {
-                                    return;
+                                    return Ok(());
                                 }
                                 Err(TryRecvError::Disconnected) => {
-                                    return;
+                                    return Ok(());
                                 }
                                 Err(TryRecvError::Empty) => {
                                     break;
@@ -282,7 +277,7 @@ impl EventLoop {
                         if event.readiness().is_readable()
                             && UnixReady::from(event.readiness()).is_error()
                         {
-                            let interrupt_value = interrupt.base.level().expect("unable to read Interrupt level");
+                            let interrupt_value = interrupt.base.level()?;
 
                             interrupt.callback(interrupt_value);
                         }
