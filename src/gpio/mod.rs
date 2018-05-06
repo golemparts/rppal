@@ -50,8 +50,6 @@ mod interrupt;
 mod mem;
 mod sysfs;
 
-pub use gpio::interrupt::Interrupt;
-
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
 const GPIO_MAX_PINS: u8 = 54;
@@ -250,6 +248,7 @@ pub struct Gpio {
     clear_on_drop: bool,
     gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
+    sync_interrupts: Vec<Option<interrupt::Interrupt>>,
     async_interrupts: interrupt::EventLoop,
 }
 
@@ -261,6 +260,7 @@ impl Gpio {
             clear_on_drop: true,
             gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
+            sync_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
             async_interrupts: interrupt::EventLoop::new(),
         };
 
@@ -272,6 +272,11 @@ impl Gpio {
                 Ok(mode) => gpio.orig_pin_state.push(PinState::new(n, mode, false)),
                 Err(e) => return Err(e),
             }
+        }
+
+        // Initialize sync_interrupts while circumventing the Copy/Clone requirement
+        for _ in 0..gpio.sync_interrupts.capacity() {
+            gpio.sync_interrupts.push(None);
         }
 
         Ok(gpio)
@@ -423,7 +428,11 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 
-    pub fn interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<Interrupt> {
+    /// Setup a synchronous interrupt, and block until the interrupt is triggered, or
+    /// a timeout occurs.
+    ///
+    /// The timeout duration can be set to None to wait indefinitely.
+    pub fn poll_interrupt(&mut self, pin: u8, trigger: Trigger, timeout: Option<Duration>, reset: bool) -> Result<Level> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }
@@ -432,9 +441,33 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        Ok(Interrupt::new(pin, trigger)?)
+        // Check for a cached interrupt on the same pin
+        if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
+            // Each pin can only have 1 trigger set
+            if interrupt.trigger() != trigger {
+                interrupt.set_trigger(trigger)?;
+            }
+
+            if reset {
+                interrupt.level()?;
+            }
+
+            return Ok(interrupt.poll(timeout)?);
+        }
+
+        let mut interrupt = interrupt::Interrupt::new(pin, trigger)?;
+        let result = interrupt.poll(timeout);
+
+        self.sync_interrupts[pin as usize] = Some(interrupt);
+
+        match result {
+            Ok(level) => Ok(level),
+            Err(e) => Err(Error::from(e)),
+        }
     }
 
+    /// Setup an asynchronous interrupt, which will execute the callback closure or
+    /// function pointer when it's triggered.
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
     where
         C: FnMut(Level) + Send + 'static,
@@ -452,6 +485,7 @@ impl Gpio {
         Ok(())
     }
 
+    /// Remove an existing asynchronous interrupt trigger.
     pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);

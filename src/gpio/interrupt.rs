@@ -18,8 +18,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// TODO: Doc comments, unexport interrupts from main thread
-
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
@@ -91,6 +89,13 @@ impl InterruptBase {
         })
     }
 
+    fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
+        self.trigger = trigger;
+        sysfs::set_edge(self.pin, trigger)?;
+
+        Ok(())
+    }
+
     fn level(&mut self) -> Result<Level> {
         let mut buffer = [0; 1];
         self.sysfs_value.read(&mut buffer)?;
@@ -160,6 +165,18 @@ impl Interrupt {
             poll: poll,
             events: events,
         })
+    }
+
+    pub fn trigger(&self) -> Trigger {
+        self.base.trigger
+    }
+
+    pub fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
+        self.base.set_trigger(trigger)
+    }
+
+    pub fn level(&mut self) -> Result<Level> {
+        Ok(self.base.level()?)
     }
 
     pub fn poll(&mut self, timeout: Option<Duration>) -> Result<Level> {
