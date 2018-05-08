@@ -303,8 +303,6 @@ impl Gpio {
     /// result.
     pub fn cleanup(&mut self) {
         if self.initialized {
-            // self.async_interrupts.stop().ok();
-
             // Use a cloned copy, because set_mode() will try to change
             // the contents of the original vector.
             for pin_state in &self.orig_pin_state.clone() {
@@ -547,8 +545,8 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        if let Some(interrupt) = self.async_interrupts[pin as usize].take() {
-            // stop() waits for the thread to exit
+        if let Some(mut interrupt) = self.async_interrupts[pin as usize].take() {
+            // stop() blocks until the poll thread exits
             interrupt.stop()?;
         }
 

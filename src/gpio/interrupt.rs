@@ -210,7 +210,8 @@ enum ControlMsg {
 }
 
 pub struct AsyncInterrupt {
-    poll_thread: thread::JoinHandle<Result<()>>,
+    pin: u8,
+    poll_thread: Option<thread::JoinHandle<Result<()>>>,
     tx: channel::Sender<ControlMsg>,
 }
 
@@ -261,17 +262,30 @@ impl AsyncInterrupt {
         });
 
         Ok(AsyncInterrupt {
-            poll_thread: poll_thread,
+            pin: pin,
+            poll_thread: Some(poll_thread),
             tx: tx,
         })
     }
 
-    pub fn stop(self) -> Result<()> {
+    pub fn stop(&mut self) -> Result<()> {
         self.tx.send(ControlMsg::Stop)?;
 
-        match self.poll_thread.join() {
-            Ok(r) => r,
-            Err(_) => Err(Error::ThreadPanic),
+        if let Some(poll_thread) = self.poll_thread.take() {
+            match poll_thread.join() {
+                Ok(r) => return r,
+                Err(_) => return Err(Error::ThreadPanic),
+            }
         }
+
+        Ok(())
+    }
+}
+
+impl Drop for AsyncInterrupt {
+    fn drop(&mut self) {
+        // Unexport the pin here, because we can't rely on the thread
+        // living long enough to unexport it.
+        sysfs::unexport(self.pin).ok();
     }
 }
