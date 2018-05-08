@@ -44,6 +44,7 @@ quick_error! {
 /// Result type returned from methods that can have `rppal::gpio::interrupt::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     In,
     Out,
@@ -97,7 +98,7 @@ pub fn set_direction(pin: u8, direction: Direction) -> Result<()> {
         Direction::High => b"high",
     };
 
-    File::create(format!("/sys/class/gpio/gpio{}/direction", pin))?.write(b_direction)?;
+    File::create(format!("/sys/class/gpio/gpio{}/direction", pin))?.write_all(b_direction)?;
 
     Ok(())
 }
@@ -110,7 +111,7 @@ pub fn set_edge(pin: u8, trigger: Trigger) -> Result<()> {
         Trigger::Both => b"both",
     };
 
-    File::create(format!("/sys/class/gpio/gpio{}/edge", pin))?.write(b_trigger)?;
+    File::create(format!("/sys/class/gpio/gpio{}/edge", pin))?.write_all(b_trigger)?;
 
     Ok(())
 }

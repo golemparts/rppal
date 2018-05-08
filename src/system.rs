@@ -29,9 +29,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
-const PERIPHERAL_BASE_RPI: u32 = 0x20000000;
-const PERIPHERAL_BASE_RPI2: u32 = 0x3f000000;
-const GPIO_OFFSET: u32 = 0x200000;
+const PERIPHERAL_BASE_RPI: u32 = 0x20_000_000;
+const PERIPHERAL_BASE_RPI2: u32 = 0x3f_000_000;
+const GPIO_OFFSET: u32 = 0x200_000;
 
 quick_error! {
     #[derive(Debug)]
@@ -185,8 +185,8 @@ impl DeviceInfo {
             | Model::RaspberryPiComputeModule
             | Model::RaspberryPiZero
             | Model::RaspberryPiZeroW => Ok(DeviceInfo {
-                model: model,
-                soc: soc,
+                model,
+                soc,
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
             }),
@@ -194,8 +194,8 @@ impl DeviceInfo {
             | Model::RaspberryPi3B
             | Model::RaspberryPi3BPlus
             | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
-                model: model,
-                soc: soc,
+                model,
+                soc,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),

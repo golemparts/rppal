@@ -88,8 +88,8 @@ impl InterruptBase {
         sysfs::set_edge(pin, trigger)?;
 
         Ok(InterruptBase {
-            pin: pin,
-            trigger: trigger,
+            pin,
+            trigger,
             sysfs_value: sysfs::open_value(pin)?,
         })
     }
@@ -103,7 +103,7 @@ impl InterruptBase {
 
     fn level(&mut self) -> Result<Level> {
         let mut buffer = [0; 1];
-        self.sysfs_value.read(&mut buffer)?;
+        self.sysfs_value.read_exact(&mut buffer)?;
         self.sysfs_value.seek(SeekFrom::Start(0))?;
 
         match &buffer {
@@ -166,9 +166,9 @@ impl Interrupt {
         )?;
 
         Ok(Interrupt {
-            base: base,
-            poll: poll,
-            events: events,
+            base,
+            poll,
+            events,
         })
     }
 
@@ -237,17 +237,15 @@ impl AsyncInterrupt {
 
                 for event in &events {
                     if event.token() == Token(TOKEN_RX) {
-                        loop {
-                            match rx.try_recv() {
-                                Ok(ControlMsg::Stop) => {
-                                    return Ok(());
-                                }
-                                Err(TryRecvError::Disconnected) => {
-                                    return Ok(());
-                                }
-                                Err(TryRecvError::Empty) => {
-                                    break;
-                                }
+                        match rx.try_recv() {
+                            Ok(ControlMsg::Stop) => {
+                                return Ok(());
+                            }
+                            Err(TryRecvError::Disconnected) => {
+                                return Ok(());
+                            }
+                            Err(TryRecvError::Empty) => {
+                                break;
                             }
                         }
                     } else if event.token() == Token(TOKEN_PIN) && event.readiness().is_readable()
@@ -262,9 +260,9 @@ impl AsyncInterrupt {
         });
 
         Ok(AsyncInterrupt {
-            pin: pin,
+            pin,
             poll_thread: Some(poll_thread),
-            tx: tx,
+            tx,
         })
     }
 
