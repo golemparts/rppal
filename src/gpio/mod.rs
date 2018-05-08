@@ -428,11 +428,54 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 
-    /// Setup a synchronous interrupt, and block until the interrupt is triggered, or
-    /// a timeout occurs.
+    /// -
+    pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
+
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        // Each pin can only be configured for a single trigger type
+        if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
+            if interrupt.trigger() != trigger {
+                interrupt.set_trigger(trigger)?;
+            }
+
+            return Ok(());
+        }
+
+        self.sync_interrupts[pin as usize] = Some(interrupt::Interrupt::new(pin, trigger)?);
+
+        Ok(())
+    }
+
+    /// -
+    pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
+
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        self.sync_interrupts[pin as usize] = None;
+
+        Ok(())
+    }
+
+    /// Block until the interrupt is triggered, or a timeout occurs.
     ///
     /// The timeout duration can be set to None to wait indefinitely.
-    pub fn poll_interrupt(&mut self, pin: u8, trigger: Trigger, timeout: Option<Duration>, reset: bool) -> Result<Level> {
+    pub fn poll_interrupt(
+        &mut self,
+        pin: u8,
+        reset: bool,
+        timeout: Option<Duration>,
+    ) -> Result<Level> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }
@@ -443,11 +486,6 @@ impl Gpio {
 
         // Check for a cached interrupt on the same pin
         if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
-            // Each pin can only have 1 trigger set
-            if interrupt.trigger() != trigger {
-                interrupt.set_trigger(trigger)?;
-            }
-
             if reset {
                 interrupt.level()?;
             }
@@ -455,15 +493,7 @@ impl Gpio {
             return Ok(interrupt.poll(timeout)?);
         }
 
-        let mut interrupt = interrupt::Interrupt::new(pin, trigger)?;
-        let result = interrupt.poll(timeout);
-
-        self.sync_interrupts[pin as usize] = Some(interrupt);
-
-        match result {
-            Ok(level) => Ok(level),
-            Err(e) => Err(Error::from(e)),
-        }
+        Err(Error::Interrupt(interrupt::Error::NotInitialized))
     }
 
     /// Setup an asynchronous interrupt, which will execute the callback closure or

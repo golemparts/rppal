@@ -41,6 +41,8 @@ quick_error! {
     #[derive(Debug)]
 /// Errors that can occur while working with interrupts.
     pub enum Error {
+/// Synchronous interrupt isn't initialized.
+        NotInitialized { description("not initialized") }
 /// Time out.
         TimeOut { description("interrupt polling timed out while waiting for a trigger") }
 /// IO error.
