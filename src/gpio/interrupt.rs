@@ -52,7 +52,9 @@ quick_error! {
 /// IO error while communicating with the interrupt polling thread.
         SendIo(err: io::Error) { description(err.description()) }
 /// Disconnected while sending a control message to the interrupt polling thread.
-        SendDisconnected { description("the receiving half of the channel has disconnected") }
+        SendDisconnected { description("receiving half of the channel has disconnected") }
+/// Interrupt polling thread panicked.
+        ThreadPanic { description("interrupt polling thread panicked") }
     }
 }
 
@@ -68,7 +70,8 @@ impl<T> From<channel::SendError<T>> for Error {
 /// Result type returned from methods that can have `rppal::gpio::interrupt::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-const TOKEN_RX: usize = 1000;
+const TOKEN_RX: usize = 0;
+const TOKEN_PIN: usize = 1;
 
 struct InterruptBase {
     pin: u8,
@@ -157,7 +160,7 @@ impl Interrupt {
         base.level()?;
         poll.register(
             &base,
-            Token(0),
+            Token(TOKEN_PIN),
             Ready::readable() | UnixReady::error(),
             PollOpt::edge(),
         )?;
@@ -192,7 +195,7 @@ impl Interrupt {
             }
 
             for event in &self.events {
-                if event.token() == Token(0) && event.readiness().is_readable()
+                if event.token() == Token(TOKEN_PIN) && event.readiness().is_readable()
                     && UnixReady::from(event.readiness()).is_error()
                 {
                     return Ok(self.base.level()?);
@@ -202,60 +205,31 @@ impl Interrupt {
     }
 }
 
-pub struct AsyncInterrupt {
-    base: InterruptBase,
-    callback: Box<FnMut(Level) + Send + 'static>,
-}
-
-impl AsyncInterrupt {
-    pub fn new<C>(pin: u8, trigger: Trigger, callback: C) -> Result<AsyncInterrupt>
-    where
-        C: FnMut(Level) + Send + 'static,
-    {
-        Ok(AsyncInterrupt {
-            base: InterruptBase::new(pin, trigger)?,
-            callback: Box::new(callback),
-        })
-    }
-
-    pub fn callback(&mut self, level: Level) {
-        (self.callback)(level);
-    }
-
-    pub fn level(&mut self) -> Result<Level> {
-        Ok(self.base.level()?)
-    }
-}
-
 enum ControlMsg {
-    Add(u8, AsyncInterrupt),
-    Remove(u8),
     Stop,
 }
 
-pub struct EventLoop {
-    tx: Option<channel::Sender<ControlMsg>>,
+pub struct AsyncInterrupt {
+    poll_thread: thread::JoinHandle<Result<()>>,
+    tx: channel::Sender<ControlMsg>,
 }
 
-impl EventLoop {
-    pub fn new() -> EventLoop {
-        EventLoop { tx: None }
-    }
-
-    fn spawn_pollthread(&mut self) -> &channel::Sender<ControlMsg> {
+impl AsyncInterrupt {
+    pub fn new<C>(pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
+    where
+        C: FnMut(Level) + Send + 'static,
+    {
         let (tx, rx) = channel::channel();
 
-        thread::spawn(move || -> Result<()> {
-            // Circumvent the Copy/Clone requirement vec/array init normally requires
-            let mut interrupts = Vec::with_capacity(256);
-            for _ in 0..interrupts.capacity() {
-                interrupts.push(None);
-            }
-
+        let poll_thread = thread::spawn(move || -> Result<()> {
             let poll = Poll::new()?;
-            let mut events = Events::with_capacity(256);
+            let mut events = Events::with_capacity(2);
 
             poll.register(&rx, Token(TOKEN_RX), Ready::readable(), PollOpt::edge())?;
+
+            let mut base = InterruptBase::new(pin, trigger)?;
+            base.level()?;
+            poll.register(&base, Token(TOKEN_PIN), Ready::readable() | UnixReady::error(), PollOpt::edge())?;
 
             loop {
                 poll.poll(&mut events, None)?;
@@ -264,23 +238,6 @@ impl EventLoop {
                     if event.token() == Token(TOKEN_RX) {
                         loop {
                             match rx.try_recv() {
-                                Ok(ControlMsg::Add(pin, mut interrupt)) => {
-                                    interrupt.base.level()?;
-                                    poll.register(
-                                        &interrupt.base,
-                                        Token(pin as usize),
-                                        Ready::readable() | UnixReady::error(),
-                                        PollOpt::edge(),
-                                    )?;
-                                    interrupts[pin as usize] = Some(interrupt);
-                                }
-                                Ok(ControlMsg::Remove(pin)) => {
-                                    if let Some(ref mut interrupt) = interrupts[pin as usize] {
-                                        poll.deregister(&interrupt.base)?;
-                                    }
-
-                                    interrupts[pin as usize] = None;
-                                }
                                 Ok(ControlMsg::Stop) => {
                                     return Ok(());
                                 }
@@ -292,61 +249,29 @@ impl EventLoop {
                                 }
                             }
                         }
-                    } else if let Some(ref mut interrupt) = interrupts[event.token().0] {
-                        if event.readiness().is_readable()
-                            && UnixReady::from(event.readiness()).is_error()
-                        {
-                            let interrupt_value = interrupt.base.level()?;
+                    } else if event.token() == Token(TOKEN_PIN) && event.readiness().is_readable()
+                        && UnixReady::from(event.readiness()).is_error()
+                    {
+                        let interrupt_value = base.level()?;
 
-                            interrupt.callback(interrupt_value);
-                        }
+                        callback(interrupt_value);
                     }
                 }
             }
         });
 
-        self.tx = Some(tx);
-        self.tx.as_ref().unwrap()
+        Ok(AsyncInterrupt {
+            poll_thread: poll_thread,
+            tx: tx,
+        })
     }
 
-    pub fn set_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
-    where
-        C: FnMut(Level) + Send + 'static,
-    {
-        // Only spawn a thread for interrupt polling if we're actually using interrupts.
-        let tx = if let Some(ref tx) = self.tx {
-            tx
-        } else {
-            self.spawn_pollthread()
-        };
+    pub fn stop(self) -> Result<()> {
+        self.tx.send(ControlMsg::Stop)?;
 
-        tx.send(ControlMsg::Add(
-            pin,
-            AsyncInterrupt::new(pin, trigger, callback)?,
-        ))?;
-
-        Ok(())
-    }
-
-    pub fn clear_interrupt(&self, pin: u8) -> Result<()> {
-        if let Some(ref tx) = self.tx {
-            tx.send(ControlMsg::Remove(pin))?;
+        match self.poll_thread.join() {
+            Ok(r) => r,
+            Err(_) => Err(Error::ThreadPanic),
         }
-
-        Ok(())
-    }
-
-    pub fn stop(&mut self) -> Result<()> {
-        if let Some(ref tx) = self.tx {
-            tx.send(ControlMsg::Stop)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl Drop for EventLoop {
-    fn drop(&mut self) {
-        self.stop().ok();
     }
 }

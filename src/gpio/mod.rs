@@ -249,7 +249,7 @@ pub struct Gpio {
     gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
     sync_interrupts: Vec<Option<interrupt::Interrupt>>,
-    async_interrupts: interrupt::EventLoop,
+    async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
 
 impl Gpio {
@@ -261,7 +261,7 @@ impl Gpio {
             gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
             sync_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
-            async_interrupts: interrupt::EventLoop::new(),
+            async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
         try!(gpio.gpio_mem.open());
@@ -277,6 +277,7 @@ impl Gpio {
         // Initialize sync_interrupts while circumventing the Copy/Clone requirement
         for _ in 0..gpio.sync_interrupts.capacity() {
             gpio.sync_interrupts.push(None);
+            gpio.async_interrupts.push(None);
         }
 
         Ok(gpio)
@@ -302,7 +303,7 @@ impl Gpio {
     /// result.
     pub fn cleanup(&mut self) {
         if self.initialized {
-            self.async_interrupts.stop().ok();
+            // self.async_interrupts.stop().ok();
 
             // Use a cloned copy, because set_mode() will try to change
             // the contents of the original vector.
@@ -438,6 +439,9 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
+        // We can't have sync and async interrupts on the same pin at the same time
+        self.clear_async_interrupt(pin)?;
+
         // Each pin can only be configured for a single trigger type
         if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
             if interrupt.trigger() != trigger {
@@ -506,7 +510,7 @@ impl Gpio {
     /// Configures an asynchronous interrupt, which will execute the callback on a
     /// separate thread when the interrupt is triggered.
     ///
-    /// The callback can be a closure or function pointer, with a single rppal::gpio::Level argument.
+    /// The callback closure or function pointer is called with a single rppal::gpio::Level argument.
     /// The pin level is read when the trigger event is processed, and may differ from the pin
     /// level that actually triggered the interrupt.
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
@@ -521,7 +525,14 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        self.async_interrupts.set_interrupt(pin, trigger, callback)?;
+        // We can't have sync and async interrupts on the same pin at the same time
+        self.clear_interrupt(pin)?;
+
+        // Stop and remove existing interrupt trigger on this pin
+        self.clear_async_interrupt(pin)?;
+
+        self.async_interrupts[pin as usize] =
+            Some(interrupt::AsyncInterrupt::new(pin, trigger, callback)?);
 
         Ok(())
     }
@@ -536,7 +547,10 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        self.async_interrupts.clear_interrupt(pin)?;
+        if let Some(interrupt) = self.async_interrupts[pin as usize].take() {
+            // stop() waits for the thread to exit
+            interrupt.stop()?;
+        }
 
         Ok(())
     }
