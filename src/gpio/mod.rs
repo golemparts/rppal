@@ -395,7 +395,7 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 1 << (pin % 32));
     }
 
-    /// Enables/disables the built-in GPIO pull-up/pull-down resistors.
+    /// Configures the built-in GPIO pull-up/pull-down resistors.
     pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
         if !self.initialized || (pin >= GPIO_MAX_PINS) {
             return;
@@ -428,7 +428,7 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 
-    /// -
+    /// Configures a synchronous interrupt.
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -452,7 +452,7 @@ impl Gpio {
         Ok(())
     }
 
-    /// -
+    /// Removes a configured synchronous interrupt.
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -467,9 +467,16 @@ impl Gpio {
         Ok(())
     }
 
-    /// Block until the interrupt is triggered, or a timeout occurs.
+    /// Blocks until the configured synchronous interrupt is triggered, or a timeout occurs.
+    ///
+    /// Setting reset to false causes poll_interrupt to return immediately if the interrupt
+    /// has been triggered since the previous call to set_interrupt or poll_interrupt.
+    /// Setting reset to true clears any previous trigger events.
     ///
     /// The timeout duration can be set to None to wait indefinitely.
+    ///
+    /// The returned pin level is read when the trigger event is processed, and may differ from
+    /// the pin level that actually triggered the interrupt.
     pub fn poll_interrupt(
         &mut self,
         pin: u8,
@@ -496,8 +503,12 @@ impl Gpio {
         Err(Error::Interrupt(interrupt::Error::NotInitialized))
     }
 
-    /// Setup an asynchronous interrupt, which will execute the callback closure or
-    /// function pointer when it's triggered.
+    /// Configures an asynchronous interrupt, which will execute the callback on a
+    /// separate thread when the interrupt is triggered.
+    ///
+    /// The callback can be a closure or function pointer, with a single rppal::gpio::Level argument.
+    /// The pin level is read when the trigger event is processed, and may differ from the pin
+    /// level that actually triggered the interrupt.
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
     where
         C: FnMut(Level) + Send + 'static,
@@ -515,7 +526,7 @@ impl Gpio {
         Ok(())
     }
 
-    /// Remove an existing asynchronous interrupt trigger.
+    /// Removes a configured asynchronous interrupt.
     pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
