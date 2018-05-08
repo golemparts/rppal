@@ -165,11 +165,7 @@ impl Interrupt {
             PollOpt::edge(),
         )?;
 
-        Ok(Interrupt {
-            base,
-            poll,
-            events,
-        })
+        Ok(Interrupt { base, poll, events })
     }
 
     pub fn trigger(&self) -> Trigger {
@@ -230,7 +226,12 @@ impl AsyncInterrupt {
 
             let mut base = InterruptBase::new(pin, trigger)?;
             base.level()?;
-            poll.register(&base, Token(TOKEN_PIN), Ready::readable() | UnixReady::error(), PollOpt::edge())?;
+            poll.register(
+                &base,
+                Token(TOKEN_PIN),
+                Ready::readable() | UnixReady::error(),
+                PollOpt::edge(),
+            )?;
 
             loop {
                 poll.poll(&mut events, None)?;

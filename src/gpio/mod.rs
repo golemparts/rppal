@@ -234,11 +234,7 @@ struct PinState {
 
 impl PinState {
     fn new(pin: u8, mode: Mode, changed: bool) -> PinState {
-        PinState {
-            pin,
-            mode,
-            changed,
-        }
+        PinState { pin, mode, changed }
     }
 }
 
