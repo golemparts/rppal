@@ -205,7 +205,7 @@ impl fmt::Display for PullUpDown {
     }
 }
 
-/// Interrupt trigger type.
+/// Interrupt trigger types.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Trigger {
     Disabled,
@@ -424,6 +424,12 @@ impl Gpio {
     }
 
     /// Configures a synchronous interrupt.
+    ///
+    /// After configuring a synchronous interrupt, you can use `poll_interrupt()`
+    /// to wait for a trigger event.
+    ///
+    /// Configuring an interrupt will remove any previously configured
+    /// (a)synchronous interrupts for the same pin.
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -467,14 +473,17 @@ impl Gpio {
 
     /// Blocks until the configured synchronous interrupt is triggered, or a timeout occurs.
     ///
-    /// Setting reset to false causes poll_interrupt to return immediately if the interrupt
-    /// has been triggered since the previous call to set_interrupt or poll_interrupt.
-    /// Setting reset to true clears any previous trigger events.
+    /// `poll_interrupt()` only works for pins that have been configured for synchronous interrupts.
+    /// Asynchronous interrupts are automatically polled on a separate thread.
+    ///
+    /// Setting reset to false causes `poll_interrupt()` to return immediately if the interrupt
+    /// has been triggered since the previous call to `set_interrupt()` or `poll_interrupt()`.
+    /// Setting reset to true clears any cached trigger events.
     ///
     /// The timeout duration can be set to None to wait indefinitely.
     ///
-    /// The returned pin level is read when the trigger event is processed, and may differ from
-    /// the pin level that actually triggered the interrupt.
+    /// The returned pin logic level is read when the trigger event is processed, and may
+    /// differ from the logic level that actually triggered the interrupt.
     pub fn poll_interrupt(
         &mut self,
         pin: u8,
@@ -489,7 +498,6 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        // Check for a cached interrupt on the same pin
         if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
             if reset {
                 interrupt.level()?;
@@ -501,12 +509,17 @@ impl Gpio {
         Err(Error::Interrupt(interrupt::Error::NotInitialized))
     }
 
+    // TODO: poll_interrupts() for polling multiple synchronous interrupts
+
     /// Configures an asynchronous interrupt, which will execute the callback on a
     /// separate thread when the interrupt is triggered.
     ///
-    /// The callback closure or function pointer is called with a single rppal::gpio::Level argument.
-    /// The pin level is read when the trigger event is processed, and may differ from the pin
+    /// The callback closure or function pointer is called with a single `rppal::gpio::Level` argument.
+    /// The pin logic level is read when the trigger event is processed, and may differ from the logic
     /// level that actually triggered the interrupt.
+    ///
+    /// Configuring an interrupt will remove any previously configured
+    /// (a)synchronous interrupts for the same pin.
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
     where
         C: FnMut(Level) + Send + 'static,
