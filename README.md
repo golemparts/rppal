@@ -4,7 +4,7 @@
 [![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO peripheral. Support for additional peripherals will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
+RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO peripheral. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
@@ -12,12 +12,12 @@ Backwards compatibility for minor revisions isn't guaranteed until the library r
 
 ### GPIO
 
-For performance reasons, the library accesses the GPIO peripheral mainly through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
+To ensure fast performance, the library interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
 
 Features:
 
-* Get/set pin mode.
-* Read/write pin level.
+* Get/set pin modes.
+* Read/write pin logic levels.
 * Set built-in pull-up/pull-down resistors.
 * Set synchronous and asynchronous interrupts.
 
