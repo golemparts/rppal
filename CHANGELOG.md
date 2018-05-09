@@ -2,6 +2,7 @@
 
 * Gpio: Add support for asynchronous interrupts (set_async_interrupt(), clear_async_interrupt()).
 * Gpio: Add support for synchronous interrupts (set_interrupt(), clear_interrupt(), poll_interrupt()).
+* DeviceInfo: Add hardcoded Raspberry Pi 3 B+ SoC identifier, rather than relying on inaccurate info from /proc/cpuinfo.
 
 # 0.4.0 (Mar 19, 2018)
 

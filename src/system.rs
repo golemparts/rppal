@@ -93,6 +93,8 @@ pub enum SoC {
     Bcm2835,
     Bcm2836,
     Bcm2837,
+    Bcm2837A1,
+    Bcm2837B0,
     Unknown,
 }
 
@@ -102,6 +104,8 @@ impl fmt::Display for SoC {
             SoC::Bcm2835 => write!(f, "BCM2835"),
             SoC::Bcm2836 => write!(f, "BCM2836"),
             SoC::Bcm2837 => write!(f, "BCM2837"),
+            SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
+            SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
             SoC::Unknown => write!(f, "Unknown"),
         }
     }
@@ -173,6 +177,8 @@ impl DeviceInfo {
             "BCM2708" | "BCM2835" => SoC::Bcm2835,
             "BCM2709" | "BCM2836" => SoC::Bcm2836,
             "BCM2710" | "BCM2837" => SoC::Bcm2837,
+            "BCM2837A1" => SoC::Bcm2837A1,
+            "BCM2837B0" => SoC::Bcm2837B0,
             _ => SoC::Unknown,
         };
 
@@ -192,10 +198,15 @@ impl DeviceInfo {
             }),
             Model::RaspberryPi2B
             | Model::RaspberryPi3B
-            | Model::RaspberryPi3BPlus
             | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
                 model,
                 soc,
+                peripheral_base: PERIPHERAL_BASE_RPI2,
+                gpio_offset: GPIO_OFFSET,
+            }),
+            Model::RaspberryPi3BPlus => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2837B0,   // Don't rely on /proc/cpuinfo for accurate 3B+ info
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
