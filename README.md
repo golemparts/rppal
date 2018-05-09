@@ -12,7 +12,7 @@ Backwards compatibility for minor revisions isn't guaranteed until the library r
 
 ### GPIO
 
-To ensure fast performance, the library interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
+To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
 
 Features:
 
