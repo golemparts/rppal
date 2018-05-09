@@ -196,17 +196,17 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi2B
-            | Model::RaspberryPi3B
-            | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
-                model,
-                soc,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
-                gpio_offset: GPIO_OFFSET,
-            }),
+            Model::RaspberryPi2B | Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 => {
+                Ok(DeviceInfo {
+                    model,
+                    soc,
+                    peripheral_base: PERIPHERAL_BASE_RPI2,
+                    gpio_offset: GPIO_OFFSET,
+                })
+            }
             Model::RaspberryPi3BPlus => Ok(DeviceInfo {
                 model,
-                soc: SoC::Bcm2837B0,   // Don't rely on /proc/cpuinfo for accurate 3B+ info
+                soc: SoC::Bcm2837B0, // Don't rely on /proc/cpuinfo for accurate 3B+ info
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
