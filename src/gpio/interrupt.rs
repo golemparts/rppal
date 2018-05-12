@@ -73,25 +73,29 @@ pub type Result<T> = result::Result<T, Error>;
 const TOKEN_RX: usize = 0;
 const TOKEN_PIN: usize = 1;
 
-struct InterruptBase {
+struct Interrupt {
     pin: u8,
     trigger: Trigger,
     sysfs_value: File,
 }
 
-impl InterruptBase {
-    fn new(pin: u8, trigger: Trigger) -> Result<InterruptBase> {
+impl Interrupt {
+    fn new(pin: u8, trigger: Trigger) -> Result<Interrupt> {
         // Export the GPIO pin so we can configure it through sysfs, set its mode to
         // input, and set the trigger type.
         sysfs::export(pin)?;
         sysfs::set_direction(pin, Direction::In)?;
         sysfs::set_edge(pin, trigger)?;
 
-        Ok(InterruptBase {
+        Ok(Interrupt {
             pin,
             trigger,
             sysfs_value: sysfs::open_value(pin)?,
         })
+    }
+
+    fn trigger(&self) -> Trigger {
+        self.trigger
     }
 
     fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
@@ -113,13 +117,13 @@ impl InterruptBase {
     }
 }
 
-impl Drop for InterruptBase {
+impl Drop for Interrupt {
     fn drop(&mut self) {
         sysfs::unexport(self.pin).ok();
     }
 }
 
-impl Evented for InterruptBase {
+impl Evented for Interrupt {
     fn register(
         &self,
         poll: &Poll,
@@ -145,43 +149,61 @@ impl Evented for InterruptBase {
     }
 }
 
-pub struct Interrupt {
-    base: InterruptBase,
-    poll: Poll,
-    events: Events,
+struct TriggerStatus {
+    interrupt: Option<Interrupt>,
+    triggered: bool,
+    level: Level,
 }
 
-impl Interrupt {
-    pub fn new(pin: u8, trigger: Trigger) -> Result<Interrupt> {
-        let mut base = InterruptBase::new(pin, trigger)?;
-        let poll = Poll::new()?;
-        let events = Events::with_capacity(1);
+pub struct EventLoop {
+    poll: Poll,
+    events: Events,
+    trigger_status: Vec<TriggerStatus>,
+}
 
-        base.level()?;
-        poll.register(
-            &base,
-            Token(TOKEN_PIN),
-            Ready::readable() | UnixReady::error(),
-            PollOpt::edge(),
-        )?;
+impl EventLoop {
+    pub fn new(capacity: usize) -> Result<EventLoop> {
+        let mut trigger_status = Vec::with_capacity(capacity);
 
-        Ok(Interrupt { base, poll, events })
+        // Initialize trigger_status while circumventing the Copy/Clone requirement
+        for _ in 0..trigger_status.capacity() {
+            trigger_status.push(TriggerStatus {
+                interrupt: None,
+                triggered: false,
+                level: Level::Low,
+            });
+        }
+
+        Ok(EventLoop {
+            poll: Poll::new()?,
+            events: Events::with_capacity(capacity),
+            trigger_status,
+        })
     }
 
-    pub fn trigger(&self) -> Trigger {
-        self.base.trigger
-    }
+    pub fn poll(
+        &mut self,
+        pins: &[u8],
+        reset: bool,
+        timeout: Option<Duration>,
+    ) -> Result<(u8, Level)> {
+        // Has any of the pins we're polling already been triggered?
+        for pin in pins {
+            if *pin as usize >= self.trigger_status.capacity() {
+                return Err(Error::NotInitialized);
+            }
 
-    pub fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
-        self.base.set_trigger(trigger)
-    }
+            if self.trigger_status[*pin as usize].triggered {
+                self.trigger_status[*pin as usize].triggered = false;
 
-    pub fn level(&mut self) -> Result<Level> {
-        Ok(self.base.level()?)
-    }
+                // Only return if we're not ignoring the stored trigger events
+                if !reset {
+                    return Ok((*pin, self.trigger_status[*pin as usize].level));
+                }
+            }
+        }
 
-    pub fn poll(&mut self, timeout: Option<Duration>) -> Result<Level> {
-        // Loop until we get the event we're waiting for, or a timeout occurs
+        // Loop until we get any of the events we're waiting for, or a timeout occurs
         loop {
             self.poll.poll(&mut self.events, timeout)?;
 
@@ -191,13 +213,70 @@ impl Interrupt {
             }
 
             for event in &self.events {
-                if event.token() == Token(TOKEN_PIN) && event.readiness().is_readable()
+                if event.token().0 < self.trigger_status.capacity()
+                    && event.readiness().is_readable()
                     && UnixReady::from(event.readiness()).is_error()
                 {
-                    return Ok(self.base.level()?);
+                    self.trigger_status[event.token().0].triggered = true;
+                    self.trigger_status[event.token().0].level = if let Some(ref mut interrupt) =
+                        self.trigger_status[event.token().0].interrupt
+                    {
+                        interrupt.level()?
+                    } else {
+                        Level::Low
+                    };
                 }
             }
+
+            // Were any interrupts triggered? If so, return one. The rest
+            // will be saved for the next poll.
+            for pin in pins {
+                if self.trigger_status[*pin as usize].triggered {
+                    self.trigger_status[*pin as usize].triggered = false;
+                    return Ok((*pin, self.trigger_status[*pin as usize].level));
+                }
+            }
+
+            // TODO: If there's a timeout set, reduce it here
         }
+    }
+
+    pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
+        self.trigger_status[pin as usize].triggered = false;
+
+        // Interrupt already exists. We just need to change the trigger.
+        if let Some(ref mut interrupt) = self.trigger_status[pin as usize].interrupt {
+            if interrupt.trigger != trigger {
+                interrupt.set_trigger(trigger)?;
+            }
+
+            return Ok(());
+        }
+
+        // Register a new interrupt
+        let mut base = Interrupt::new(pin, trigger)?;
+
+        base.level()?;
+        self.poll.register(
+            &base,
+            Token(pin as usize),
+            Ready::readable() | UnixReady::error(),
+            PollOpt::edge(),
+        )?;
+
+        self.trigger_status[pin as usize].interrupt = Some(base);
+
+        Ok(())
+    }
+
+    pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
+        self.trigger_status[pin as usize].triggered = false;
+
+        if let Some(interrupt) = self.trigger_status[pin as usize].interrupt.take() {
+            self.poll.deregister(&interrupt)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -224,7 +303,7 @@ impl AsyncInterrupt {
 
             poll.register(&rx, Token(TOKEN_RX), Ready::readable(), PollOpt::edge())?;
 
-            let mut base = InterruptBase::new(pin, trigger)?;
+            let mut base = Interrupt::new(pin, trigger)?;
             base.level()?;
             poll.register(
                 &base,

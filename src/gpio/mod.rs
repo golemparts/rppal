@@ -244,7 +244,7 @@ pub struct Gpio {
     clear_on_drop: bool,
     gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
-    sync_interrupts: Vec<Option<interrupt::Interrupt>>,
+    sync_interrupts: interrupt::EventLoop,
     async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
 
@@ -256,7 +256,7 @@ impl Gpio {
             clear_on_drop: true,
             gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
-            sync_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
+            sync_interrupts: interrupt::EventLoop::new(GPIO_MAX_PINS as usize)?,
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
@@ -271,8 +271,7 @@ impl Gpio {
         }
 
         // Initialize sync_interrupts while circumventing the Copy/Clone requirement
-        for _ in 0..gpio.sync_interrupts.capacity() {
-            gpio.sync_interrupts.push(None);
+        for _ in 0..gpio.async_interrupts.capacity() {
             gpio.async_interrupts.push(None);
         }
 
@@ -443,15 +442,7 @@ impl Gpio {
         self.clear_async_interrupt(pin)?;
 
         // Each pin can only be configured for a single trigger type
-        if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
-            if interrupt.trigger() != trigger {
-                interrupt.set_trigger(trigger)?;
-            }
-
-            return Ok(());
-        }
-
-        self.sync_interrupts[pin as usize] = Some(interrupt::Interrupt::new(pin, trigger)?);
+        self.sync_interrupts.set_interrupt(pin, trigger)?;
 
         Ok(())
     }
@@ -466,12 +457,12 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        self.sync_interrupts[pin as usize] = None;
+        self.sync_interrupts.clear_interrupt(pin)?;
 
         Ok(())
     }
 
-    /// Blocks until the configured synchronous interrupt is triggered, or a timeout occurs.
+    /// Blocks until a synchronous interrupt is triggered on the selected pin, or a timeout occurs.
     ///
     /// `poll_interrupt()` only works for pins that have been configured for synchronous interrupts.
     /// Asynchronous interrupts are automatically polled on a separate thread.
@@ -490,26 +481,45 @@ impl Gpio {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Level> {
+        Ok(self.poll_interrupts(&[pin], reset, timeout)?.1)
+    }
+
+    /// Blocks until a synchronous interrupt is triggered on any of the selected pins, or a timeout occurs.
+    ///
+    /// `poll_interrupts()` only works for pins that have been configured for synchronous interrupts.
+    /// Asynchronous interrupts are automatically polled on a separate thread.
+    ///
+    /// Setting reset to false causes `poll_interrupts()` to return immediately if any of the interrupts
+    /// have been triggered since the previous call to `set_interrupt()` or `poll_interrupts()`.
+    /// Setting reset to true clears any cached trigger events.
+    ///
+    /// The timeout duration can be set to None to wait indefinitely.
+    ///
+    /// When an interrupt event is triggered on any of the pins, `poll_interrupts()` returns a
+    /// tuple containing the corresponding pin number and logic level. If multiple events trigger at
+    /// the same time, only the first one is returned. The remaining events are cached and will be returned
+    /// the next time `poll_interrupts()` is called.
+    ///
+    /// The returned pin logic level is read when the trigger event is processed, and may
+    /// differ from the logic level that actually triggered the interrupt.
+    pub fn poll_interrupts(
+        &mut self,
+        pins: &[u8],
+        reset: bool,
+        timeout: Option<Duration>,
+    ) -> Result<(u8, Level)> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }
 
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
-
-        if let Some(ref mut interrupt) = self.sync_interrupts[pin as usize] {
-            if reset {
-                interrupt.level()?;
+        for pin in pins {
+            if *pin >= GPIO_MAX_PINS {
+                return Err(Error::InvalidPin(*pin));
             }
-
-            return Ok(interrupt.poll(timeout)?);
         }
 
-        Err(Error::Interrupt(interrupt::Error::NotInitialized))
+        Ok(self.sync_interrupts.poll(pins, reset, timeout)?)
     }
-
-    // TODO: poll_interrupts() for polling multiple synchronous interrupts
 
     /// Configures an asynchronous interrupt, which will execute the callback on a
     /// separate thread when the interrupt is triggered.
