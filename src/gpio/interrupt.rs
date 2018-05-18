@@ -187,18 +187,24 @@ impl EventLoop {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<(u8, Level)> {
-        // Has any of the pins we're polling already been triggered?
         for pin in pins {
             if *pin as usize >= self.trigger_status.capacity() {
                 return Err(Error::NotInitialized);
             }
 
+            // Did we cache any triggers during the previous poll?
             if self.trigger_status[*pin as usize].triggered {
                 self.trigger_status[*pin as usize].triggered = false;
 
-                // Only return if we're not ignoring the stored trigger events
                 if !reset {
                     return Ok((*pin, self.trigger_status[*pin as usize].level));
+                }
+            }
+
+            // Read the logic level to reset any pending trigger events
+            if let Some(ref mut interrupt) = self.trigger_status[*pin as usize].interrupt {
+                if reset {
+                    interrupt.level()?;
                 }
             }
         }
