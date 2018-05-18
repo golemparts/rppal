@@ -464,14 +464,16 @@ impl Gpio {
 
     /// Blocks until a synchronous interrupt is triggered on the selected pin, or a timeout occurs.
     ///
-    /// `poll_interrupt()` only works for pins that have been configured for synchronous interrupts.
-    /// Asynchronous interrupts are automatically polled on a separate thread.
+    /// `poll_interrupt()` only works for pins that have been configured for synchronous interrupts using
+    /// `set_interrupt()`. Asynchronous interrupts are automatically polled on a separate thread.
     ///
-    /// Setting reset to false causes `poll_interrupt()` to return immediately if the interrupt
+    /// Setting `reset` to `false` causes `poll_interrupt()` to return immediately if the interrupt
     /// has been triggered since the previous call to `set_interrupt()` or `poll_interrupt()`.
-    /// Setting reset to true clears any cached trigger events.
+    /// Setting `reset` to `true` clears any cached trigger events for the selected pin.
     ///
-    /// The timeout duration can be set to None to wait indefinitely.
+    /// The `timeout` duration indicates how long the call to `poll_interrupt()` will block while waiting
+    /// for interrupt trigger events, after which an `Error::Interrupt(InterruptError::TimeOut)` is returned.
+    /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
@@ -486,16 +488,18 @@ impl Gpio {
 
     /// Blocks until a synchronous interrupt is triggered on any of the selected pins, or a timeout occurs.
     ///
-    /// `poll_interrupts()` only works for pins that have been configured for synchronous interrupts.
-    /// Asynchronous interrupts are automatically polled on a separate thread.
+    /// `poll_interrupts()` only works for pins that have been configured for synchronous interrupts using
+    /// `set_interrupt()`. Asynchronous interrupts are automatically polled on a separate thread.
     ///
-    /// Setting reset to false causes `poll_interrupts()` to return immediately if any of the interrupts
+    /// Setting `reset` to `false` causes `poll_interrupts()` to return immediately if any of the interrupts
     /// have been triggered since the previous call to `set_interrupt()` or `poll_interrupts()`.
-    /// Setting reset to true clears any cached trigger events.
+    /// Setting `reset` to `true` clears any cached trigger events for the selected pins.
     ///
-    /// The timeout duration can be set to None to wait indefinitely.
+    /// The `timeout` duration indicates how long the call to `poll_interrupts()` will block while waiting
+    /// for interrupt trigger events, after which an `Error::Interrupt(InterruptError::TimeOut)` is returned.
+    /// `timeout` can be set to `None` to wait indefinitely.
     ///
-    /// When an interrupt event is triggered on any of the pins, `poll_interrupts()` returns a
+    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts()` returns a
     /// tuple containing the corresponding pin number and logic level. If multiple events trigger at
     /// the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time `poll_interrupts()` is called.
