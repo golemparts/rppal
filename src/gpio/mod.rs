@@ -50,6 +50,8 @@ mod interrupt;
 mod mem;
 mod sysfs;
 
+pub use self::interrupt::Error as InterruptError;
+
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
 const GPIO_MAX_PINS: u8 = 54;
@@ -130,7 +132,7 @@ quick_error! {
 /// running `cleanup()`.
         NotInitialized { description("not initialized") }
 /// Interrupt error.
-        Interrupt(err: interrupt::Error) { description(err.description()) from() }
+        Interrupt(err: InterruptError) { description(err.description()) from() }
     }
 }
 
