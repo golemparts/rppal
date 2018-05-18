@@ -20,9 +20,9 @@
 
 //! Interface for the Raspberry Pi's BCM283x GPIO peripheral.
 //!
-//! The GPIO peripheral interface accesses the appropriate memory registers
-//! through either the `/dev/gpiomem` device, or `/dev/mem` for distributions
-//! where the former isn't available.
+//! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
+//! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
+//! GPIO pin interrupts are controlled using the sysfs interface.
 //!
 //! On a typical up-to-date Raspbian installation, any user that's part of the
 //! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
@@ -31,10 +31,13 @@
 //! Pins are addressed by their BCM GPIO pin numbers, rather than their
 //! physical location.
 //!
-//! By default, all pins are reset to their original state when `Gpio` goes out
-//! of scope. Use `set_clear_on_drop(false)` to disable this behavior. Note that
+//! By default, all pins are reset to their original state when [`Gpio`] goes out
+//! of scope. Use [`set_clear_on_drop(false)`] to disable this behavior. Note that
 //! drop methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
+//!
+//! [`Gpio`]: struct.Gpio.html
+//! [`set_clear_on_drop(false)`]: struct.Gpio.html#method.set_clear_on_drop
 
 #![allow(dead_code)]
 
@@ -129,7 +132,9 @@ quick_error! {
 /// GPIO isn't initialized.
 ///
 /// You should normally only see this error when you call a method after
-/// running `cleanup()`.
+/// running [`cleanup`].
+///
+/// [`cleanup`]: struct.Gpio.html#method.cleanup
         NotInitialized { description("not initialized") }
 /// Interrupt error.
         Interrupt(err: InterruptError) { description(err.description()) from() }
@@ -285,9 +290,12 @@ impl Gpio {
     /// Drop methods aren't called when a program is abnormally terminated,
     /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
     /// caught. You'll either have to catch those using crates such as
-    /// `simple_signal`, or manually call `cleanup()`.
+    /// [`simple_signal`], or manually call [`cleanup`].
     ///
     /// Enabled by default.
+    ///
+    /// [`simple_signal`]: https://crates.io/crates/simple-signal
+    /// [`cleanup`]: #method.cleanup
     pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
         self.clear_on_drop = clear_on_drop;
     }
@@ -426,11 +434,13 @@ impl Gpio {
 
     /// Configures a synchronous interrupt.
     ///
-    /// After configuring a synchronous interrupt, you can use `poll_interrupt()`
+    /// After configuring a synchronous interrupt, you can use [`poll_interrupt`]
     /// to wait for a trigger event.
     ///
     /// Configuring an interrupt will remove any previously configured
     /// (a)synchronous interrupts for the same pin.
+    ///
+    /// [`poll_interrupt`]: #method.poll_interrupt
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -466,19 +476,22 @@ impl Gpio {
 
     /// Blocks until a synchronous interrupt is triggered on the selected pin, or a timeout occurs.
     ///
-    /// `poll_interrupt()` only works for pins that have been configured for synchronous interrupts using
-    /// `set_interrupt()`. Asynchronous interrupts are automatically polled on a separate thread.
+    /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
+    /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
     ///
-    /// Setting `reset` to `false` causes `poll_interrupt()` to return immediately if the interrupt
-    /// has been triggered since the previous call to `set_interrupt()` or `poll_interrupt()`.
+    /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
+    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
     /// Setting `reset` to `true` clears any cached trigger events for the selected pin.
     ///
-    /// The `timeout` duration indicates how long the call to `poll_interrupt()` will block while waiting
-    /// for interrupt trigger events, after which an `Error::Interrupt(InterruptError::TimeOut)` is returned.
+    /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
+    /// for interrupt trigger events, after which an [`Error::Interrupt(InterruptError::TimeOut)`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
+    ///
+    /// [`set_interrupt`]: #method.set_interrupt
+    /// [`Error::Interrupt(InterruptError::TimeOut)`]: enum.Error.html
     pub fn poll_interrupt(
         &mut self,
         pin: u8,
@@ -490,24 +503,27 @@ impl Gpio {
 
     /// Blocks until a synchronous interrupt is triggered on any of the selected pins, or a timeout occurs.
     ///
-    /// `poll_interrupts()` only works for pins that have been configured for synchronous interrupts using
-    /// `set_interrupt()`. Asynchronous interrupts are automatically polled on a separate thread.
+    /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
+    /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
     ///
-    /// Setting `reset` to `false` causes `poll_interrupts()` to return immediately if any of the interrupts
-    /// have been triggered since the previous call to `set_interrupt()` or `poll_interrupts()`.
+    /// Setting `reset` to `false` causes `poll_interrupts` to return immediately if any of the interrupts
+    /// have been triggered since the previous call to [`set_interrupt`] or `poll_interrupts`.
     /// Setting `reset` to `true` clears any cached trigger events for the selected pins.
     ///
-    /// The `timeout` duration indicates how long the call to `poll_interrupts()` will block while waiting
-    /// for interrupt trigger events, after which an `Error::Interrupt(InterruptError::TimeOut)` is returned.
+    /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
+    /// for interrupt trigger events, after which an [`Error::Interrupt(InterruptError::TimeOut)`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
-    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts()` returns a
+    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts` returns a
     /// tuple containing the corresponding pin number and logic level. If multiple events trigger at
     /// the same time, only the first one is returned. The remaining events are cached and will be returned
-    /// the next time `poll_interrupts()` is called.
+    /// the next time `poll_interrupts` is called.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
+    ///
+    /// [`set_interrupt`]: #method.set_interrupt
+    /// [`Error::Interrupt(InterruptError::TimeOut)`]: enum.Error.html
     pub fn poll_interrupts(
         &mut self,
         pins: &[u8],
@@ -530,12 +546,14 @@ impl Gpio {
     /// Configures an asynchronous interrupt, which will execute the callback on a
     /// separate thread when the interrupt is triggered.
     ///
-    /// The callback closure or function pointer is called with a single `rppal::gpio::Level` argument.
+    /// The callback closure or function pointer is called with a single [`Level`] argument.
     /// The pin logic level is read when the trigger event is processed, and may differ from the logic
     /// level that actually triggered the interrupt.
     ///
     /// Configuring an interrupt will remove any previously configured
     /// (a)synchronous interrupts for the same pin.
+    ///
+    /// [`Level`]: enum.Level.html
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
     where
         C: FnMut(Level) + Send + 'static,

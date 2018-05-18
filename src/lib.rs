@@ -18,12 +18,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! A Rust library that provides access to the Raspberry Pi GPIO peripheral
-//! through either `/dev/gpiomem` or `/dev/mem`. Support for additional peripherals,
-//! as well as useful helper functions, will be added in future updates.
-//!
-//! The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute,
-//! Compute 3, Zero and Zero W.
+//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO peripheral.
+//! Support for additional peripherals will be added in future updates. The library is
+//! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
+//! Zero and Zero W.
 
 #![recursion_limit = "128"] // Needed for the quick_error! macro
 

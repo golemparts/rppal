@@ -20,9 +20,11 @@
 
 //! Raspberry Pi system-related tools.
 //!
-//! Use `DeviceInfo` to identify what Raspberry Pi model and SoC the software is
+//! Use [`DeviceInfo`] to identify what Raspberry Pi model and SoC the software is
 //! running on. This information is used internally to calculate the correct memory
 //! locations for the various BCM283x peripherals.
+//!
+//! [`DeviceInfo`]: struct.DeviceInfo.html
 
 use std::fmt;
 use std::fs::File;
