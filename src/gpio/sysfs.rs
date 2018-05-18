@@ -32,17 +32,8 @@ use users;
 
 use gpio::Trigger;
 
-quick_error! {
-    #[derive(Debug)]
-/// Errors that can occur while working with sysfs.
-    pub enum Error {
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-    }
-}
-
-/// Result type returned from methods that can have `rppal::gpio::interrupt::Error`s.
-pub type Result<T> = result::Result<T, Error>;
+/// Result type returned from methods that can have `io::Error`s.
+pub type Result<T> = result::Result<T, io::Error>;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Direction {

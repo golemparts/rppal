@@ -47,10 +47,6 @@ quick_error! {
         TimeOut { description("interrupt polling timed out while waiting for a trigger") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Sysfs error.
-        Sysfs(err: sysfs::Error) { description(err.description()) from() }
-/// IO error while communicating with the interrupt polling thread.
-        SendIo(err: io::Error) { description(err.description()) }
 /// Disconnected while sending a control message to the interrupt polling thread.
         SendDisconnected { description("receiving half of the channel has disconnected") }
 /// Interrupt polling thread panicked.
@@ -61,7 +57,7 @@ quick_error! {
 impl<T> From<channel::SendError<T>> for Error {
     fn from(err: channel::SendError<T>) -> Error {
         match err {
-            channel::SendError::Io(e) => Error::SendIo(e),
+            channel::SendError::Io(e) => Error::Io(e),
             channel::SendError::Disconnected(_) => Error::SendDisconnected,
         }
     }
