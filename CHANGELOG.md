@@ -1,3 +1,7 @@
+# 0.5.1 (TBD)
+
+* Gpio: Add poll_interrupts(), which waits for multiple synchronous interrupts at the same time.
+
 # 0.5.0 (May 9, 2018)
 
 * Gpio: Add support for asynchronous interrupts (set_async_interrupt(), clear_async_interrupt()).
