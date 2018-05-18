@@ -25,7 +25,7 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::mpsc::TryRecvError;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use mio::event::Evented;
 use mio::unix::{EventedFd, UnixReady};
@@ -192,7 +192,7 @@ impl EventLoop {
                 return Err(Error::NotInitialized);
             }
 
-            // Did we cache any triggers during the previous poll?
+            // Did we cache any trigger events during the previous poll?
             if self.trigger_status[*pin as usize].triggered {
                 self.trigger_status[*pin as usize].triggered = false;
 
@@ -210,6 +210,7 @@ impl EventLoop {
         }
 
         // Loop until we get any of the events we're waiting for, or a timeout occurs
+        let now = Instant::now();
         loop {
             self.poll.poll(&mut self.events, timeout)?;
 
@@ -243,7 +244,15 @@ impl EventLoop {
                 }
             }
 
-            // TODO: If there's a timeout set, reduce it here
+            // It's possible a pin we're not waiting for continuously triggers
+            // an interrupt, causing repeated loops with calls to poll() using a
+            // reset timeout value. Make sure we haven't been looping longer than
+            // the requested timeout.
+            if let Some(t) = timeout {
+                if now.elapsed() > t {
+                    return Err(Error::TimeOut);
+                }
+            }
         }
     }
 
@@ -334,7 +343,8 @@ impl AsyncInterrupt {
                                 break;
                             }
                         }
-                    } else if event.token() == Token(TOKEN_PIN) && event.readiness().is_readable()
+                    } else if event.token() == Token(TOKEN_PIN)
+                        && event.readiness().is_readable()
                         && UnixReady::from(event.readiness()).is_error()
                     {
                         let interrupt_value = base.level()?;
