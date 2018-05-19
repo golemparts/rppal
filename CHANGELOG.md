@@ -1,6 +1,8 @@
-# 0.5.1 (TBD)
+# 0.5.1 (May 19, 2018)
 
 * Gpio: Add poll_interrupts(), which waits for multiple synchronous interrupts at the same time.
+* Gpio: Add public interface for InterruptError.
+* Cleanup documentation.
 
 # 0.5.0 (May 9, 2018)
 
@@ -19,9 +21,7 @@
 
 # 0.2.0 (Oct 6, 2017)
 
-* To adhere to Rust's naming conventions, several structs and enums that
-had GPIO, IO, BCM or CPU somewhere in their name have been changed to
-Gpio, Io, Bcm and Cpu respectively.
+* To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU somewhere in their name have been changed to Gpio, Io, Bcm and Cpu respectively.
 * GPIO has been added as a temporary (deprecated) type alias for Gpio.
 * Minor version bump due to incompatible API changes in a 0.x.x release.
 
