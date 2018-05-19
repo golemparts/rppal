@@ -484,14 +484,14 @@ impl Gpio {
     /// Setting `reset` to `true` clears any cached trigger events for the selected pin.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
-    /// for interrupt trigger events, after which an [`Error::Interrupt(InterruptError::TimeOut)`] is returned.
+    /// for interrupt trigger events, after which an [`Err(Error::Interrupt(InterruptError::TimeOut))`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    /// [`Error::Interrupt(InterruptError::TimeOut)`]: enum.Error.html
+    /// [`Err(Error::Interrupt(InterruptError::TimeOut))`]: enum.Error.html
     pub fn poll_interrupt(
         &mut self,
         pin: u8,
@@ -511,7 +511,7 @@ impl Gpio {
     /// Setting `reset` to `true` clears any cached trigger events for the selected pins.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
-    /// for interrupt trigger events, after which an [`Error::Interrupt(InterruptError::TimeOut)`] is returned.
+    /// for interrupt trigger events, after which an [`Err(Error::Interrupt(InterruptError::TimeOut))`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts` returns a
@@ -523,7 +523,7 @@ impl Gpio {
     /// differ from the logic level that actually triggered the interrupt.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    /// [`Error::Interrupt(InterruptError::TimeOut)`]: enum.Error.html
+    /// [`Err(Error::Interrupt(InterruptError::TimeOut))`]: enum.Error.html
     pub fn poll_interrupts(
         &mut self,
         pins: &[u8],
