@@ -18,23 +18,21 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO peripheral.
-//! Support for additional peripherals will be added in future updates. The library is
-//! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
-//! Zero and Zero W.
+use std::result;
 
-#![recursion_limit = "128"] // Needed for the quick_error! macro
+quick_error! {
+    #[derive(Debug)]
+    pub enum Error {
+    }
+}
 
-#[macro_use]
-extern crate enum_primitive;
-extern crate libc;
-extern crate mio;
-extern crate mio_extras;
-extern crate num;
-#[macro_use]
-extern crate quick_error;
-extern crate users;
+/// Result type returned from methods that can have `spi::Error`s.
+pub type Result<T> = result::Result<T, Error>;
 
-pub mod gpio;
-pub mod spi;
-pub mod system;
+pub struct Spi {}
+
+impl Spi {
+    pub fn new() -> Result<Spi> {
+        Ok(Spi {})
+    }
+}
