@@ -18,7 +18,49 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the SPI0 and SPI1 peripherals.
+//! Interface for the SPI peripherals.
+//!
+//! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.C`
+//! devices, where B points to an SPI bus (0, 1, 2), and C to a Chip Enable pin (0, 1, 2).
+//!
+//! The Raspberry Pi's GPIO header exposes several SPI buses. SPI0 is available
+//! on all Raspberry Pi models. SPI1 is available on models with a 40-pin
+//! header. SPI2 is only available on the Compute and Compute 3.
+//!
+//! SPI0 is disabled by default. You can enable it by running
+//! `sudo raspi-config`, or by manually adding `dtparam=spi=on` to
+//! `/boot/config.txt`. The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 9 (physical pin 21)
+//! * MOSI: BCM GPIO 10 (physical pin 19)
+//! * SCLK: BCM GPIO 11 (physical pin 23)
+//! * SS: CE0: BCM GPIO 8 (physical pin 24), CE1: BCM GPIO 7 (physical pin 26)
+//!
+//! SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
+//! to the documentation, using higher clock speeds on SPI1 requires additional
+//! CPU time compared to SPI0, caused by shallow FIFOs and no DMA support. SPI1
+//! can be enabled by adding `dtoverlay=spi1-3cs` to `/boot/config.txt`. Replace
+//! `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave Select pins.
+//! The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 19 (physical pin 35)
+//! * MOSI: BCM GPIO 20 (physical pin 38)
+//! * SCLK: BCM GPIO 21 (physical pin 40)
+//! * SS: CE0: BCM GPIO 18 (physical pin 12), CE1: BCM GPIO 17 (physical pin 11), CE2: BCM GPIO 16 (physical pin 36)
+//!
+//! SPI2 shares the same characteristics as SPI1. It can be enabled by adding
+//! `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace `3cs` with either `2cs` or
+//! `1cs` if you only require 2 or 1 Slave Select pins. The associated pins are
+//! listed below.
+//!
+//! * MISO: BCM GPIO 40
+//! * MOSI: BCM GPIO 41
+//! * SCLK: BCM GPIO 42
+//! * SS: CE0: BCM GPIO 43, CE1: BCM GPIO 44, CE2: BCM GPIO 45
+//!
+//! The GPIO pin numbers mentioned above are part of the default configuration. Some of
+//! their functionality can be moved to different pins. Read `/boot/overlays/README`
+//! for more information.
 
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -40,43 +82,10 @@ mod ioctl {}
 
 /// SPI buses.
 ///
-/// The Raspberry Pi's GPIO header exposes several SPI buses. SPI0 is available
-/// on all Raspberry Pi models. SPI1 is available on models with a 40-pin
-/// header. SPI2 is only available on the Compute and Compute 3 module.
+/// The Raspberry Pi supports up to three SPI buses, depending on the model and
+/// your `/boot/config.txt` configuration. More information can be found [here].
 ///
-/// SPI0 is disabled by default. You can enable it by running
-/// `sudo raspi-config`, or by manually adding `dtparam=spi=on` to
-/// `/boot/config.txt`. The associated pins are listed below.
-///
-/// * MISO: BCM GPIO 9 (physical pin 21)
-/// * MOSI: BCM GPIO 10 (physical pin 19)
-/// * SCLK: BCM GPIO 11 (physical pin 23)
-/// * SS: CE0: BCM GPIO 8 (physical pin 24), CE1: BCM GPIO 7 (physical pin 26)
-///
-/// SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
-/// to the documentation, using higher clock speeds on SPI1 requires additional
-/// CPU time compared to SPI0, caused by shallow FIFOs and no DMA support. SPI1
-/// can be enabled by adding `dtoverlay=spi1-3cs` to `/boot/config.txt`. Replace
-/// `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave Select pins.
-/// The associated pins are listed below.
-///
-/// * MISO: BCM GPIO 19 (physical pin 35)
-/// * MOSI: BCM GPIO 20 (physical pin 38)
-/// * SCLK: BCM GPIO 21 (physical pin 40)
-/// * SS: CE0: BCM GPIO 18 (physical pin 12), CE1: BCM GPIO 17 (physical pin 11), CE2: BCM GPIO 16 (physical pin 36)
-///
-/// SPI2 shares the same characteristics as SPI1. It can be enabled by adding
-/// `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace `3cs` with either `2cs` or
-/// `1cs` if you only require 2 or 1 Slave Select pins. The associated pins are
-/// listed below.
-///
-/// * MISO: BCM GPIO 40
-/// * MOSI: BCM GPIO 41
-/// * SCLK: BCM GPIO 42
-/// * SS: CE0: BCM GPIO 43, CE1: BCM GPIO 44, CE2: BCM GPIO 45
-///
-/// The GPIO pin numbers mentioned above are part of the default configuration. Some of
-/// them can be moved to different pins. Read `/boot/overlays/README` for more information.
+/// [here]: index.html
 pub enum Bus {
     Spi0 = 0,
     Spi1 = 1,
@@ -85,16 +94,15 @@ pub enum Bus {
 
 /// Chip Enable (Slave Select) pins.
 ///
-/// Select a Chip Enable pin to signal which device should
-/// interact with the SPI master. Chip Enable is more commonly
+/// The Chip Enable pin is used to signal which device should
+/// pay attention to the SPI bus. Chip Enable is more commonly
 /// known as Slave Select or Chip Select.
 ///
-/// Each of the available SPI buses has access to either two
-/// or three Chip Enable pins, as shown below:
+/// The number of available Chip Enable pins for the selected SPI
+/// bus depends on your `/boot/config.txt` configuration. More
+/// information can be found [here].
 ///
-/// * Spi0: Ce0 (BCM GPIO 8), Ce1 (BCM GPIO 7)
-/// * Spi1: Ce0 (BCM GPIO 18, Ce1 (BCM GPIO 17), Ce2 (BCM GPIO 16)
-/// * Spi2: Ce0 (BCM GPIO 43, Ce1 (BCM GPIO 44), Ce2 (BCM GPIO 45)
+/// [here]: index.html
 pub enum ChipEnable {
     Ce0 = 0,
     Ce1 = 1,
@@ -122,6 +130,7 @@ pub enum Mode {
     Mode3 = 3, // CPOL 1, CPHA 1
 }
 
+/// Provides access to the Raspberry Pi's SPI peripherals.
 pub struct Spi {
     spidev: File,
 }

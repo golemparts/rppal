@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the Raspberry Pi's BCM283x GPIO peripheral.
+//! Interface for the GPIO peripheral.
 //!
 //! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
 //! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
@@ -245,7 +245,7 @@ impl PinState {
     }
 }
 
-/// Provides access to the Raspberry Pi GPIO.
+/// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,
