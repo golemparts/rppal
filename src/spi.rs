@@ -78,7 +78,35 @@ quick_error! {
 /// Result type returned from methods that can have `spi::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-mod ioctl {}
+mod ioctl {
+    const SPI_IOC_MAGIC: u8 = b'k';
+
+    const SPI_IOC_TYPE_MODE: u8 = 1;
+    const SPI_IOC_TYPE_LSB_FIRST: u8 = 2;
+    const SPI_IOC_TYPE_BITS_PER_WORD: u8 = 3;
+    const SPI_IOC_TYPE_MAX_SPEED_HZ: u8 = 4;
+    const SPI_IOC_TYPE_MESSAGE: u8 = 0;
+
+    #[repr(C)]
+    pub struct SpiIocTransfer {
+        tx_buf: u64,
+        rx_buf: u64,
+        len: u32,
+        speed_hz: u32,
+        delay_usecs: u16,
+        bits_per_word: u8,
+        cs_change: u8,
+        tx_nbits: u8,
+        rx_nbits: u8,
+        pad: u16,
+    }
+
+    ioctl!(write_int spi_write_mode with SPI_IOC_MAGIC, SPI_IOC_TYPE_MODE);
+    ioctl!(write_int spi_write_lsb_first with SPI_IOC_MAGIC, SPI_IOC_TYPE_LSB_FIRST);
+    ioctl!(write_int spi_write_bits_per_word with SPI_IOC_MAGIC, SPI_IOC_TYPE_BITS_PER_WORD);
+    ioctl!(write_int spi_write_max_speed_hz with SPI_IOC_MAGIC, SPI_IOC_TYPE_MAX_SPEED_HZ);
+    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; SpiIocTransfer);
+}
 
 /// SPI buses.
 ///
@@ -130,13 +158,30 @@ pub enum Mode {
     Mode3 = 3, // CPOL 1, CPHA 1
 }
 
+pub enum BitOrder {
+    LsbFirst,
+    MsbFirst,
+}
+
 /// Provides access to the Raspberry Pi's SPI peripherals.
 pub struct Spi {
     spidev: File,
 }
 
 impl Spi {
-    pub fn new(bus: Bus, chip_enable: ChipEnable, mode: Mode, speed: u32) -> Result<Spi> {
+    pub fn new(
+        bus: Bus,
+        chip_enable: ChipEnable,
+        clock_speed: u32,
+        mode: Mode,
+        bit_order: BitOrder,
+    ) -> Result<Spi> {
+        // We don't ask for bits per word, because the driver only supports
+        // 8 bits (or 9 bits in LoSSI mode). Changing the SS polarity from
+        // active-low to active-high isn't supported either.
+        // Based on https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
+        // and https://www.kernel.org/doc/Documentation/spi/spidev.
+
         let spidev = OpenOptions::new()
             .read(true)
             .write(true)
