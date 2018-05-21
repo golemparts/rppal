@@ -30,6 +30,8 @@ extern crate enum_primitive;
 extern crate libc;
 extern crate mio;
 extern crate mio_extras;
+#[macro_use]
+extern crate nix;
 extern crate num;
 #[macro_use]
 extern crate quick_error;
