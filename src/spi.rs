@@ -18,12 +18,15 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+//! Interface for the SPI0 and SPI1 peripherals.
+
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::result;
 
 quick_error! {
     #[derive(Debug)]
+/// Errors that can occur when accessing the SPI peripherals.
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
@@ -35,17 +38,33 @@ pub type Result<T> = result::Result<T, Error>;
 
 mod ioctl {}
 
+/// SPI devices.
 pub enum Device {
     Spi0 = 0, // Enabled by default
     Spi1 = 1, // Requires additional configuration
 }
 
+/// Chip Enable pins.
 pub enum ChipEnable {
     Ce0 = 0, // SPI0: BCM GPIO 8    SPI1: BCM GPIO 18
     Ce1 = 1, // SPI0: BCM GPIO 7    SPI1: BCM GPIO 17
     Ce2 = 2, // SPI0: N/A,          SPI1: BCM GPIO 16
 }
 
+/// SPI modes.
+///
+/// Select the appropriate SPI mode for your device. Each mode
+/// configures the clock polarity (CPOL) and clock phase (CPHA)
+/// as shown below:
+///
+/// * Mode0: CPOL 0, CPHA 0
+/// * Mode1: CPOL 0, CPHA 1
+/// * Mode2: CPOL 1, CPHA 0
+/// * Mode3: CPOL 1, CPHA 1
+///
+/// More information on clock polarity and phase can be found on [Wikipedia].
+///
+/// [Wikipedia]: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 pub enum Mode {
     Mode0 = 0, // CPOL 0, CPHA 0
     Mode1 = 1, // CPOL 0, CPHA 1
@@ -59,10 +78,10 @@ pub struct Spi {
 
 impl Spi {
     pub fn new(device: Device, chip_enable: ChipEnable, mode: Mode, speed: u32) -> Result<Spi> {
-        let spidev = OpenOptions::new().read(true).write(true).open(format!(
-            "/dev/spidev{}.{}",
-            device as u8, chip_enable as u8
-        ))?;
+        let spidev = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(format!("/dev/spidev{}.{}", device as u8, chip_enable as u8))?;
 
         Ok(Spi { spidev })
     }
