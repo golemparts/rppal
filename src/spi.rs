@@ -64,6 +64,7 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
+use std::io::{Read, Write};
 use std::result;
 use std::os::unix::io::AsRawFd;
 
@@ -219,12 +220,15 @@ impl Spi {
     }
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
-    pub fn read(&self, mut buffer: &[u8]) -> Result<()> {
+    ///
+    /// The SPI protocol doesn't indicate how much incoming data is waiting,
+    /// so the number of bytes read is equal to the length of `buffer`.
+    pub fn read(&mut self, buffer: &mut [u8]) -> Result<()> {
         Ok(())
     }
 
-    /// Sends the data contained in `buffer` to the slave device.
-    pub fn write(&self, buffer: &[u8]) -> Result<()> {
+    /// Sends the outgoing data contained in `buffer` to the slave device.
+    pub fn write(&mut self, buffer: &[u8]) -> Result<()> {
         Ok(())
     }
 
@@ -237,7 +241,7 @@ impl Spi {
     ///
     /// Because reading and writing occur simultaneously, `transfer` only transfers
     /// as many bytes as the shortest of the two buffers contains.
-    pub fn transfer(&self, mut read_buffer: &[u8], write_buffer: &[u8]) -> Result<()> {
+    pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<()> {
         Ok(())
     }
 }
