@@ -64,13 +64,12 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
-use std::io::{Read, Write};
-use std::result;
 use std::os::unix::io::AsRawFd;
+use std::result;
 
 use nix;
 
-// TODO: Replace Error::Nix with something more useful
+pub use nix::errno::Errno;
 
 quick_error! {
     #[derive(Debug)]
@@ -78,8 +77,25 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Nix error.
-        Nix(err: nix::Error) { description(err.description()) from() }
+/// System call error.
+        Sys(errno: Errno) { display("System call error: {}", errno) }
+/// Invalid path.
+        InvalidPath {}
+/// Invalid Utf8.
+        InvalidUtf8 {}
+/// Unsupported operation.
+        UnsupportedOperation {}
+    }
+}
+
+impl From<nix::Error> for Error {
+    fn from(err: nix::Error) -> Error {
+        match err {
+            nix::Error::Sys(errno) => Error::Sys(errno),
+            nix::Error::InvalidPath => Error::InvalidPath,
+            nix::Error::InvalidUtf8 => Error::InvalidUtf8,
+            nix::Error::UnsupportedOperation => Error::UnsupportedOperation,
+        }
     }
 }
 
@@ -184,12 +200,27 @@ pub enum BitOrder {
 }
 
 /// Provides access to the Raspberry Pi's SPI peripherals.
+///
+/// Before using `Spi`, make sure your Raspberry Pi has the necessary SPI buses and Chip Enable pins
+/// enabled. More information can be found [here].
+///
+/// [here]: index.html
 pub struct Spi {
     spidev: File,
 }
 
 impl Spi {
     /// Creates a new instance of `Spi`.
+    ///
+    /// `bus` and `chip_enable` specify the selected SPI bus and one of its associated Chip Enable pins.
+    ///
+    /// `clock_speed` defines the maximum clock speed in Hz. The SPI driver will automatically select
+    /// the closest valid frequency.
+    ///
+    /// `mode` selects the clock polarity and phase.
+    ///
+    /// `bit_order` sets the order in which bits are shifted out and in to most-significant bit first or
+    /// least-significant bit first.
     pub fn new(
         bus: Bus,
         chip_enable: ChipEnable,
@@ -222,7 +253,7 @@ impl Spi {
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
     /// The SPI protocol doesn't indicate how much incoming data is waiting,
-    /// so the number of bytes read is equal to the length of `buffer`.
+    /// so the number of bytes read is always equal to the length of `buffer`.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<()> {
         Ok(())
     }
