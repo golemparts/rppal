@@ -64,6 +64,7 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
+use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::result;
 
@@ -106,28 +107,81 @@ mod ioctl {
     const SPI_IOC_MAGIC: u8 = b'k';
 
     const SPI_IOC_TYPE_MESSAGE: u8 = 0;
-    const SPI_IOC_TYPE_MODE: u8 = 1;
     const SPI_IOC_TYPE_LSB_FIRST: u8 = 2;
     const SPI_IOC_TYPE_BITS_PER_WORD: u8 = 3;
     const SPI_IOC_TYPE_MAX_SPEED_HZ: u8 = 4;
+    const SPI_IOC_TYPE_MODE32: u8 = 5;
 
     #[derive(Debug, PartialEq, Copy, Clone)]
     #[repr(C)]
-    pub struct SpiIocTransfer {
+    pub struct TransferSegment {
+        // Pointer to transmit buffer, or 0.
         tx_buf: u64,
+        // Pointer to receive buffer, or 0.
         rx_buf: u64,
+        // Number of bytes to transfer in this segment.
         len: u32,
+        // Set a different clock speed for this segment. 0 = default.
         speed_hz: u32,
+        // Add a delay before the (optional) SS change and the next segment.
         delay_usecs: u16,
+        // Not used, since we only support 8 bits. 0 = default.
         bits_per_word: u8,
+        // Set to 1 to briefly set SS inactive between this segment and the next, and keep SS active after the final segment.
         cs_change: u8,
+        // Used for dual/quad SPI.
         tx_nbits: u8,
+        // Used for dual/quad SPI.
         rx_nbits: u8,
+        // Padding. Set to 0 for forward compatibility.
         pad: u16,
     }
 
-    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; SpiIocTransfer);
-    ioctl!(write_int spi_write_mode with SPI_IOC_MAGIC, SPI_IOC_TYPE_MODE);
+    // TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
+    // interpreted the documentation incorrectly.
+
+    impl TransferSegment {
+        pub fn new(read_buffer: Option<&mut [u8]>, write_buffer: Option<&[u8]>) -> TransferSegment {
+            // Len will contain the length of the shortest of the supplied buffers
+            let mut len: u32 = 0;
+
+            let tx_buf = if let Some(buffer) = write_buffer {
+                len = buffer.len() as u32;
+                buffer.as_ptr() as u64
+            } else {
+                0
+            };
+
+            let rx_buf = if let Some(buffer) = read_buffer {
+                if len > buffer.len() as u32 {
+                    len = buffer.len() as u32;
+                }
+                buffer.as_ptr() as u64
+            } else {
+                0
+            };
+
+            TransferSegment {
+                tx_buf,
+                rx_buf,
+                len,
+                speed_hz: 0,
+                delay_usecs: 0,
+                bits_per_word: 0,
+                cs_change: 0,
+                tx_nbits: 0,
+                rx_nbits: 0,
+                pad: 0,
+            }
+        }
+
+        pub fn len(&self) -> u32 {
+            self.len
+        }
+    }
+
+    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; TransferSegment);
+    ioctl!(write_int spi_write_mode with SPI_IOC_MAGIC, SPI_IOC_TYPE_MODE32);
     ioctl!(write_int spi_write_lsb_first with SPI_IOC_MAGIC, SPI_IOC_TYPE_LSB_FIRST);
     ioctl!(write_int spi_write_bits_per_word with SPI_IOC_MAGIC, SPI_IOC_TYPE_BITS_PER_WORD);
     ioctl!(write_int spi_write_max_speed_hz with SPI_IOC_MAGIC, SPI_IOC_TYPE_MAX_SPEED_HZ);
@@ -253,26 +307,52 @@ impl Spi {
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
     /// The SPI protocol doesn't indicate how much incoming data is waiting,
-    /// so the number of bytes read is always equal to the length of `buffer`.
-    pub fn read(&mut self, buffer: &mut [u8]) -> Result<()> {
-        Ok(())
+    /// so the maximum number of bytes read depends on the length of `buffer`.
+    ///
+    /// During the read, the MOSI line is kept in a state that results in a zero
+    /// value byte shifted out for every byte `read` receives on the MISO line.
+    ///
+    /// Chip Enable is set to Low (active) at the start of the read, and
+    /// High (inactive) when the read completes.
+    ///
+    /// Returns how many bytes were read.
+    pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        Ok(self.spidev.read(buffer)?)
     }
 
     /// Sends the outgoing data contained in `buffer` to the slave device.
-    pub fn write(&mut self, buffer: &[u8]) -> Result<()> {
-        Ok(())
+    ///
+    /// Any data received on the MISO line from the slave is ignored.
+    ///
+    /// Chip Enable is set to Low (active) at the start of the write, and
+    /// High (inactive) when the write completes.
+    ///
+    /// Returns how many bytes were written.
+    pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
+        Ok(self.spidev.write(buffer)?)
     }
 
     /// Sends and receives data at the same time.
     ///
-    /// SPI is a full-duplex protocol that shifts out bits to the slave device through MOSI
-    /// while simultaneously reading the bits shifted in on the MISO line by the slave. `transfer`
-    /// receives incoming data and writes it to `read_buffer`, and sends the outgoing data
+    /// SPI is a full-duplex protocol that shifts out bits to the slave device on the MOSI
+    /// line while simultaneously shifting in bits it receives on the MISO line.
+    /// `transfer` stores the incoming data in `read_buffer`, and sends the outgoing data
     /// contained in `write_buffer`.
     ///
-    /// Because reading and writing occur simultaneously, `transfer` only transfers
+    /// Because data is sent and received simultaneously, `transfer` only transfers
     /// as many bytes as the shortest of the two buffers contains.
-    pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<()> {
-        Ok(())
+    ///
+    /// Chip Enable is set to Low (active) at the start of the transfer, and
+    /// High (inactive) when the transfer completes.
+    ///
+    /// Returns how many bytes were transferred.
+    pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
+        let segment = ioctl::TransferSegment::new(Some(read_buffer), Some(write_buffer));
+
+        unsafe {
+            ioctl::spi_transfer(self.spidev.as_raw_fd(), &[segment])?;
+        }
+
+        Ok(segment.len() as usize)
     }
 }
