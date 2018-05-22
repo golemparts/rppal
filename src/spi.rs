@@ -65,6 +65,11 @@
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::result;
+use std::os::unix::io::AsRawFd;
+
+use nix;
+
+// TODO: Replace Error::Nix with something more useful
 
 quick_error! {
     #[derive(Debug)]
@@ -72,6 +77,8 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
+/// Nix error.
+        Nix(err: nix::Error) { description(err.description()) from() }
     }
 }
 
@@ -81,12 +88,13 @@ pub type Result<T> = result::Result<T, Error>;
 mod ioctl {
     const SPI_IOC_MAGIC: u8 = b'k';
 
+    const SPI_IOC_TYPE_MESSAGE: u8 = 0;
     const SPI_IOC_TYPE_MODE: u8 = 1;
     const SPI_IOC_TYPE_LSB_FIRST: u8 = 2;
     const SPI_IOC_TYPE_BITS_PER_WORD: u8 = 3;
     const SPI_IOC_TYPE_MAX_SPEED_HZ: u8 = 4;
-    const SPI_IOC_TYPE_MESSAGE: u8 = 0;
 
+    #[derive(Debug, PartialEq, Copy, Clone)]
     #[repr(C)]
     pub struct SpiIocTransfer {
         tx_buf: u64,
@@ -101,11 +109,11 @@ mod ioctl {
         pad: u16,
     }
 
+    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; SpiIocTransfer);
     ioctl!(write_int spi_write_mode with SPI_IOC_MAGIC, SPI_IOC_TYPE_MODE);
     ioctl!(write_int spi_write_lsb_first with SPI_IOC_MAGIC, SPI_IOC_TYPE_LSB_FIRST);
     ioctl!(write_int spi_write_bits_per_word with SPI_IOC_MAGIC, SPI_IOC_TYPE_BITS_PER_WORD);
     ioctl!(write_int spi_write_max_speed_hz with SPI_IOC_MAGIC, SPI_IOC_TYPE_MAX_SPEED_HZ);
-    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; SpiIocTransfer);
 }
 
 /// SPI buses.
@@ -114,6 +122,7 @@ mod ioctl {
 /// your `/boot/config.txt` configuration. More information can be found [here].
 ///
 /// [here]: index.html
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Bus {
     Spi0 = 0,
     Spi1 = 1,
@@ -131,6 +140,7 @@ pub enum Bus {
 /// information can be found [here].
 ///
 /// [here]: index.html
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum ChipEnable {
     Ce0 = 0,
     Ce1 = 1,
@@ -151,16 +161,25 @@ pub enum ChipEnable {
 /// More information on clock polarity and phase can be found on [Wikipedia].
 ///
 /// [Wikipedia]: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Mode {
-    Mode0 = 0, // CPOL 0, CPHA 0
-    Mode1 = 1, // CPOL 0, CPHA 1
-    Mode2 = 2, // CPOL 1, CPHA 0
-    Mode3 = 3, // CPOL 1, CPHA 1
+    Mode0 = 0,
+    Mode1 = 1,
+    Mode2 = 2,
+    Mode3 = 3,
 }
 
+/// Bit order.
+///
+/// The bit order determines in what order data is shifted out and shifted in.
+/// Select the bit order that's appropriate for the device you're communicating with.
+///
+/// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will transfer the
+/// least-significant bit first.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BitOrder {
-    LsbFirst,
-    MsbFirst,
+    MsbFirst = 0,
+    LsbFirst = 1,
 }
 
 /// Provides access to the Raspberry Pi's SPI peripherals.
@@ -169,6 +188,7 @@ pub struct Spi {
 }
 
 impl Spi {
+    /// Creates a new instance of `Spi`.
     pub fn new(
         bus: Bus,
         chip_enable: ChipEnable,
@@ -187,17 +207,36 @@ impl Spi {
             .write(true)
             .open(format!("/dev/spidev{}.{}", bus as u8, chip_enable as u8))?;
 
+        // Configure SPI bus through ioctl calls
+        unsafe {
+            ioctl::spi_write_mode(spidev.as_raw_fd(), mode as i32)?;
+            ioctl::spi_write_max_speed_hz(spidev.as_raw_fd(), clock_speed as i32)?;
+            ioctl::spi_write_bits_per_word(spidev.as_raw_fd(), 8)?;
+            ioctl::spi_write_lsb_first(spidev.as_raw_fd(), bit_order as i32)?;
+        }
+
         Ok(Spi { spidev })
     }
 
+    /// Receives incoming data from the slave device and writes it to `buffer`.
     pub fn read(&self, mut buffer: &[u8]) -> Result<()> {
         Ok(())
     }
 
+    /// Sends the data contained in `buffer` to the slave device.
     pub fn write(&self, buffer: &[u8]) -> Result<()> {
         Ok(())
     }
 
+    /// Sends and receives data at the same time.
+    ///
+    /// SPI is a full-duplex protocol that shifts out bits to the slave device through MOSI
+    /// while simultaneously reading the bits shifted in on the MISO line by the slave. `transfer`
+    /// receives incoming data and writes it to `read_buffer`, and sends the outgoing data
+    /// contained in `write_buffer`.
+    ///
+    /// Because reading and writing occur simultaneously, `transfer` only transfers
+    /// as many bytes as the shortest of the two buffers contains.
     pub fn transfer(&self, mut read_buffer: &[u8], write_buffer: &[u8]) -> Result<()> {
         Ok(())
     }
