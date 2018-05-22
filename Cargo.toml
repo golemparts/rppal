@@ -2,13 +2,13 @@
 name = "rppal"
 version = "0.5.1"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
-description = "Interface for the Raspberry Pi GPIO through /dev/gpiomem or /dev/mem."
+description = "Interface for the Raspberry Pi's GPIO and SPI peripherals."
 documentation = "https://docs.golemparts.com/rppal"
 repository = "https://github.com/golemparts/rppal"
 readme = "README.md"
 license = "MIT"
 categories = ["embedded", "hardware-support"]
-keywords = ["raspberry","pi","gpio","peripherals"]
+keywords = ["raspberry","pi","gpio","spi"]
 
 [dependencies]
 libc = "0.2"
