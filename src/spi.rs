@@ -41,9 +41,9 @@
 //! SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
 //! to the documentation, using higher clock speeds on SPI1 requires additional
 //! CPU time compared to SPI0, caused by shallow FIFOs and no DMA support. SPI1
-//! can be enabled by adding `dtoverlay=spi1-3cs` to `/boot/config.txt`. Replace
-//! `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave Select pins.
-//! The associated pins are listed below.
+//! can be enabled by adding `dtoverlay=spi1-3cs` to `/boot/config.txt`.
+//! Replace `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave
+//! Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 19 (physical pin 35)
 //! * MOSI: BCM GPIO 20 (physical pin 38)
@@ -51,25 +51,26 @@
 //! * SS: CE0: BCM GPIO 18 (physical pin 12), CE1: BCM GPIO 17 (physical pin 11), CE2: BCM GPIO 16 (physical pin 36)
 //!
 //! SPI2 shares the same characteristics as SPI1. It can be enabled by adding
-//! `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace `3cs` with either `2cs` or
-//! `1cs` if you only require 2 or 1 Slave Select pins. The associated pins are
-//! listed below.
+//! `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace `3cs` with either `2cs`
+//! or `1cs` if you only require 2 or 1 Slave Select pins. The associated pins
+//! are listed below.
 //!
 //! * MISO: BCM GPIO 40
 //! * MOSI: BCM GPIO 41
 //! * SCLK: BCM GPIO 42
 //! * SS: CE0: BCM GPIO 43, CE1: BCM GPIO 44, CE2: BCM GPIO 45
 //!
-//! The GPIO pin numbers mentioned above are part of the default configuration. Some of
-//! their functionality can be moved to different pins. Read `/boot/overlays/README`
-//! for more information.
+//! The GPIO pin numbers mentioned above are part of the default configuration.
+//! Some of their functionality can be moved to different pins. Read
+//! `/boot/overlays/README` for more information.
 //!
 //! ## Buffer size limits
 //!
-//! By default, the Linux SPI driver can handle up to 4096 bytes in a single transfer. You can
-//! increase this limit to a maximum of 65536 bytes by adding `spidev.bufsiz=65536` to the single line
-//! of parameters in `/boot/cmdline.txt`. Remember to reboot the Raspberry Pi afterwards. The current
-//! value of bufsiz can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
+//! By default, the Linux SPI driver can handle up to 4096 bytes in a single
+//! transfer. You can increase this limit to a maximum of 65536 bytes by adding
+//! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
+//! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
+//! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
 
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -211,13 +212,13 @@ pub enum Bus {
 
 /// Chip Enable (Slave Select) pins.
 ///
-/// The Chip Enable pin is used to signal which device should
-/// pay attention to the SPI bus. Chip Enable is more commonly
-/// known as Slave Select or Chip Select.
+/// The Chip Enable pin is used to signal which device should pay attention to
+/// the SPI bus. Chip Enable is more commonly known as Slave Select or Chip
+/// Select.
 ///
-/// The number of available Chip Enable pins for the selected SPI
-/// bus depends on your `/boot/config.txt` configuration. More
-/// information can be found [here].
+/// The number of available Chip Enable pins for the selected SPI bus depends
+/// on your `/boot/config.txt` configuration. More information can be found
+/// [here].
 ///
 /// [here]: index.html
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -229,9 +230,8 @@ pub enum ChipEnable {
 
 /// SPI modes.
 ///
-/// Select the appropriate SPI mode for your device. Each mode
-/// configures the clock polarity (CPOL) and clock phase (CPHA)
-/// as shown below:
+/// Select the appropriate SPI mode for your device. Each mode configures the
+/// clock polarity (CPOL) and clock phase (CPHA) as shown below:
 ///
 /// * Mode0: CPOL 0, CPHA 0
 /// * Mode1: CPOL 0, CPHA 1
@@ -252,10 +252,11 @@ pub enum Mode {
 /// Bit order.
 ///
 /// The bit order determines in what order data is shifted out and shifted in.
-/// Select the bit order that's appropriate for the device you're communicating with.
+/// Select the bit order that's appropriate for the device you're
+/// communicating with.
 ///
-/// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will transfer the
-/// least-significant bit first.
+/// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will
+/// transfer the least-significant bit first.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BitOrder {
     MsbFirst = 0,
@@ -264,8 +265,8 @@ pub enum BitOrder {
 
 /// Provides access to the Raspberry Pi's SPI peripherals.
 ///
-/// Before using `Spi`, make sure your Raspberry Pi has the necessary SPI buses and Chip Enable pins
-/// enabled. More information can be found [here].
+/// Before using `Spi`, make sure your Raspberry Pi has the necessary SPI buses
+/// and Chip Enable pins enabled. More information can be found [here].
 ///
 /// [here]: index.html
 pub struct Spi {
@@ -275,15 +276,16 @@ pub struct Spi {
 impl Spi {
     /// Creates a new instance of `Spi`.
     ///
-    /// `bus` and `chip_enable` specify the selected SPI bus and one of its associated Chip Enable pins.
+    /// `bus` and `chip_enable` specify the selected SPI bus and one of its
+    /// associated Chip Enable pins.
     ///
-    /// `clock_speed` defines the maximum clock speed in Hz. The SPI driver will automatically select
-    /// the closest valid frequency.
+    /// `clock_speed` defines the maximum clock speed in Hz. The SPI driver
+    /// will automatically select the closest valid frequency.
     ///
     /// `mode` selects the clock polarity and phase.
     ///
-    /// `bit_order` sets the order in which bits are shifted out and in to most-significant bit first or
-    /// least-significant bit first.
+    /// `bit_order` sets the order in which bits are shifted out and in to
+    /// most-significant bit first or least-significant bit first.
     pub fn new(
         bus: Bus,
         chip_enable: ChipEnable,
@@ -318,11 +320,12 @@ impl Spi {
     /// The SPI protocol doesn't indicate how much incoming data is waiting,
     /// so the maximum number of bytes read depends on the length of `buffer`.
     ///
-    /// During the read, the MOSI line is kept in a state that results in a zero
-    /// value byte shifted out for every byte `read` receives on the MISO line.
+    /// During the read, the MOSI line is kept in a state that results in a
+    /// zero value byte shifted out for every byte `read` receives on the MISO
+    /// line.
     ///
-    /// Chip Enable is set to Low (active) at the start of the read, and
-    /// High (inactive) when the read completes.
+    /// Chip Enable is set to Low (active) at the start of the read, and High
+    /// (inactive) when the read completes.
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
@@ -343,13 +346,13 @@ impl Spi {
 
     /// Sends and receives data at the same time.
     ///
-    /// SPI is a full-duplex protocol that shifts out bits to the slave device on the MOSI
-    /// line while simultaneously shifting in bits it receives on the MISO line.
-    /// `transfer` stores the incoming data in `read_buffer`, and sends the outgoing data
-    /// contained in `write_buffer`.
+    /// SPI is a full-duplex protocol that shifts out bits to the slave device
+    /// on the MOSI line while simultaneously shifting in bits it receives on
+    /// the MISO line. `transfer` stores the incoming data in `read_buffer`,
+    /// and sends the outgoing data contained in `write_buffer`.
     ///
-    /// Because data is sent and received simultaneously, `transfer` only transfers
-    /// as many bytes as the shortest of the two buffers contains.
+    /// Because data is sent and received simultaneously, `transfer` only
+    /// transfers as many bytes as the shortest of the two buffers contains.
     ///
     /// Chip Enable is set to Low (active) at the start of the transfer, and
     /// High (inactive) when the transfer completes.
