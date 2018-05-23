@@ -22,6 +22,8 @@
 //!
 //! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.C`
 //! devices, where B points to an SPI bus (0, 1, 2), and C to a Chip Enable pin (0, 1, 2).
+//! Which of these buses and pins is available depends on your Raspberry Pi model and
+//! configuration, as explained below.
 //!
 //! ## SPI buses
 //!
@@ -39,11 +41,11 @@
 //! * SS: CE0: BCM GPIO 8 (physical pin 24), CE1: BCM GPIO 7 (physical pin 26)
 //!
 //! SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
-//! to the documentation, using higher clock speeds on SPI1 requires additional
-//! CPU time compared to SPI0, caused by shallow FIFOs and no DMA support. SPI1
-//! can be enabled by adding `dtoverlay=spi1-3cs` to `/boot/config.txt`.
-//! Replace `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave
-//! Select pins. The associated pins are listed below.
+//! to the BCM2835 documentation, using higher clock speeds on SPI1 requires
+//! additional CPU time compared to SPI0, caused by smaller FIFOs and no DMA
+//! support. SPI1 can be enabled by adding `dtoverlay=spi1-3cs` to
+//! `/boot/config.txt`. Replace `3cs` with either `2cs` or `1cs` if you only
+//! require 2 or 1 Slave Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 19 (physical pin 35)
 //! * MOSI: BCM GPIO 20 (physical pin 38)
@@ -66,7 +68,7 @@
 //!
 //! ## Buffer size limits
 //!
-//! By default, the Linux SPI driver can handle up to 4096 bytes in a single
+//! By default, spidev can handle up to 4096 bytes in a single
 //! transfer. You can increase this limit to a maximum of 65536 bytes by adding
 //! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
@@ -78,9 +80,7 @@ use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use nix;
-
-pub use nix::errno::Errno;
+use ioctl;
 
 quick_error! {
     #[derive(Debug)]
@@ -88,111 +88,117 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Invalid path.
-        InvalidPath { description("invalid path") }
-/// Invalid Utf8.
-        InvalidUtf8 { description("invalid UTF8") }
-/// Unsupported operation.
-        UnsupportedOperation { description("unsupported operation") }
-    }
-}
-
-impl From<nix::Error> for Error {
-    fn from(err: nix::Error) -> Error {
-        match err {
-            nix::Error::Sys(errno) => Error::Io(io::Error::from_raw_os_error(errno as i32)),
-            nix::Error::InvalidPath => Error::InvalidPath,
-            nix::Error::InvalidUtf8 => Error::InvalidUtf8,
-            nix::Error::UnsupportedOperation => Error::UnsupportedOperation,
-        }
+/// The SPI driver doesn't support the `LsbFirst` bit order.
+///
+/// Setting the bit order to `LsbFirst` isn't supported by the hardware driver on
+/// your Raspberry Pi. You can use the [`reverse_bits`] function to reverse the
+/// bit order in software by converting your write buffer before sending it to
+/// the slave device, and your read buffer after collecting any incoming data.
+///
+/// [`reverse_bits`]: fn.reverse_bits.html
+        LsbFirstNotSupported { description("the LsbFirst bit order is not supported") }
     }
 }
 
 /// Result type returned from methods that can have `spi::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-mod ioctl {
-    const SPI_IOC_MAGIC: u8 = b'k';
+const LOOKUP_REVERSE_BITS: [u8; 256] = [
+    0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
+    0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8,
+    0x04, 0x84, 0x44, 0xC4, 0x24, 0xA4, 0x64, 0xE4, 0x14, 0x94, 0x54, 0xD4, 0x34, 0xB4, 0x74, 0xF4,
+    0x0C, 0x8C, 0x4C, 0xCC, 0x2C, 0xAC, 0x6C, 0xEC, 0x1C, 0x9C, 0x5C, 0xDC, 0x3C, 0xBC, 0x7C, 0xFC,
+    0x02, 0x82, 0x42, 0xC2, 0x22, 0xA2, 0x62, 0xE2, 0x12, 0x92, 0x52, 0xD2, 0x32, 0xB2, 0x72, 0xF2,
+    0x0A, 0x8A, 0x4A, 0xCA, 0x2A, 0xAA, 0x6A, 0xEA, 0x1A, 0x9A, 0x5A, 0xDA, 0x3A, 0xBA, 0x7A, 0xFA,
+    0x06, 0x86, 0x46, 0xC6, 0x26, 0xA6, 0x66, 0xE6, 0x16, 0x96, 0x56, 0xD6, 0x36, 0xB6, 0x76, 0xF6,
+    0x0E, 0x8E, 0x4E, 0xCE, 0x2E, 0xAE, 0x6E, 0xEE, 0x1E, 0x9E, 0x5E, 0xDE, 0x3E, 0xBE, 0x7E, 0xFE,
+    0x01, 0x81, 0x41, 0xC1, 0x21, 0xA1, 0x61, 0xE1, 0x11, 0x91, 0x51, 0xD1, 0x31, 0xB1, 0x71, 0xF1,
+    0x09, 0x89, 0x49, 0xC9, 0x29, 0xA9, 0x69, 0xE9, 0x19, 0x99, 0x59, 0xD9, 0x39, 0xB9, 0x79, 0xF9,
+    0x05, 0x85, 0x45, 0xC5, 0x25, 0xA5, 0x65, 0xE5, 0x15, 0x95, 0x55, 0xD5, 0x35, 0xB5, 0x75, 0xF5,
+    0x0D, 0x8D, 0x4D, 0xCD, 0x2D, 0xAD, 0x6D, 0xED, 0x1D, 0x9D, 0x5D, 0xDD, 0x3D, 0xBD, 0x7D, 0xFD,
+    0x03, 0x83, 0x43, 0xC3, 0x23, 0xA3, 0x63, 0xE3, 0x13, 0x93, 0x53, 0xD3, 0x33, 0xB3, 0x73, 0xF3,
+    0x0B, 0x8B, 0x4B, 0xCB, 0x2B, 0xAB, 0x6B, 0xEB, 0x1B, 0x9B, 0x5B, 0xDB, 0x3B, 0xBB, 0x7B, 0xFB,
+    0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
+    0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF,
+];
 
-    const SPI_IOC_TYPE_MESSAGE: u8 = 0;
-    const SPI_IOC_TYPE_LSB_FIRST: u8 = 2;
-    const SPI_IOC_TYPE_BITS_PER_WORD: u8 = 3;
-    const SPI_IOC_TYPE_MAX_SPEED_HZ: u8 = 4;
-    const SPI_IOC_TYPE_MODE32: u8 = 5;
-
-    #[derive(Debug, PartialEq, Copy, Clone)]
-    #[repr(C)]
-    pub struct TransferSegment {
-        // Pointer to transmit buffer, or 0.
-        tx_buf: u64,
-        // Pointer to receive buffer, or 0.
-        rx_buf: u64,
-        // Number of bytes to transfer in this segment.
-        len: u32,
-        // Set a different clock speed for this segment. Default = 0.
-        speed_hz: u32,
-        // Add a delay before the (optional) SS change and the next segment.
-        delay_usecs: u16,
-        // Not used, since we only support 8 bits. Default = 0.
-        bits_per_word: u8,
-        // Set to 1 to briefly set SS inactive between this segment and the next, and keep SS active after the final segment.
-        cs_change: u8,
-        // Number of bits used for writing (dual/quad SPI). Default = 0.
-        tx_nbits: u8,
-        // Number of bits used for reading (dual/quad SPI). Default = 0.
-        rx_nbits: u8,
-        // Padding. Set to 0 for forward compatibility.
-        pad: u16,
+#[inline(always)]
+/// Reverses the bits of each byte in `buffer`.
+///
+/// Use this function to switch between most-significant bit first and
+/// least-significant bit first.
+pub fn reverse_bits(buffer: &mut [u8]) {
+    for byte in buffer {
+        *byte = LOOKUP_REVERSE_BITS[*byte as usize];
     }
+}
 
-    // TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
-    // interpreted the documentation incorrectly.
+#[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(C)]
+pub struct TransferSegment {
+    // Pointer to transmit buffer, or 0.
+    tx_buf: u64,
+    // Pointer to receive buffer, or 0.
+    rx_buf: u64,
+    // Number of bytes to transfer in this segment.
+    len: u32,
+    // Set a different clock speed for this segment. Default = 0.
+    speed_hz: u32,
+    // Add a delay before the (optional) SS change and the next segment.
+    delay_usecs: u16,
+    // Not used, since we only support 8 bits (or 9 bits in LoSSI mode). Default = 0.
+    bits_per_word: u8,
+    // Set to 1 to briefly set SS High (inactive) between this segment and the next. If this is the last segment, keep SS Low (active).
+    cs_change: u8,
+    // Number of bits used for writing (dual/quad SPI). Default = 0.
+    tx_nbits: u8,
+    // Number of bits used for reading (dual/quad SPI). Default = 0.
+    rx_nbits: u8,
+    // Padding. Set to 0 for forward compatibility.
+    pad: u16,
+}
 
-    impl TransferSegment {
-        pub fn new(read_buffer: Option<&mut [u8]>, write_buffer: Option<&[u8]>) -> TransferSegment {
-            // Len will contain the length of the shortest of the supplied buffers
-            let mut len: u32 = 0;
+// TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
+// interpreted the documentation incorrectly.
 
-            let tx_buf = if let Some(buffer) = write_buffer {
+impl TransferSegment {
+    pub fn new(read_buffer: Option<&mut [u8]>, write_buffer: Option<&[u8]>) -> TransferSegment {
+        // Len will contain the length of the shortest of the supplied buffers
+        let mut len: u32 = 0;
+
+        let tx_buf = if let Some(buffer) = write_buffer {
+            len = buffer.len() as u32;
+            buffer.as_ptr() as u64
+        } else {
+            0
+        };
+
+        let rx_buf = if let Some(buffer) = read_buffer {
+            if len > buffer.len() as u32 {
                 len = buffer.len() as u32;
-                buffer.as_ptr() as u64
-            } else {
-                0
-            };
-
-            let rx_buf = if let Some(buffer) = read_buffer {
-                if len > buffer.len() as u32 {
-                    len = buffer.len() as u32;
-                }
-                buffer.as_ptr() as u64
-            } else {
-                0
-            };
-
-            TransferSegment {
-                tx_buf,
-                rx_buf,
-                len,
-                speed_hz: 0,
-                delay_usecs: 0,
-                bits_per_word: 0,
-                cs_change: 0,
-                tx_nbits: 0,
-                rx_nbits: 0,
-                pad: 0,
             }
-        }
+            buffer.as_ptr() as u64
+        } else {
+            0
+        };
 
-        pub fn len(&self) -> u32 {
-            self.len
+        TransferSegment {
+            tx_buf,
+            rx_buf,
+            len,
+            speed_hz: 0,
+            delay_usecs: 0,
+            bits_per_word: 0,
+            cs_change: 0,
+            tx_nbits: 0,
+            rx_nbits: 0,
+            pad: 0,
         }
     }
 
-    ioctl!(write_buf spi_transfer with SPI_IOC_MAGIC, SPI_IOC_TYPE_MESSAGE; TransferSegment);
-    ioctl!(write_int spi_write_mode with SPI_IOC_MAGIC, SPI_IOC_TYPE_MODE32);
-    ioctl!(write_int spi_write_lsb_first with SPI_IOC_MAGIC, SPI_IOC_TYPE_LSB_FIRST);
-    ioctl!(write_int spi_write_bits_per_word with SPI_IOC_MAGIC, SPI_IOC_TYPE_BITS_PER_WORD);
-    ioctl!(write_int spi_write_max_speed_hz with SPI_IOC_MAGIC, SPI_IOC_TYPE_MAX_SPEED_HZ);
+    pub fn len(&self) -> u32 {
+        self.len
+    }
 }
 
 /// SPI buses.
@@ -255,6 +261,14 @@ pub enum Mode {
 ///
 /// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will
 /// transfer the least-significant bit first.
+///
+/// There's a possibility the `LsbFirst` bit order isn't supported by the hardware
+/// driver on your Raspberry Pi. You can use the [`reverse_bits`] function to
+/// reverse the bit order in software by converting your write buffer before
+/// sending it to the slave device, and your read buffer after collecting any
+/// incoming data.
+///
+/// [`reverse_bits`]: fn.reverse_bits.html
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BitOrder {
     MsbFirst = 0,
@@ -304,10 +318,10 @@ impl Spi {
 
         // Configure SPI bus through ioctl calls
         unsafe {
-            ioctl::spi_write_mode(spidev.as_raw_fd(), mode as i32)?;
-            ioctl::spi_write_max_speed_hz(spidev.as_raw_fd(), clock_speed as i32)?;
-            ioctl::spi_write_bits_per_word(spidev.as_raw_fd(), 8)?;
-            ioctl::spi_write_lsb_first(spidev.as_raw_fd(), bit_order as i32)?;
+            ioctl::spidev::set_mode(spidev.as_raw_fd(), mode as u8)?;
+            ioctl::spidev::set_speed(spidev.as_raw_fd(), clock_speed)?;
+            ioctl::spidev::set_bits_per_word(spidev.as_raw_fd(), 8)?;
+            ioctl::spidev::set_lsb_first(spidev.as_raw_fd(), bit_order as u8)?;
         }
 
         Ok(Spi { spidev })
@@ -357,11 +371,13 @@ impl Spi {
     ///
     /// Returns how many bytes were transferred.
     pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
-        let segment = ioctl::TransferSegment::new(Some(read_buffer), Some(write_buffer));
+        let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
 
+        /*
         unsafe {
-            ioctl::spi_transfer(self.spidev.as_raw_fd(), &[segment])?;
+            ioctl::spidev::transfer(self.spidev.as_raw_fd(), &[segment])?;
         }
+        */
 
         Ok(segment.len() as usize)
     }
