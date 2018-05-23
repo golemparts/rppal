@@ -23,6 +23,8 @@
 //! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.C`
 //! devices, where B points to an SPI bus (0, 1, 2), and C to a Chip Enable pin (0, 1, 2).
 //!
+//! ## SPI buses
+//!
 //! The Raspberry Pi's GPIO header exposes several SPI buses. SPI0 is available
 //! on all Raspberry Pi models. SPI1 is available on models with a 40-pin
 //! header. SPI2 is only available on the Compute and Compute 3.
@@ -61,6 +63,13 @@
 //! The GPIO pin numbers mentioned above are part of the default configuration. Some of
 //! their functionality can be moved to different pins. Read `/boot/overlays/README`
 //! for more information.
+//!
+//! ## Buffer size limits
+//!
+//! By default, the Linux SPI driver can handle up to 4096 bytes in a single transfer. You can
+//! increase this limit to a maximum of 65536 bytes by adding `spidev.bufsiz=65536` to the single line
+//! of parameters in `/boot/cmdline.txt`. Remember to reboot the Raspberry Pi afterwards. The current
+//! value of bufsiz can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
 
 use std::fs::{File, OpenOptions};
 use std::io;
