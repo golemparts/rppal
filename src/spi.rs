@@ -88,21 +88,19 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// System call error.
-        Sys(errno: Errno) { display("System call error: {}", errno) }
 /// Invalid path.
-        InvalidPath {}
+        InvalidPath { description("invalid path") }
 /// Invalid Utf8.
-        InvalidUtf8 {}
+        InvalidUtf8 { description("invalid UTF8") }
 /// Unsupported operation.
-        UnsupportedOperation {}
+        UnsupportedOperation { description("unsupported operation") }
     }
 }
 
 impl From<nix::Error> for Error {
     fn from(err: nix::Error) -> Error {
         match err {
-            nix::Error::Sys(errno) => Error::Sys(errno),
+            nix::Error::Sys(errno) => Error::Io(io::Error::from_raw_os_error(errno as i32)),
             nix::Error::InvalidPath => Error::InvalidPath,
             nix::Error::InvalidUtf8 => Error::InvalidUtf8,
             nix::Error::UnsupportedOperation => Error::UnsupportedOperation,
@@ -131,17 +129,17 @@ mod ioctl {
         rx_buf: u64,
         // Number of bytes to transfer in this segment.
         len: u32,
-        // Set a different clock speed for this segment. 0 = default.
+        // Set a different clock speed for this segment. Default = 0.
         speed_hz: u32,
         // Add a delay before the (optional) SS change and the next segment.
         delay_usecs: u16,
-        // Not used, since we only support 8 bits. 0 = default.
+        // Not used, since we only support 8 bits. Default = 0.
         bits_per_word: u8,
         // Set to 1 to briefly set SS inactive between this segment and the next, and keep SS active after the final segment.
         cs_change: u8,
-        // Used for dual/quad SPI.
+        // Number of bits used for writing (dual/quad SPI). Default = 0.
         tx_nbits: u8,
-        // Used for dual/quad SPI.
+        // Number of bits used for reading (dual/quad SPI). Default = 0.
         rx_nbits: u8,
         // Padding. Set to 0 for forward compatibility.
         pad: u16,
