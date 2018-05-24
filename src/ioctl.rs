@@ -64,26 +64,52 @@ pub mod spidev {
     const NR_MAX_SPEED_HZ: c_ulong = 4 << NRSHIFT;
     const NR_MODE32: c_ulong = 5 << NRSHIFT;
 
+    const REQ_RD_MODE: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE | SIZE_U8);
+    const REQ_RD_LSB_FIRST: c_ulong = (DIR_READ | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
+    const REQ_RD_BITS_PER_WORD: c_ulong = (DIR_READ | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
+    const REQ_RD_MAX_SPEED_HZ: c_ulong = (DIR_READ | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
+    const REQ_RD_MODE_32: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE32 | SIZE_U32);
+
     const REQ_WR_MODE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE | SIZE_U8);
     const REQ_WR_LSB_FIRST: c_ulong = (DIR_WRITE | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
     const REQ_WR_BITS_PER_WORD: c_ulong = (DIR_WRITE | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
     const REQ_WR_MAX_SPEED_HZ: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
     const REQ_WR_MODE_32: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE32 | SIZE_U32);
 
+    pub unsafe fn mode(fd: c_int, value: &mut u8) -> Result<i32> {
+        parse_retval(ioctl(fd, REQ_RD_MODE, value))
+    }
+
     pub unsafe fn set_mode(fd: c_int, value: u8) -> Result<i32> {
         parse_retval(ioctl(fd, REQ_WR_MODE, &value))
+    }
+
+    pub unsafe fn lsb_first(fd: c_int, value: &mut u8) -> Result<i32> {
+        parse_retval(ioctl(fd, REQ_RD_LSB_FIRST, value))
     }
 
     pub unsafe fn set_lsb_first(fd: c_int, value: u8) -> Result<i32> {
         parse_retval(ioctl(fd, REQ_WR_LSB_FIRST, &value))
     }
 
+    pub unsafe fn bits_per_word(fd: c_int, value: &mut u8) -> Result<i32> {
+        parse_retval(ioctl(fd, REQ_RD_BITS_PER_WORD, value))
+    }
+
     pub unsafe fn set_bits_per_word(fd: c_int, value: u8) -> Result<i32> {
         parse_retval(ioctl(fd, REQ_WR_BITS_PER_WORD, &value))
     }
 
-    pub unsafe fn set_speed(fd: c_int, value: u32) -> Result<i32> {
+    pub unsafe fn clock_speed(fd: c_int, value: &mut u32) -> Result<i32> {
+        parse_retval(ioctl(fd, REQ_RD_MAX_SPEED_HZ, value))
+    }
+
+    pub unsafe fn set_clock_speed(fd: c_int, value: u32) -> Result<i32> {
         parse_retval(ioctl(fd, REQ_WR_MAX_SPEED_HZ, &value))
+    }
+
+    pub unsafe fn mode32(fd: c_int, value: &mut u32) -> Result<i32> {
+        parse_retval(ioctl(fd, REQ_RD_MODE_32, value))
     }
 
     pub unsafe fn set_mode32(fd: c_int, value: u32) -> Result<i32> {
