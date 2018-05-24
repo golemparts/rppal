@@ -88,15 +88,26 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// The SPI driver doesn't support the `LsbFirst` bit order.
+/// The specified number of bits per word is not supported.
 ///
-/// Setting the bit order to `LsbFirst` isn't supported by the hardware driver on
-/// your Raspberry Pi. You can use the [`reverse_bits`] function to reverse the
-/// bit order in software by converting your write buffer before sending it to
-/// the slave device, and your read buffer after collecting any incoming data.
+/// The Raspberry Pi currently only supports 8 bit words (or 9 bits in LoSSI
+/// mode). Any other value will trigger this error.
+        BitsPerWordNotSupported(bits_per_word: u8) { description("bits per word value not supported") }
+/// The specified bit order is not supported.
+///
+/// This error is triggered if the bit order isn't supported by the SPI
+/// hardware driver. You'll likely encounter this error when you try to set the
+/// bit order to LsbFirst. You can use the [`reverse_bits`] function instead to
+/// reverse the bit order in software by converting your write buffer before
+/// sending it to the slave device, and your read buffer after reading any
+/// incoming data.
 ///
 /// [`reverse_bits`]: fn.reverse_bits.html
-        LsbFirstNotSupported { description("the LsbFirst bit order is not supported") }
+        BitOrderNotSupported(bit_order: BitOrder) { description("bit order value not supported") }
+/// The specified clock speed is not supported.
+        ClockSpeedNotSupported(clock_speed: u32) { description("clock speed value not supported") }
+/// The specified mode is not supported.
+        ModeNotSupported(mode: Mode) { description("mode value not supported") }
     }
 }
 
@@ -122,11 +133,11 @@ const LOOKUP_REVERSE_BITS: [u8; 256] = [
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF,
 ];
 
-#[inline(always)]
 /// Reverses the bits of each byte in `buffer`.
 ///
-/// Use this function to switch between most-significant bit first and
-/// least-significant bit first.
+/// Use this function to switch the bit order between most-significant bit first
+/// and least-significant bit first.
+#[inline(always)]
 pub fn reverse_bits(buffer: &mut [u8]) {
     for byte in buffer {
         *byte = LOOKUP_REVERSE_BITS[*byte as usize];
@@ -262,11 +273,11 @@ pub enum Mode {
 /// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will
 /// transfer the least-significant bit first.
 ///
-/// There's a possibility the `LsbFirst` bit order isn't supported by the hardware
-/// driver on your Raspberry Pi. You can use the [`reverse_bits`] function to
-/// reverse the bit order in software by converting your write buffer before
-/// sending it to the slave device, and your read buffer after collecting any
-/// incoming data.
+/// There's a possibility the `LsbFirst` bit order isn't supported by the
+/// hardware driver on your Raspberry Pi. You can use the [`reverse_bits`]
+/// function instead to reverse the bit order in software by converting your
+/// write buffer before sending it to the slave device, and your read buffer
+/// after reading any incoming data.
 ///
 /// [`reverse_bits`]: fn.reverse_bits.html
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -295,19 +306,12 @@ impl Spi {
     /// will automatically select the closest valid frequency.
     ///
     /// `mode` selects the clock polarity and phase.
-    ///
-    /// `bit_order` sets the order in which bits are shifted out and in to
-    /// most-significant bit first or least-significant bit first.
-    pub fn new(
-        bus: Bus,
-        chip_enable: ChipEnable,
-        clock_speed: u32,
-        mode: Mode,
-        bit_order: BitOrder,
-    ) -> Result<Spi> {
-        // We don't ask for bits per word, because the driver only supports
+    pub fn new(bus: Bus, chip_enable: ChipEnable, clock_speed: u32, mode: Mode) -> Result<Spi> {
+        // We don't ask for bits per word here, because the driver only supports
         // 8 bits (or 9 bits in LoSSI mode). Changing the SS polarity from
-        // active-low to active-high isn't supported either.
+        // active-low to active-high isn't supported. And it appears the
+        // hardware driver doesn't support the LsbFirst bit order, so we don't
+        // explicitly ask for a bit order either.
         // Based on https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
         // and https://www.kernel.org/doc/Documentation/spi/spidev.
 
@@ -316,15 +320,82 @@ impl Spi {
             .write(true)
             .open(format!("/dev/spidev{}.{}", bus as u8, chip_enable as u8))?;
 
-        // Configure SPI bus through ioctl calls
-        unsafe {
-            ioctl::spidev::set_mode(spidev.as_raw_fd(), mode as u8)?;
-            ioctl::spidev::set_speed(spidev.as_raw_fd(), clock_speed)?;
-            ioctl::spidev::set_bits_per_word(spidev.as_raw_fd(), 8)?;
-            ioctl::spidev::set_lsb_first(spidev.as_raw_fd(), bit_order as u8)?;
-        }
+        let spi = Spi { spidev };
 
-        Ok(Spi { spidev })
+        // Set defaults and user-specified settings
+        spi.set_mode(mode)?;
+        spi.set_clock_speed(clock_speed)?;
+        spi.set_bits_per_word(8)?;
+        spi.set_bit_order(BitOrder::MsbFirst)?;
+
+        Ok(spi)
+    }
+
+    pub fn bit_order(&self) -> Result<BitOrder> {
+        unimplemented!()
+    }
+
+    /// Sets the order in which bits are shifted out and in.
+    ///
+    /// By default, bit order is set to `MsbFirst`.
+    ///
+    /// There's a possibility the `LsbFirst` bit order isn't supported by the
+    /// hardware driver on your Raspberry Pi. You can use the [`reverse_bits`]
+    /// function instead to reverse the bit order in software by converting your
+    /// write buffer before sending it to the slave device, and your read buffer
+    /// after reading any incoming data.
+    ///
+    /// [`reverse_bits`]: fn.reverse_bits.html
+    pub fn set_bit_order(&self, bit_order: BitOrder) -> Result<()> {
+        match unsafe { ioctl::spidev::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::BitOrderNotSupported(bit_order))
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
+    }
+
+    pub fn bits_per_word(&self) -> Result<u8> {
+        unimplemented!()
+    }
+
+    pub fn set_bits_per_word(&self, bits_per_word: u8) -> Result<()> {
+        match unsafe { ioctl::spidev::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::BitsPerWordNotSupported(bits_per_word))
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
+    }
+
+    pub fn clock_speed(&self) -> Result<u32> {
+        unimplemented!()
+    }
+
+    pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
+        match unsafe { ioctl::spidev::set_speed(self.spidev.as_raw_fd(), clock_speed) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::ClockSpeedNotSupported(clock_speed))
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
+    }
+
+    pub fn mode(&self) -> Result<Mode> {
+        unimplemented!()
+    }
+
+    pub fn set_mode(&self, mode: Mode) -> Result<()> {
+        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), mode as u8) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::ModeNotSupported(mode))
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
     }
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
