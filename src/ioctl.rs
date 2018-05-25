@@ -22,6 +22,7 @@
 
 use libc::{c_int, c_ulong, ioctl};
 use std::io;
+use std::marker;
 use std::mem::size_of;
 use std::result;
 
@@ -99,7 +100,7 @@ pub mod spidev {
 
     #[derive(Debug, PartialEq, Copy, Clone)]
     #[repr(C)]
-    pub struct TransferSegment {
+    pub struct TransferSegment<'a, 'b> {
         // Pointer to transmit buffer, or 0.
         tx_buf: u64,
         // Pointer to receive buffer, or 0.
@@ -110,20 +111,39 @@ pub mod spidev {
         speed_hz: u32,
         // Add a delay before the (optional) SS change and the next segment.
         delay_usecs: u16,
-        // Not used, since we only support 8 bits (or 9 bits in LoSSI mode). Default = 0.
+        // Bits per word for this segment. The Pi only supports 8 bits (or 9 bits in LoSSI mode). Default = 0.
         bits_per_word: u8,
-        // Set to 1 to briefly set SS High (inactive) between this segment and the next. If this is the last segment, keep SS Low (active).
+        // Set to 1 to briefly set SS inactive between this segment and the next. If this is the last segment, keep SS active.
         cs_change: u8,
-        // Number of bits used for writing (dual/quad SPI). Default = 0.
+        // Number of outgoing lines used for dual/quad SPI. Default = 0.
         tx_nbits: u8,
-        // Number of bits used for reading (dual/quad SPI). Default = 0.
+        // Number of incoming lines used for dual/quad SPI. Default = 0.
         rx_nbits: u8,
         // Padding. Set to 0 for forward compatibility.
         pad: u16,
+        // Zero-sized variables used to link this struct to the read/write buffer lifetimes.
+        read_buffer_lifetime: marker::PhantomData<&'a mut [u8]>,
+        write_buffer_lifetime: marker::PhantomData<&'b [u8]>,
     }
 
-    impl TransferSegment {
-        pub fn new(read_buffer: Option<&mut [u8]>, write_buffer: Option<&[u8]>) -> TransferSegment {
+    impl<'a, 'b> TransferSegment<'a, 'b> {
+        pub fn new(
+            read_buffer: Option<&'a mut [u8]>,
+            write_buffer: Option<&'b [u8]>,
+        ) -> TransferSegment<'a, 'b> {
+            TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false, 0, 0)
+        }
+
+        pub fn with_settings(
+            read_buffer: Option<&'a mut [u8]>,
+            write_buffer: Option<&'b [u8]>,
+            clock_speed: u32,
+            delay: u16,
+            bits_per_word: u8,
+            cs_change: bool,
+            tx_nbits: u8,
+            rx_nbits: u8,
+        ) -> TransferSegment<'a, 'b> {
             // Len will contain the length of the shortest of the supplied buffers
             let mut len: u32 = 0;
 
@@ -147,18 +167,68 @@ pub mod spidev {
                 tx_buf,
                 rx_buf,
                 len,
-                speed_hz: 0,
-                delay_usecs: 0,
-                bits_per_word: 0,
-                cs_change: 0,
-                tx_nbits: 0,
-                rx_nbits: 0,
+                speed_hz: clock_speed,
+                delay_usecs: delay,
+                bits_per_word,
+                cs_change: cs_change as u8,
+                tx_nbits,
+                rx_nbits,
                 pad: 0,
+                read_buffer_lifetime: marker::PhantomData,
+                write_buffer_lifetime: marker::PhantomData,
             }
         }
 
         pub fn len(&self) -> u32 {
             self.len
+        }
+
+        pub fn clock_speed(&self) -> u32 {
+            self.speed_hz
+        }
+
+        pub fn set_clock_speed(&mut self, clock_speed: u32) {
+            self.speed_hz = clock_speed;
+        }
+
+        pub fn delay(&self) -> u16 {
+            self.delay_usecs
+        }
+
+        pub fn set_delay(&mut self, delay: u16) {
+            self.delay_usecs = delay;
+        }
+
+        pub fn bits_per_word(&self) -> u8 {
+            self.bits_per_word
+        }
+
+        pub fn set_bits_per_word(&mut self, bits_per_word: u8) {
+            self.bits_per_word = bits_per_word;
+        }
+
+        pub fn cs_change(&self) -> bool {
+            self.cs_change == 1
+        }
+
+        pub fn set_cs_change(&mut self, cs_change: bool) {
+            self.cs_change = cs_change as u8;
+        }
+
+        pub fn rx_nbits(&self) -> u8 {
+            self.rx_nbits
+        }
+
+        pub fn set_rx_nbits(&mut self, rx_nbits: u8) {
+            self.rx_nbits = rx_nbits;
+        }
+
+        pub fn tx_nbits(&self) -> u8 {
+            self.tx_nbits
+        }
+
+        pub fn set_tx_nbits(&mut self, tx_nbits: u8) {
+            self.tx_nbits = tx_nbits;
         }
     }
 
