@@ -90,6 +90,8 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
+/// Bidirectional mode is not supported.
+        BidirectionalNotSupported { description("bidirectional mode not supported") }
 /// The specified number of bits per word is not supported.
 ///
 /// The Raspberry Pi currently only supports 8 bit words (or 9 bits in LoSSI
@@ -109,6 +111,8 @@ quick_error! {
         ClockSpeedNotSupported(clock_speed: u32) { description("clock speed value not supported") }
 /// The specified mode is not supported.
         ModeNotSupported(mode: Mode) { description("mode value not supported") }
+/// The specified Slave Select polarity is not supported.
+        PolarityNotSupported(polarity: Polarity) { description("polarity value not supported") }
     }
 }
 
@@ -176,6 +180,13 @@ pub enum ChipEnable {
     Ce2 = 2,
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+/// Slave Select polarities.
+pub enum Polarity {
+    ActiveLow = 0,
+    ActiveHigh = 1,
+}
+
 /// SPI modes.
 ///
 /// Select the appropriate SPI mode for your device. Each mode configures the
@@ -197,7 +208,7 @@ pub enum Mode {
     Mode3 = 3,
 }
 
-/// Bit order.
+/// Bit orders.
 ///
 /// The bit order determines in what order data is shifted out and shifted in.
 /// Select the bit order that's appropriate for the device you're
@@ -261,14 +272,55 @@ impl Spi {
         spi.set_bits_per_word(8)?;
         spi.set_bit_order(BitOrder::MsbFirst)?;
 
-        // TODO: (re)check support for CS_HIGH, NO_CS, 3WIRE, dual/quad SPI
+        // TODO: (re)check support for CS_HIGH, NO_CS, 3WIRE
+
+        Ok(spi)
+    }
+
+    /// Gets the current state of bidirectional mode.
+    pub fn bidirectional(&self) -> Result<bool> {
+        let mut mode: u8 = 0;
+        unsafe {
+            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut mode)?;
+        }
+
+        Ok((mode & ioctl::spidev::MODE_3WIRE) > 0)
+    }
+
+    /// Enables or disables bidirectional mode.
+    ///
+    /// Bidirectional mode, also known as 3-wire mode, uses 3 lines (MOMI,
+    /// SCLK, SS) instead of the regular 4. The MOSI line is used as MOMI
+    /// (Master In, Master Out), and MISO isn't needed.
+    ///
+    /// The Raspberry Pi's SPI hardware driver only supports a half-duplex
+    /// version of bidirectional mode, which means you can't read and write
+    /// at the same time.
+    pub fn set_bidirectional(&self, bidirectional: bool) -> Result<()> {
         // From the rpi SPI doc page: Bidirectional or "3-wire" mode is supported
         // by the spi-bcm2835 kernel module. Please note that in this mode, either
         // the tx or rx field of the spi_transfer struct must be a NULL pointer,
         // since only half-duplex communication is possible. Otherwise, the transfer
         // will fail.
 
-        Ok(spi)
+        let mut new_mode: u8 = 0;
+        unsafe {
+            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
+        }
+
+        if bidirectional {
+            new_mode |= ioctl::spidev::MODE_3WIRE;
+        } else {
+            new_mode &= !ioctl::spidev::MODE_3WIRE;
+        }
+
+        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::BidirectionalNotSupported)
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
     }
 
     /// Gets the bit order.
@@ -305,7 +357,7 @@ impl Spi {
         }
     }
 
-    /// Gets the bits per word.
+    /// Gets the number of bits per word.
     pub fn bits_per_word(&self) -> Result<u8> {
         let mut bits_per_word: u8 = 0;
         unsafe {
@@ -381,6 +433,44 @@ impl Spi {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::ModeNotSupported(mode))
+            }
+            Err(e) => Err(Error::Io(e)),
+        }
+    }
+
+    /// Gets the Slave Select polarity.
+    pub fn polarity(&self) -> Result<Polarity> {
+        let mut mode: u8 = 0;
+        unsafe {
+            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut mode)?;
+        }
+
+        if (mode & ioctl::spidev::MODE_CS_HIGH) == 0 {
+            Ok(Polarity::ActiveLow)
+        } else {
+            Ok(Polarity::ActiveHigh)
+        }
+    }
+
+    /// Sets Slave Select polarity.
+    ///
+    /// By default, the Slave Select polarity is set to `ActiveLow`.
+    pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
+        let mut new_mode: u8 = 0;
+        unsafe {
+            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
+        }
+
+        if polarity == Polarity::ActiveLow {
+            new_mode |= ioctl::spidev::MODE_CS_HIGH;
+        } else {
+            new_mode &= !ioctl::spidev::MODE_CS_HIGH;
+        }
+
+        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+            Ok(_) => Ok(()),
+            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
+                Err(Error::PolarityNotSupported(polarity))
             }
             Err(e) => Err(Error::Io(e)),
         }

@@ -115,9 +115,9 @@ pub mod spidev {
         bits_per_word: u8,
         // Set to 1 to briefly set SS inactive between this segment and the next. If this is the last segment, keep SS active.
         cs_change: u8,
-        // Number of outgoing lines used for dual/quad SPI. Default = 0.
+        // Number of outgoing lines used for dual/quad SPI. Not supported on the Raspberry Pi. Default = 0.
         tx_nbits: u8,
-        // Number of incoming lines used for dual/quad SPI. Default = 0.
+        // Number of incoming lines used for dual/quad SPI. Not supported on the Raspberry Pi. Default = 0.
         rx_nbits: u8,
         // Padding. Set to 0 for forward compatibility.
         pad: u16,
@@ -131,7 +131,7 @@ pub mod spidev {
             read_buffer: Option<&'a mut [u8]>,
             write_buffer: Option<&'b [u8]>,
         ) -> TransferSegment<'a, 'b> {
-            TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false, 0, 0)
+            TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
         }
 
         pub fn with_settings(
@@ -141,8 +141,6 @@ pub mod spidev {
             delay: u16,
             bits_per_word: u8,
             cs_change: bool,
-            tx_nbits: u8,
-            rx_nbits: u8,
         ) -> TransferSegment<'a, 'b> {
             // Len will contain the length of the shortest of the supplied buffers
             let mut len: u32 = 0;
@@ -171,8 +169,8 @@ pub mod spidev {
                 delay_usecs: delay,
                 bits_per_word,
                 cs_change: cs_change as u8,
-                tx_nbits,
-                rx_nbits,
+                tx_nbits: 0,
+                rx_nbits: 0,
                 pad: 0,
                 read_buffer_lifetime: marker::PhantomData,
                 write_buffer_lifetime: marker::PhantomData,
@@ -181,6 +179,10 @@ pub mod spidev {
 
         pub fn len(&self) -> u32 {
             self.len
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.len == 0
         }
 
         pub fn clock_speed(&self) -> u32 {
@@ -213,22 +215,6 @@ pub mod spidev {
 
         pub fn set_cs_change(&mut self, cs_change: bool) {
             self.cs_change = cs_change as u8;
-        }
-
-        pub fn rx_nbits(&self) -> u8 {
-            self.rx_nbits
-        }
-
-        pub fn set_rx_nbits(&mut self, rx_nbits: u8) {
-            self.rx_nbits = rx_nbits;
-        }
-
-        pub fn tx_nbits(&self) -> u8 {
-            self.tx_nbits
-        }
-
-        pub fn set_tx_nbits(&mut self, tx_nbits: u8) {
-            self.tx_nbits = tx_nbits;
         }
     }
 
