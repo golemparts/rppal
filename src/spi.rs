@@ -82,6 +82,8 @@ use std::result;
 
 use ioctl;
 
+pub use ioctl::spidev::TransferSegment;
+
 quick_error! {
     #[derive(Debug)]
 /// Errors that can occur when accessing the SPI peripherals.
@@ -140,74 +142,6 @@ const LOOKUP_REVERSE_BITS: [u8; 256] = [
 pub fn reverse_bits(buffer: &mut [u8]) {
     for byte in buffer {
         *byte = LOOKUP_REVERSE_BITS[*byte as usize];
-    }
-}
-
-#[derive(Debug, PartialEq, Copy, Clone)]
-#[repr(C)]
-pub struct TransferSegment {
-    // Pointer to transmit buffer, or 0.
-    tx_buf: u64,
-    // Pointer to receive buffer, or 0.
-    rx_buf: u64,
-    // Number of bytes to transfer in this segment.
-    len: u32,
-    // Set a different clock speed for this segment. Default = 0.
-    speed_hz: u32,
-    // Add a delay before the (optional) SS change and the next segment.
-    delay_usecs: u16,
-    // Not used, since we only support 8 bits (or 9 bits in LoSSI mode). Default = 0.
-    bits_per_word: u8,
-    // Set to 1 to briefly set SS High (inactive) between this segment and the next. If this is the last segment, keep SS Low (active).
-    cs_change: u8,
-    // Number of bits used for writing (dual/quad SPI). Default = 0.
-    tx_nbits: u8,
-    // Number of bits used for reading (dual/quad SPI). Default = 0.
-    rx_nbits: u8,
-    // Padding. Set to 0 for forward compatibility.
-    pad: u16,
-}
-
-// TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
-// interpreted the documentation incorrectly.
-
-impl TransferSegment {
-    pub fn new(read_buffer: Option<&mut [u8]>, write_buffer: Option<&[u8]>) -> TransferSegment {
-        // Len will contain the length of the shortest of the supplied buffers
-        let mut len: u32 = 0;
-
-        let tx_buf = if let Some(buffer) = write_buffer {
-            len = buffer.len() as u32;
-            buffer.as_ptr() as u64
-        } else {
-            0
-        };
-
-        let rx_buf = if let Some(buffer) = read_buffer {
-            if len > buffer.len() as u32 {
-                len = buffer.len() as u32;
-            }
-            buffer.as_ptr() as u64
-        } else {
-            0
-        };
-
-        TransferSegment {
-            tx_buf,
-            rx_buf,
-            len,
-            speed_hz: 0,
-            delay_usecs: 0,
-            bits_per_word: 0,
-            cs_change: 0,
-            tx_nbits: 0,
-            rx_nbits: 0,
-            pad: 0,
-        }
-    }
-
-    pub fn len(&self) -> u32 {
-        self.len
     }
 }
 
@@ -441,7 +375,7 @@ impl Spi {
         }
 
         // Make sure we only replace the CPOL/CPHA bits
-        new_mode = (new_mode & !0b11u8) | (mode as u8);
+        new_mode = (new_mode & !0x03) | (mode as u8);
 
         match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
             Ok(_) => Ok(()),
@@ -498,12 +432,22 @@ impl Spi {
     pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
         let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
 
-        /*
         unsafe {
             ioctl::spidev::transfer(self.spidev.as_raw_fd(), &[segment])?;
         }
-        */
 
         Ok(segment.len() as usize)
+    }
+
+    /// -
+    pub fn transfer_segments(&self, segments: &[TransferSegment]) -> Result<()> {
+        unsafe {
+            ioctl::spidev::transfer(self.spidev.as_raw_fd(), segments)?;
+        }
+
+        // TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
+        // interpreted the documentation incorrectly.
+
+        Ok(())
     }
 }
