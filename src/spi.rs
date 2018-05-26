@@ -20,8 +20,8 @@
 
 //! Interface for the SPI peripherals.
 //!
-//! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.C`
-//! devices, where B points to an SPI bus (0, 1, 2), and C to a Chip Enable pin (0, 1, 2).
+//! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.S`
+//! devices, where B points to an SPI bus (0, 1, 2), and S to a Slave Select pin (0, 1, 2).
 //! Which of these buses and pins is available depends on your Raspberry Pi model and
 //! configuration, as explained below.
 //!
@@ -162,19 +162,21 @@ pub enum Bus {
     Spi2 = 2,
 }
 
-/// Chip Enable (Slave Select) pins.
+/// Slave Select pins.
 ///
-/// The Chip Enable pin is used to signal which device should pay attention to
-/// the SPI bus. Chip Enable is more commonly known as Slave Select or Chip
-/// Select.
+/// The Slave Select pin is used to signal which device should pay attention to
+/// the SPI bus. Slave Select is the more commonly used name for this pin, but
+/// it's also known as Chip Select or Chip Enable. The Raspberry Pi uses the name
+/// Chip Enable (CE) in some of its documentation, which is why the Slave Select
+/// pins are named Ce0, Ce1 and Ce2.
 ///
-/// The number of available Chip Enable pins for the selected SPI bus depends
+/// The number of available Slave Select pins for the selected SPI bus depends
 /// on your `/boot/config.txt` configuration. More information can be found
 /// [here].
 ///
 /// [here]: index.html
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum ChipEnable {
+pub enum SlaveSelect {
     Ce0 = 0,
     Ce1 = 1,
     Ce2 = 2,
@@ -233,7 +235,7 @@ pub enum BitOrder {
 /// Provides access to the Raspberry Pi's SPI peripherals.
 ///
 /// Before using `Spi`, make sure your Raspberry Pi has the necessary SPI buses
-/// and Chip Enable pins enabled. More information can be found [here].
+/// and Slave Select pins enabled. More information can be found [here].
 ///
 /// [here]: index.html
 pub struct Spi {
@@ -243,14 +245,14 @@ pub struct Spi {
 impl Spi {
     /// Creates a new instance of `Spi`.
     ///
-    /// `bus` and `chip_enable` specify the selected SPI bus and one of its
-    /// associated Chip Enable pins.
+    /// `bus` and `slave_select` specify the selected SPI bus and one of its
+    /// associated Slave Select pins.
     ///
-    /// `clock_speed` defines the maximum clock speed in Hz. The SPI driver
+    /// `clock_speed` defines the maximum clock speed in herz (Hz). The SPI driver
     /// will automatically select the closest valid frequency.
     ///
     /// `mode` selects the clock polarity and phase.
-    pub fn new(bus: Bus, chip_enable: ChipEnable, clock_speed: u32, mode: Mode) -> Result<Spi> {
+    pub fn new(bus: Bus, slave_select: SlaveSelect, clock_speed: u32, mode: Mode) -> Result<Spi> {
         // We don't ask for bits per word here, because the driver only supports
         // 8 bits (or 9 bits in LoSSI mode). Changing the SS polarity from
         // active-low to active-high isn't supported. And the driver doesn't
@@ -262,7 +264,7 @@ impl Spi {
         let spidev = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(format!("/dev/spidev{}.{}", bus as u8, chip_enable as u8))?;
+            .open(format!("/dev/spidev{}.{}", bus as u8, slave_select as u8))?;
 
         let spi = Spi { spidev };
 
@@ -383,7 +385,7 @@ impl Spi {
         }
     }
 
-    /// Gets the clock speed.
+    /// Gets the clock speed in herz (Hz).
     pub fn clock_speed(&self) -> Result<u32> {
         let mut clock_speed: u32 = 0;
         unsafe {
@@ -393,7 +395,7 @@ impl Spi {
         Ok(clock_speed)
     }
 
-    // Sets the clock speed frequency in Hz.
+    // Sets the clock speed frequency in herz (Hz).
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
         match unsafe { ioctl::spidev::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
             Ok(_) => Ok(()),
@@ -485,8 +487,8 @@ impl Spi {
     /// zero value byte shifted out for every byte `read` receives on the MISO
     /// line.
     ///
-    /// Chip Enable is set to Low (active) at the start of the read, and High
-    /// (inactive) when the read completes.
+    /// Slave Select is set to active at the start of the read, and inactive
+    /// when the read completes.
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
@@ -497,8 +499,8 @@ impl Spi {
     ///
     /// Any data received on the MISO line from the slave is ignored.
     ///
-    /// Chip Enable is set to Low (active) at the start of the write, and
-    /// High (inactive) when the write completes.
+    /// Slave Select is set to active at the start of the write, and inactive
+    /// when the write completes.
     ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
@@ -515,8 +517,8 @@ impl Spi {
     /// Because data is sent and received simultaneously, `transfer` only
     /// transfers as many bytes as the shortest of the two buffers contains.
     ///
-    /// Chip Enable is set to Low (active) at the start of the transfer, and
-    /// High (inactive) when the transfer completes.
+    /// Slave Select is set to active at the start of the transfer, and inactive
+    /// when the transfer completes.
     ///
     /// Returns how many bytes were transferred.
     pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {

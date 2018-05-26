@@ -98,12 +98,13 @@ pub mod spidev {
     pub const MODE_RX_DUAL: u32 = 0x400;
     pub const MODE_RX_QUAD: u32 = 0x800;
 
+    /// -
     #[derive(Debug, PartialEq, Copy, Clone)]
     #[repr(C)]
     pub struct TransferSegment<'a, 'b> {
-        // Pointer to transmit buffer, or 0.
+        // Pointer to write buffer, or 0.
         tx_buf: u64,
-        // Pointer to receive buffer, or 0.
+        // Pointer to read buffer, or 0.
         rx_buf: u64,
         // Number of bytes to transfer in this segment.
         len: u32,
@@ -121,12 +122,14 @@ pub mod spidev {
         rx_nbits: u8,
         // Padding. Set to 0 for forward compatibility.
         pad: u16,
-        // Zero-sized variables used to link this struct to the read/write buffer lifetimes.
+        // Zero-sized variable used to link this struct to the read buffer lifetime.
         read_buffer_lifetime: marker::PhantomData<&'a mut [u8]>,
+        // Zero-sized variable used to link this struct to the write buffer lifetime.
         write_buffer_lifetime: marker::PhantomData<&'b [u8]>,
     }
 
     impl<'a, 'b> TransferSegment<'a, 'b> {
+        /// -
         pub fn new(
             read_buffer: Option<&'a mut [u8]>,
             write_buffer: Option<&'b [u8]>,
@@ -134,6 +137,7 @@ pub mod spidev {
             TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
         }
 
+        /// -
         pub fn with_settings(
             read_buffer: Option<&'a mut [u8]>,
             write_buffer: Option<&'b [u8]>,
@@ -177,43 +181,78 @@ pub mod spidev {
             }
         }
 
+        /// Returns the number of bytes that will be transferred.
+        ///
+        /// If both a read buffer and write buffer are supplied, `transfer_segments` only
+        /// transfers as many bytes as the shortest of the two buffers contains.
         pub fn len(&self) -> u32 {
             self.len
         }
 
+        /// Returns `true` if this segment won't transfer any bytes.
         pub fn is_empty(&self) -> bool {
             self.len == 0
         }
 
+        /// Gets the alternate clock speed in hertz (Hz) for this segment.
         pub fn clock_speed(&self) -> u32 {
             self.speed_hz
         }
 
+        /// Sets an alternate clock speed in hertz (Hz) for this segment.
+        ///
+        /// By default, the clock speed is set to 0, which means
+        /// it will use the same value as configured for `Spi`.
         pub fn set_clock_speed(&mut self, clock_speed: u32) {
             self.speed_hz = clock_speed;
         }
 
+        /// Gets the delay in microseconds (µs) for this segment.
         pub fn delay(&self) -> u16 {
             self.delay_usecs
         }
 
+        /// Sets a delay in microseconds (µs) for this segment.
+        ///
+        /// `set_delay` adds a delay before the (optional) Slave Select change
+        /// and the next segment.
+        ///
+        /// By default, the delay is set to 0.
         pub fn set_delay(&mut self, delay: u16) {
             self.delay_usecs = delay;
         }
 
+        /// Gets the number of bits per word for this segment.
         pub fn bits_per_word(&self) -> u8 {
             self.bits_per_word
         }
 
+        /// Sets the number of bits per word for this segment.
+        ///
+        /// The Raspberry Pi currently only supports 8 bit words (or 9 bits in
+        /// LoSSI mode).
+        ///
+        /// By default, bits per word is set to 0, which means
+        /// it will use the same value as configured for `Spi`.
         pub fn set_bits_per_word(&mut self, bits_per_word: u8) {
             self.bits_per_word = bits_per_word;
         }
 
-        pub fn cs_change(&self) -> bool {
+        /// Gets the state of `ss_change` for this segment.
+        pub fn ss_change(&self) -> bool {
             self.cs_change == 1
         }
 
-        pub fn set_cs_change(&mut self, cs_change: bool) {
+        /// Sets alternate Slave Select behavior for this segment.
+        ///
+        /// If `ss_change` is set to `true`, and this is not the last
+        /// segment of the transfer, the Slave Select line will briefly
+        /// change to inactive between this segment and the next.
+        /// If this is the last segment, setting `ss_change` to true will
+        /// keep Slave Select active after the transfer ends.
+        ///
+        /// By default, `ss_change` is set to `false`.
+        pub fn set_ss_change(&mut self, cs_change: bool) {
             self.cs_change = cs_change as u8;
         }
     }
