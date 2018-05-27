@@ -8,13 +8,17 @@ RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO and SPI 
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
+## Documentation
+
+Documentation for the latest release can be found at [docs.golemparts.com/rppal](https://docs.golemparts.com/rppal). Documentation for earlier releases is stored at [docs.rs/rppal](https://docs.rs/rppal).
+
 ## Supported peripherals
 
 ### GPIO
 
 To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
 
-Features:
+#### Features
 
 * Get/set pin modes.
 * Read/write pin logic levels.
@@ -25,9 +29,34 @@ Features:
 
 _Coming in release 0.6.0._
 
-## Documentation
+#### Features
 
-Documentation for the latest release can be found at [docs.golemparts.com/rppal](https://docs.golemparts.com/rppal). Documentation for earlier releases is stored at [docs.rs/rppal](https://docs.rs/rppal).
+* SPI mode 0-3, Slave Select active-low/active-high, 8 bits per word, configurable clock speed
+* Half-duplex reads, writes, and multi-segment transfers
+* Full-duplex transfers and multi-segment transfers
+* Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
+* Reverse bit order helper function
+
+#### Unsupported SPI features
+
+Several features offered by the generic spidev interface aren't fully
+supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
+first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
+SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
+SPI_TX_DUAL/SPI_RX_DUAL (dual SPI), SPI_TX_QUAD/SPI_RX_QUAD (quad SPI),
+and any number of bits per word other than 8.
+
+If your slave device requires SPI_LSB_FIRST, you can use the
+reverse_bits function instead to reverse the bit order in software by
+converting your write buffer before sending it to the slave device, and
+your read buffer after reading any incoming data.
+
+SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
+together.
+
+SPI_NO_CS can be implemented by connecting the Slave Select pin on your
+slave device to any other available GPIO pin on the Pi, and manually
+changing it to high and low as needed.
 
 ## Usage
 
