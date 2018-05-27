@@ -87,16 +87,16 @@ pub mod spidev {
     pub const MODE_2: u8 = MODE_CPOL;
     pub const MODE_3: u8 = MODE_CPOL | MODE_CPHA;
 
-    pub const MODE_CS_HIGH: u8 = 0x04;
-    pub const MODE_LSB_FIRST: u8 = 0x08;
-    pub const MODE_3WIRE: u8 = 0x10;
-    pub const MODE_LOOP: u8 = 0x20;
-    pub const MODE_NO_CS: u8 = 0x40;
-    pub const MODE_READY: u8 = 0x80;
-    pub const MODE_TX_DUAL: u32 = 0x100;
-    pub const MODE_TX_QUAD: u32 = 0x200;
-    pub const MODE_RX_DUAL: u32 = 0x400;
-    pub const MODE_RX_QUAD: u32 = 0x800;
+    pub const MODE_CS_HIGH: u8 = 0x04; // Set SS to active high
+    pub const MODE_LSB_FIRST: u8 = 0x08; // Set bit order to LSB first
+    pub const MODE_3WIRE: u8 = 0x10; // Set bidirectional mode
+    pub const MODE_LOOP: u8 = 0x20; // Loopback mode
+    pub const MODE_NO_CS: u8 = 0x40; // Don't assert SS
+    pub const MODE_READY: u8 = 0x80; // Slave sends a ready signal
+    pub const MODE_TX_DUAL: u32 = 0x100; // Send on 2 outgoing lines
+    pub const MODE_TX_QUAD: u32 = 0x200; // Send on 4 outgoing lines
+    pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
+    pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
 
     /// -
     #[derive(Debug, PartialEq, Copy, Clone)]

@@ -73,6 +73,29 @@
 //! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
 //! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
+//!
+//! ## Unsupported SPI features
+//!
+//! Several features offered by the generic spidev interface aren't fully
+//! supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
+//! first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
+//! SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
+//! SPI_TX_DUAL/SPI_RX_DUAL (dual SPI), SPI_TX_QUAD/SPI_RX_QUAD (quad SPI),
+//! and any number of bits per word other than 8.
+//!
+//! If your slave device requires SPI_LSB_FIRST, you can use the
+//! [`reverse_bits`] function instead to reverse the bit order in software by
+//! converting your write buffer before sending it to the slave device, and
+//! your read buffer after reading any incoming data.
+//!
+//! SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
+//! together.
+//!
+//! SPI_NO_CS can be implemented by connecting the Slave Select pin on your
+//! slave device to any other available GPIO pin on the Pi, and manually
+//! changing it to high and low as needed.
+///
+/// [`reverse_bits`]: fn.reverse_bits.html
 
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -80,7 +103,7 @@ use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use ioctl;
+use ioctl::spidev as ioctl;
 
 pub use ioctl::spidev::TransferSegment;
 
@@ -90,8 +113,6 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Bidirectional mode is not supported.
-        BidirectionalNotSupported { description("bidirectional mode not supported") }
 /// The specified number of bits per word is not supported.
 ///
 /// The Raspberry Pi currently only supports 8 bit words (or 9 bits in LoSSI
@@ -253,83 +274,40 @@ impl Spi {
     ///
     /// `mode` selects the clock polarity and phase.
     pub fn new(bus: Bus, slave_select: SlaveSelect, clock_speed: u32, mode: Mode) -> Result<Spi> {
-        // We don't ask for bits per word here, because the driver only supports
-        // 8 bits (or 9 bits in LoSSI mode). Changing the SS polarity from
-        // active-low to active-high isn't supported. And the driver doesn't
-        // support the LsbFirst bit order, so we don't explicitly ask for a bit
-        // order either.
-        // Based on https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
-        // and https://www.kernel.org/doc/Documentation/spi/spidev.
+        // The following options currently aren't supported by spidev in Raspbian Stretch on the Pi:
+        //
+        // LSB_FIRST - ioctl() returns EINVAL when set
+        // 3WIRE - neither MOSI nor MISO show any outgoing data in half-duplex mode
+        // LOOP - ioctl() returns EINVAL when set
+        // NO_CS - SS is still set to active (tried both file write() and ioctl())
+        // READY - ioctl() returns EINVAL when set
+        // TX_DUAL/TX_QUAD/RX_DUAL/RX_QUAD - Not supported by BCM283x
+        // bits per word - any value other than 0 or 8 returns EINVAL when set
 
         let spidev = OpenOptions::new()
             .read(true)
             .write(true)
             .open(format!("/dev/spidev{}.{}", bus as u8, slave_select as u8))?;
 
+        // Reset all mode flags
+        unsafe {
+            ioctl::set_mode32(spidev.as_raw_fd(), mode as u32)?;
+        }
+
         let spi = Spi { spidev };
 
         // Set defaults and user-specified settings
-        spi.set_mode(mode)?;
-        spi.set_clock_speed(clock_speed)?;
         spi.set_bits_per_word(8)?;
-        spi.set_bit_order(BitOrder::MsbFirst)?;
-
-        // TODO: (re)check support for CS_HIGH, NO_CS, 3WIRE
+        spi.set_clock_speed(clock_speed)?;
 
         Ok(spi)
-    }
-
-    /// Gets the current state of bidirectional mode.
-    pub fn bidirectional(&self) -> Result<bool> {
-        let mut mode: u8 = 0;
-        unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut mode)?;
-        }
-
-        Ok((mode & ioctl::spidev::MODE_3WIRE) > 0)
-    }
-
-    /// Enables or disables bidirectional mode.
-    ///
-    /// Bidirectional mode, also known as 3-wire mode, uses 3 lines (MOMI,
-    /// SCLK, SS) instead of the regular 4. The MOSI line is used as MOMI
-    /// (Master In, Master Out), and MISO isn't needed.
-    ///
-    /// The Raspberry Pi's SPI hardware driver only supports a half-duplex
-    /// version of bidirectional mode, which means you can't read and write
-    /// at the same time.
-    pub fn set_bidirectional(&self, bidirectional: bool) -> Result<()> {
-        // From the rpi SPI doc page: Bidirectional or "3-wire" mode is supported
-        // by the spi-bcm2835 kernel module. Please note that in this mode, either
-        // the tx or rx field of the spi_transfer struct must be a NULL pointer,
-        // since only half-duplex communication is possible. Otherwise, the transfer
-        // will fail.
-
-        let mut new_mode: u8 = 0;
-        unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
-        }
-
-        if bidirectional {
-            new_mode |= ioctl::spidev::MODE_3WIRE;
-        } else {
-            new_mode &= !ioctl::spidev::MODE_3WIRE;
-        }
-
-        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
-            Ok(_) => Ok(()),
-            Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
-                Err(Error::BidirectionalNotSupported)
-            }
-            Err(e) => Err(Error::Io(e)),
-        }
     }
 
     /// Gets the bit order.
     pub fn bit_order(&self) -> Result<BitOrder> {
         let mut bit_order: u8 = 0;
         unsafe {
-            ioctl::spidev::lsb_first(self.spidev.as_raw_fd(), &mut bit_order)?;
+            ioctl::lsb_first(self.spidev.as_raw_fd(), &mut bit_order)?;
         }
 
         Ok(match bit_order {
@@ -340,17 +318,17 @@ impl Spi {
 
     /// Sets the order in which bits are shifted out and in.
     ///
-    /// By default, bit order is set to `MsbFirst`.
-    ///
     /// The Raspberry Pi currently only supports the MsbFirst bit order. If you
     /// need the LsbFirst bit order, you can use the [`reverse_bits`] function
     /// instead to reverse the bit order in software by converting your write
     /// buffer before sending it to the slave device, and your read buffer after
     /// reading any incoming data.
     ///
+    /// By default, bit order is set to `MsbFirst`.
+    ///
     /// [`reverse_bits`]: fn.reverse_bits.html
     pub fn set_bit_order(&self, bit_order: BitOrder) -> Result<()> {
-        match unsafe { ioctl::spidev::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) } {
+        match unsafe { ioctl::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) } {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::BitOrderNotSupported(bit_order))
@@ -363,7 +341,7 @@ impl Spi {
     pub fn bits_per_word(&self) -> Result<u8> {
         let mut bits_per_word: u8 = 0;
         unsafe {
-            ioctl::spidev::bits_per_word(self.spidev.as_raw_fd(), &mut bits_per_word)?;
+            ioctl::bits_per_word(self.spidev.as_raw_fd(), &mut bits_per_word)?;
         }
 
         Ok(bits_per_word)
@@ -371,12 +349,11 @@ impl Spi {
 
     /// Sets the number of bits per word.
     ///
-    /// By default, `bits_per_word` is set to 8.
+    /// The Raspberry Pi currently only supports 8 bit words.
     ///
-    /// The Raspberry Pi currently only supports 8 bit words (or 9 bits in
-    /// LoSSI mode).
+    /// By default, bits per word is set to 8.
     pub fn set_bits_per_word(&self, bits_per_word: u8) -> Result<()> {
-        match unsafe { ioctl::spidev::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) } {
+        match unsafe { ioctl::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) } {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::BitsPerWordNotSupported(bits_per_word))
@@ -389,7 +366,7 @@ impl Spi {
     pub fn clock_speed(&self) -> Result<u32> {
         let mut clock_speed: u32 = 0;
         unsafe {
-            ioctl::spidev::clock_speed(self.spidev.as_raw_fd(), &mut clock_speed)?;
+            ioctl::clock_speed(self.spidev.as_raw_fd(), &mut clock_speed)?;
         }
 
         Ok(clock_speed)
@@ -397,7 +374,7 @@ impl Spi {
 
     // Sets the clock speed frequency in herz (Hz).
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
-        match unsafe { ioctl::spidev::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
+        match unsafe { ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::ClockSpeedNotSupported(clock_speed))
@@ -410,7 +387,7 @@ impl Spi {
     pub fn mode(&self) -> Result<Mode> {
         let mut mode: u8 = 0;
         unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut mode)?;
+            ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
         }
 
         Ok(match mode & 0x03 {
@@ -425,13 +402,13 @@ impl Spi {
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
         let mut new_mode: u8 = 0;
         unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
+            ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
         }
 
         // Make sure we only replace the CPOL/CPHA bits
         new_mode = (new_mode & !0x03) | (mode as u8);
 
-        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+        match unsafe { ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) } {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::ModeNotSupported(mode))
@@ -441,13 +418,13 @@ impl Spi {
     }
 
     /// Gets the Slave Select polarity.
-    pub fn polarity(&self) -> Result<Polarity> {
+    pub fn ss_polarity(&self) -> Result<Polarity> {
         let mut mode: u8 = 0;
         unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut mode)?;
+            ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
         }
 
-        if (mode & ioctl::spidev::MODE_CS_HIGH) == 0 {
+        if (mode & ioctl::MODE_CS_HIGH) == 0 {
             Ok(Polarity::ActiveLow)
         } else {
             Ok(Polarity::ActiveHigh)
@@ -457,19 +434,19 @@ impl Spi {
     /// Sets Slave Select polarity.
     ///
     /// By default, the Slave Select polarity is set to `ActiveLow`.
-    pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
+    pub fn set_ss_polarity(&self, polarity: Polarity) -> Result<()> {
         let mut new_mode: u8 = 0;
         unsafe {
-            ioctl::spidev::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
+            ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
         }
 
-        if polarity == Polarity::ActiveLow {
-            new_mode |= ioctl::spidev::MODE_CS_HIGH;
+        if polarity == Polarity::ActiveHigh {
+            new_mode |= ioctl::MODE_CS_HIGH;
         } else {
-            new_mode &= !ioctl::spidev::MODE_CS_HIGH;
+            new_mode &= !ioctl::MODE_CS_HIGH;
         }
 
-        match unsafe { ioctl::spidev::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+        match unsafe { ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) } {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::PolarityNotSupported(polarity))
@@ -525,7 +502,7 @@ impl Spi {
         let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
 
         unsafe {
-            ioctl::spidev::transfer(self.spidev.as_raw_fd(), &[segment])?;
+            ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
         }
 
         Ok(segment.len() as usize)
@@ -534,11 +511,8 @@ impl Spi {
     /// -
     pub fn transfer_segments(&self, segments: &[TransferSegment]) -> Result<()> {
         unsafe {
-            ioctl::spidev::transfer(self.spidev.as_raw_fd(), segments)?;
+            ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
         }
-
-        // TODO: Doublecheck cs_change behavior after the final transfer segment. Some SPI drivers may have
-        // interpreted the documentation incorrectly.
 
         Ok(())
     }
