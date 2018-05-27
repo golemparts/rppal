@@ -53,7 +53,7 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
-pub mod spidev {
+pub mod spi {
     use super::*;
 
     const TYPE_SPI: c_ulong = (b'k' as c_ulong) << TYPESHIFT;
@@ -71,13 +71,12 @@ pub mod spidev {
     const REQ_RD_MAX_SPEED_HZ: c_ulong = (DIR_READ | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
     const REQ_RD_MODE_32: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE32 | SIZE_U32);
 
+    const REQ_WR_MESSAGE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MESSAGE);
     const REQ_WR_MODE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE | SIZE_U8);
     const REQ_WR_LSB_FIRST: c_ulong = (DIR_WRITE | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
     const REQ_WR_BITS_PER_WORD: c_ulong = (DIR_WRITE | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
     const REQ_WR_MAX_SPEED_HZ: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
     const REQ_WR_MODE_32: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE32 | SIZE_U32);
-
-    const REQ_WR_MESSAGE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MESSAGE);
 
     pub const MODE_CPHA: u8 = 0x01;
     pub const MODE_CPOL: u8 = 0x02;
@@ -90,7 +89,7 @@ pub mod spidev {
     pub const MODE_CS_HIGH: u8 = 0x04; // Set SS to active high
     pub const MODE_LSB_FIRST: u8 = 0x08; // Set bit order to LSB first
     pub const MODE_3WIRE: u8 = 0x10; // Set bidirectional mode
-    pub const MODE_LOOP: u8 = 0x20; // Loopback mode
+    pub const MODE_LOOP: u8 = 0x20; // Set loopback mode
     pub const MODE_NO_CS: u8 = 0x40; // Don't assert SS
     pub const MODE_READY: u8 = 0x80; // Slave sends a ready signal
     pub const MODE_TX_DUAL: u32 = 0x100; // Send on 2 outgoing lines
@@ -98,7 +97,7 @@ pub mod spidev {
     pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
     pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
 
-    /// -
+    /// TODO: Doc comments
     #[derive(Debug, PartialEq, Copy, Clone)]
     #[repr(C)]
     pub struct TransferSegment<'a, 'b> {
@@ -129,7 +128,7 @@ pub mod spidev {
     }
 
     impl<'a, 'b> TransferSegment<'a, 'b> {
-        /// -
+        /// TODO: Doc comments
         pub fn new(
             read_buffer: Option<&'a mut [u8]>,
             write_buffer: Option<&'b [u8]>,
@@ -137,7 +136,7 @@ pub mod spidev {
             TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
         }
 
-        /// -
+        /// TODO: Doc comments
         pub fn with_settings(
             read_buffer: Option<&'a mut [u8]>,
             write_buffer: Option<&'b [u8]>,
@@ -183,8 +182,10 @@ pub mod spidev {
 
         /// Returns the number of bytes that will be transferred.
         ///
-        /// If both a read buffer and write buffer are supplied, `transfer_segments` only
+        /// If both a read buffer and write buffer are supplied, [`transfer_segments`] only
         /// transfers as many bytes as the shortest of the two buffers contains.
+        ///
+        /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
         pub fn len(&self) -> u32 {
             self.len
         }
@@ -201,7 +202,7 @@ pub mod spidev {
 
         /// Sets an alternate clock speed in hertz (Hz) for this segment.
         ///
-        /// By default, the clock speed is set to 0, which means
+        /// By default, `clock_speed` is set to 0, which means
         /// it will use the same value as configured for `Spi`.
         pub fn set_clock_speed(&mut self, clock_speed: u32) {
             self.speed_hz = clock_speed;
@@ -214,10 +215,10 @@ pub mod spidev {
 
         /// Sets a delay in microseconds (µs) for this segment.
         ///
-        /// `set_delay` adds a delay before the (optional) Slave Select change
-        /// and the next segment.
+        /// `set_delay` adds a delay at the end of this segment,
+        /// before the (optional) Slave Select change.
         ///
-        /// By default, the delay is set to 0.
+        /// By default, `delay` is set to 0.
         pub fn set_delay(&mut self, delay: u16) {
             self.delay_usecs = delay;
         }
@@ -229,16 +230,15 @@ pub mod spidev {
 
         /// Sets the number of bits per word for this segment.
         ///
-        /// The Raspberry Pi currently only supports 8 bit words (or 9 bits in
-        /// LoSSI mode).
+        /// The Raspberry Pi currently only supports 8 bit words.
         ///
-        /// By default, bits per word is set to 0, which means
+        /// By default, `bits_per_word` is set to 0, which means
         /// it will use the same value as configured for `Spi`.
         pub fn set_bits_per_word(&mut self, bits_per_word: u8) {
             self.bits_per_word = bits_per_word;
         }
 
-        /// Gets the state of `ss_change` for this segment.
+        /// Gets the state of Slave Select change for this segment.
         pub fn ss_change(&self) -> bool {
             self.cs_change == 1
         }
@@ -252,8 +252,8 @@ pub mod spidev {
         /// keep Slave Select active after the transfer ends.
         ///
         /// By default, `ss_change` is set to `false`.
-        pub fn set_ss_change(&mut self, cs_change: bool) {
-            self.cs_change = cs_change as u8;
+        pub fn set_ss_change(&mut self, ss_change: bool) {
+            self.cs_change = ss_change as u8;
         }
     }
 

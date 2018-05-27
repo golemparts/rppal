@@ -38,29 +38,30 @@
 //! * MISO: BCM GPIO 9 (physical pin 21)
 //! * MOSI: BCM GPIO 10 (physical pin 19)
 //! * SCLK: BCM GPIO 11 (physical pin 23)
-//! * SS: CE0: BCM GPIO 8 (physical pin 24), CE1: BCM GPIO 7 (physical pin 26)
+//! * SS: [`Ss0`] BCM GPIO 8 (physical pin 24), [`Ss1`] BCM GPIO 7 (physical pin 26)
 //!
 //! SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
 //! to the BCM2835 documentation, using higher clock speeds on SPI1 requires
 //! additional CPU time compared to SPI0, caused by smaller FIFOs and no DMA
-//! support. SPI1 can be enabled by adding `dtoverlay=spi1-3cs` to
-//! `/boot/config.txt`. Replace `3cs` with either `2cs` or `1cs` if you only
-//! require 2 or 1 Slave Select pins. The associated pins are listed below.
+//! support. It doesn't support [`Mode1`] or [`Mode3`]. SPI1 can be enabled by
+//! adding `dtoverlay=spi1-3cs` to `/boot/config.txt`. Replace `3cs` with
+//! either `2cs` or `1cs` if you only require 2 or 1 Slave Select pins.
+//! The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 19 (physical pin 35)
 //! * MOSI: BCM GPIO 20 (physical pin 38)
 //! * SCLK: BCM GPIO 21 (physical pin 40)
-//! * SS: CE0: BCM GPIO 18 (physical pin 12), CE1: BCM GPIO 17 (physical pin 11), CE2: BCM GPIO 16 (physical pin 36)
+//! * SS: [`Ss0`] BCM GPIO 18 (physical pin 12), [`Ss1`] BCM GPIO 17 (physical pin 11), [`Ss2`] BCM GPIO 16 (physical pin 36)
 //!
-//! SPI2 shares the same characteristics as SPI1. It can be enabled by adding
-//! `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace `3cs` with either `2cs`
-//! or `1cs` if you only require 2 or 1 Slave Select pins. The associated pins
-//! are listed below.
+//! SPI2 shares the same characteristics and limitations as SPI1. It can be
+//! enabled by adding `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace
+//! `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave Select
+//! pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 40
 //! * MOSI: BCM GPIO 41
 //! * SCLK: BCM GPIO 42
-//! * SS: CE0: BCM GPIO 43, CE1: BCM GPIO 44, CE2: BCM GPIO 45
+//! * SS: [`Ss0`] BCM GPIO 43, [`Ss1`] BCM GPIO 44, [`Ss2`] BCM GPIO 45
 //!
 //! The GPIO pin numbers mentioned above are part of the default configuration.
 //! Some of their functionality can be moved to different pins. Read
@@ -94,18 +95,22 @@
 //! SPI_NO_CS can be implemented by connecting the Slave Select pin on your
 //! slave device to any other available GPIO pin on the Pi, and manually
 //! changing it to high and low as needed.
-///
-/// [`reverse_bits`]: fn.reverse_bits.html
-
+//!
+//! [`Ss0`]: enum.SlaveSelect.html
+//! [`Ss1`]: enum.SlaveSelect.html
+//! [`Ss2`]: enum.SlaveSelect.html
+//! [`Mode1`]: enum.Mode.html
+//! [`Mode3`]: enum.Mode.html
+//! [`reverse_bits`]: fn.reverse_bits.html
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use ioctl::spidev as ioctl;
+use ioctl::spi as ioctl;
 
-pub use ioctl::spidev::TransferSegment;
+pub use ioctl::spi::TransferSegment;
 
 quick_error! {
     #[derive(Debug)]
@@ -185,11 +190,12 @@ pub enum Bus {
 
 /// Slave Select pins.
 ///
-/// The Slave Select pin is used to signal which device should pay attention to
-/// the SPI bus. Slave Select is the more commonly used name for this pin, but
-/// it's also known as Chip Select or Chip Enable. The Raspberry Pi uses the name
-/// Chip Enable (CE) in some of its documentation, which is why the Slave Select
-/// pins are named Ce0, Ce1 and Ce2.
+/// Slave Select is used to signal which slave device should pay attention to
+/// the SPI bus. Slave Select (SS) is the more commonly used name, but
+/// it's also known as Chip Select (CS) or Chip Enable (CE). Throughout the Raspberry
+/// Pi's documentation, config files and BCM2835 datasheet, multiple different names
+/// are used. Any pins referred to as CE0, CE1, and CE2 or CS0, CS1, and CS2 are equivalent
+/// to `Ss0`, `Ss1`, and `Ss2`.
 ///
 /// The number of available Slave Select pins for the selected SPI bus depends
 /// on your `/boot/config.txt` configuration. More information can be found
@@ -198,9 +204,9 @@ pub enum Bus {
 /// [here]: index.html
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SlaveSelect {
-    Ce0 = 0,
-    Ce1 = 1,
-    Ce2 = 2,
+    Ss0 = 0,
+    Ss1 = 1,
+    Ss2 = 2,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -220,8 +226,14 @@ pub enum Polarity {
 /// * Mode2: CPOL 1, CPHA 0
 /// * Mode3: CPOL 1, CPHA 1
 ///
+/// The [`Spi0`] bus supports all 4 modes. [`Spi1`] and [`Spi2`] only support
+/// `Mode0` and `Mode2`.
+///
 /// More information on clock polarity and phase can be found on [Wikipedia].
 ///
+/// [`Spi0`]: enum.Bus.html
+/// [`Spi1`]: enum.Bus.html
+/// [`Spi2`]: enum.Bus.html
 /// [Wikipedia]: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Mode {
@@ -284,14 +296,22 @@ impl Spi {
         // TX_DUAL/TX_QUAD/RX_DUAL/RX_QUAD - Not supported by BCM283x
         // bits per word - any value other than 0 or 8 returns EINVAL when set
 
+        // TODO: SPI0: Check mode1,2,3
+        // TODO: SPI1: Check mode flags and transfer segment settings
+        // TODO: Verify per-segment clock speeds
+
         let spidev = OpenOptions::new()
             .read(true)
             .write(true)
             .open(format!("/dev/spidev{}.{}", bus as u8, slave_select as u8))?;
 
         // Reset all mode flags
-        unsafe {
-            ioctl::set_mode32(spidev.as_raw_fd(), mode as u32)?;
+        if let Err(e) = unsafe { ioctl::set_mode32(spidev.as_raw_fd(), mode as u32) } {
+            if e.kind() == io::ErrorKind::InvalidInput {
+                return Err(Error::ModeNotSupported(mode));
+            } else {
+                return Err(Error::Io(e));
+            }
         }
 
         let spi = Spi { spidev };
@@ -372,7 +392,7 @@ impl Spi {
         Ok(clock_speed)
     }
 
-    // Sets the clock speed frequency in herz (Hz).
+    /// Sets the clock speed frequency in herz (Hz).
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
         match unsafe { ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
             Ok(_) => Ok(()),
@@ -383,7 +403,7 @@ impl Spi {
         }
     }
 
-    // Gets the mode.
+    /// Gets the mode.
     pub fn mode(&self) -> Result<Mode> {
         let mut mode: u8 = 0;
         unsafe {
@@ -398,7 +418,7 @@ impl Spi {
         })
     }
 
-    // Sets the mode.
+    /// Sets the mode.
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
         let mut new_mode: u8 = 0;
         unsafe {
@@ -508,7 +528,15 @@ impl Spi {
         Ok(segment.len() as usize)
     }
 
-    /// -
+    /// Transfers multiple half-duplex or full-duplex segments.
+    ///
+    /// `transfer_segments` processes multiple transfers in
+    /// a single call. Each [`TransferSegment`] contains a reference
+    /// to a read buffer, a write buffer, or both, and optional
+    /// settings that override the SPI bus settings for that
+    /// specific segment.
+    ///
+    /// [`TransferSegment`]: struct.TransferSegment.html
     pub fn transfer_segments(&self, segments: &[TransferSegment]) -> Result<()> {
         unsafe {
             ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
