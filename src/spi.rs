@@ -296,10 +296,6 @@ impl Spi {
         // TX_DUAL/TX_QUAD/RX_DUAL/RX_QUAD - Not supported by BCM283x
         // bits per word - any value other than 0 or 8 returns EINVAL when set
 
-        // TODO: SPI0: Check mode1,2,3
-        // TODO: SPI1: Check mode flags and transfer segment settings
-        // TODO: Verify per-segment clock speeds
-
         let spidev = OpenOptions::new()
             .read(true)
             .write(true)

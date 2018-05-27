@@ -18,25 +18,38 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO and SPI peripherals.
-//! Support for additional peripherals will be added in future updates. The library is
-//! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
-//! Zero and Zero W.
+#![allow(dead_code)]
 
-#![recursion_limit = "128"] // Needed for the quick_error! macro
+use libc::{c_int, c_ulong};
+use std::io;
+use std::mem::size_of;
+use std::result;
 
-#[macro_use]
-extern crate enum_primitive;
-extern crate libc;
-extern crate mio;
-extern crate mio_extras;
-extern crate num;
-#[macro_use]
-extern crate quick_error;
-extern crate users;
-
-mod ioctl;
-
-pub mod gpio;
 pub mod spi;
-pub mod system;
+
+pub type Result<T> = result::Result<T, io::Error>;
+
+const NRBITS: u8 = 8;
+const TYPEBITS: u8 = 8;
+const SIZEBITS: u8 = 14;
+const DIRBITS: u8 = 2;
+
+const NRSHIFT: u8 = 0;
+const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
+const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
+const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
+
+const DIR_NONE: c_ulong = 0;
+const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
+const DIR_READ: c_ulong = 2 << DIRSHIFT;
+
+const SIZE_U8: c_ulong = (size_of::<u8>() as c_ulong) << SIZESHIFT;
+const SIZE_U32: c_ulong = (size_of::<u32>() as c_ulong) << SIZESHIFT;
+
+fn parse_retval(retval: c_int) -> Result<i32> {
+    if retval == -1 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(retval)
+    }
+}
