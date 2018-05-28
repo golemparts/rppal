@@ -209,8 +209,8 @@ pub enum SlaveSelect {
     Ss2 = 2,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Slave Select polarities.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Polarity {
     ActiveLow = 0,
     ActiveHigh = 1,
@@ -514,7 +514,7 @@ impl Spi {
     /// when the transfer completes.
     ///
     /// Returns how many bytes were transferred.
-    pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
+    pub fn transfer(&self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
         let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
 
         unsafe {
