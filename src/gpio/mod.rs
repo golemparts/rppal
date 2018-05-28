@@ -328,9 +328,16 @@ impl Gpio {
         let reg_value = self.gpio_mem.read(reg_addr);
         let mode_value: usize = ((reg_value >> ((pin % 10) * 3)) & 0b111) as usize;
 
-        let modes = [Mode::Input, Mode::Output, Mode::Alt5,
-                Mode::Alt4, Mode::Alt0, Mode::Alt1,
-                Mode::Alt2, Mode::Alt3];
+        let modes = [
+            Mode::Input,
+            Mode::Output,
+            Mode::Alt5,
+            Mode::Alt4,
+            Mode::Alt0,
+            Mode::Alt1,
+            Mode::Alt2,
+            Mode::Alt3,
+        ];
 
         if mode_value < modes.len() {
             Ok(modes[mode_value])
