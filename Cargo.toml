@@ -12,12 +12,7 @@ keywords = ["raspberry","pi","gpio","spi"]
 
 [dependencies]
 libc = "0.2"
-enum_primitive = "0.1"
 quick-error = "1.1"
 mio = "0.6"
 mio-extras = "2.0"
 users = "0.6"
-
-[dependencies.num]
-version = "0.1"
-default-features = false

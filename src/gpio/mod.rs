@@ -41,7 +41,6 @@
 
 #![allow(dead_code)]
 
-use num::FromPrimitive;
 use std::error;
 use std::fmt;
 use std::io;
@@ -144,19 +143,17 @@ quick_error! {
 /// Result type returned from methods that can have `rppal::gpio::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-enum_from_primitive! {
-    #[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 /// Pin modes.
-    pub enum Mode {
-        Input = 0b000,
-        Output = 0b001,
-        Alt0 = 0b100,
-        Alt1 = 0b101,
-        Alt2 = 0b110,
-        Alt3 = 0b111,
-        Alt4 = 0b011,
-        Alt5 = 0b010,
-    }
+pub enum Mode {
+    Input = 0b000,
+    Output = 0b001,
+    Alt0 = 0b100,
+    Alt1 = 0b101,
+    Alt2 = 0b110,
+    Alt3 = 0b111,
+    Alt4 = 0b011,
+    Alt5 = 0b010,
 }
 
 impl fmt::Display for Mode {
@@ -174,13 +171,11 @@ impl fmt::Display for Mode {
     }
 }
 
-enum_from_primitive! {
-    #[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 /// Pin logic levels.
-    pub enum Level {
-        Low = 0,
-        High = 1,
-    }
+pub enum Level {
+    Low = 0,
+    High = 1,
 }
 
 impl fmt::Display for Level {
@@ -192,14 +187,12 @@ impl fmt::Display for Level {
     }
 }
 
-enum_from_primitive! {
-    #[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 /// Built-in pull-up/pull-down resistor states.
-    pub enum PullUpDown {
-        Off = 0b00,
-        PullDown = 0b01,
-        PullUp = 0b10,
-    }
+pub enum PullUpDown {
+    Off = 0b00,
+    PullDown = 0b01,
+    PullUp = 0b10,
 }
 
 impl fmt::Display for PullUpDown {
@@ -333,10 +326,14 @@ impl Gpio {
 
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
         let reg_value = self.gpio_mem.read(reg_addr);
-        let mode_value = (reg_value >> ((pin % 10) * 3)) & 0b111;
+        let mode_value: usize = ((reg_value >> ((pin % 10) * 3)) & 0b111) as usize;
 
-        if let Some(mode) = Mode::from_u32(mode_value) {
-            Ok(mode)
+        let modes = [Mode::Input, Mode::Output, Mode::Alt5,
+                Mode::Alt4, Mode::Alt0, Mode::Alt1,
+                Mode::Alt2, Mode::Alt3];
+
+        if mode_value < modes.len() {
+            Ok(modes[mode_value])
         } else {
             Err(Error::UnknownMode(mode_value as u8))
         }

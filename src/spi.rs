@@ -277,9 +277,9 @@ pub enum BitOrder {
 /// [here]: index.html
 pub struct Spi {
     spidev: File,
-    // Temporary fix to force !Sync. Spi isn't safe for Sync because of ioctl().
-    // This avoids needing #![feature(optin_builtin_traits)] to manually add
-    // impl !Sync for Spi.
+    // The no_sync field is a workaround to force !Sync. Spi isn't safe for
+    // Sync because of ioctl() and the underlying drivers. This avoids needing
+    // #![feature(optin_builtin_traits)] to manually add impl !Sync for Spi.
     no_sync: PhantomData<*const ()>,
 }
 
