@@ -1,3 +1,7 @@
+# 0.6.0 (TBD)
+
+* Spi: Add support for SPI with half-duplex reads/writes and full-duplex multi-segment transfers.
+
 # 0.5.1 (May 19, 2018)
 
 * Gpio: Add poll_interrupts(), which waits for multiple synchronous interrupts at the same time.
