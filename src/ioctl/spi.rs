@@ -192,8 +192,8 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     /// transfers as many bytes as the shortest of the two buffers contains.
     ///
     /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
-    pub fn len(&self) -> u32 {
-        self.len
+    pub fn len(&self) -> usize {
+        self.len as usize
     }
 
     /// Returns `true` if this segment won't transfer any bytes.

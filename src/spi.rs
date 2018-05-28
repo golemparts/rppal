@@ -521,7 +521,7 @@ impl Spi {
             ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
         }
 
-        Ok(segment.len() as usize)
+        Ok(segment.len())
     }
 
     /// Transfers multiple half-duplex or full-duplex segments.
