@@ -117,8 +117,8 @@ use ioctl::spi as ioctl;
 pub use ioctl::spi::TransferSegment;
 
 quick_error! {
-    #[derive(Debug)]
 /// Errors that can occur when accessing the SPI peripherals.
+    #[derive(Debug)]
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
@@ -275,6 +275,7 @@ pub enum BitOrder {
 /// and Slave Select pins enabled. More information can be found [here].
 ///
 /// [here]: index.html
+#[derive(Debug)]
 pub struct Spi {
     spidev: File,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for

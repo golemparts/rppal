@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use std::fmt;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
@@ -38,8 +39,8 @@ pub use gpio::sysfs::Direction;
 pub use gpio::{Level, Trigger};
 
 quick_error! {
-    #[derive(Debug)]
 /// Errors that can occur while working with interrupts.
+    #[derive(Debug)]
     pub enum Error {
 /// Synchronous interrupt isn't initialized.
         NotInitialized { description("not initialized") }
@@ -69,6 +70,7 @@ pub type Result<T> = result::Result<T, Error>;
 const TOKEN_RX: usize = 0;
 const TOKEN_PIN: usize = 1;
 
+#[derive(Debug)]
 struct Interrupt {
     pin: u8,
     trigger: Trigger,
@@ -145,12 +147,14 @@ impl Evented for Interrupt {
     }
 }
 
+#[derive(Debug)]
 struct TriggerStatus {
     interrupt: Option<Interrupt>,
     triggered: bool,
     level: Level,
 }
 
+#[derive(Debug)]
 pub struct EventLoop {
     poll: Poll,
     events: Events,
@@ -377,5 +381,15 @@ impl Drop for AsyncInterrupt {
         // Unexport the pin here, because we can't rely on the thread
         // living long enough to unexport it.
         sysfs::unexport(self.pin).ok();
+    }
+}
+
+impl fmt::Debug for AsyncInterrupt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("AsyncInterrupt")
+            .field("pin", &self.pin)
+            .field("poll_thread", &self.poll_thread)
+            .field("tx", &"")
+            .finish()
     }
 }

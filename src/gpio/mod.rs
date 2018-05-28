@@ -66,8 +66,8 @@ const GPIO_OFFSET_GPPUD: usize = 37;
 const GPIO_OFFSET_GPPUDCLK: usize = 38;
 
 quick_error! {
-    #[derive(Debug)]
 /// Errors that can occur when accessing the GPIO peripheral.
+    #[derive(Debug)]
     pub enum Error {
 /// Invalid GPIO pin number.
 ///
@@ -143,8 +143,8 @@ quick_error! {
 /// Result type returned from methods that can have `rppal::gpio::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Pin modes.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Mode {
     Input = 0b000,
     Output = 0b001,
@@ -171,8 +171,8 @@ impl fmt::Display for Mode {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Pin logic levels.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Level {
     Low = 0,
     High = 1,
@@ -187,8 +187,8 @@ impl fmt::Display for Level {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Built-in pull-up/pull-down resistor states.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum PullUpDown {
     Off = 0b00,
     PullDown = 0b01,
@@ -239,6 +239,7 @@ impl PinState {
 }
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
+#[derive(Debug)]
 pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,

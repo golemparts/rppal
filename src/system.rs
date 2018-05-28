@@ -36,8 +36,8 @@ const PERIPHERAL_BASE_RPI2: u32 = 0x3f_000_000;
 const GPIO_OFFSET: u32 = 0x200_000;
 
 quick_error! {
-    #[derive(Debug)]
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
+    #[derive(Debug)]
     pub enum Error {
 /// Unknown model.
 ///
@@ -55,8 +55,8 @@ quick_error! {
 /// Result type returned from methods that can have `system::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Identifiable Raspberry Pi models.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
@@ -89,8 +89,8 @@ impl fmt::Display for Model {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
 /// Identifiable Raspberry Pi SoCs.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SoC {
     Bcm2835,
     Bcm2836,
@@ -114,6 +114,7 @@ impl fmt::Display for SoC {
 }
 
 /// Retrieves Raspberry Pi device information.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct DeviceInfo {
     model: Model,
     soc: SoC,

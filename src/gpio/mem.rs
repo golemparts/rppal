@@ -34,6 +34,7 @@ use system::DeviceInfo;
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
 const GPIO_MEM_SIZE: usize = 164;
 
+#[derive(Debug)]
 pub struct GpioMem {
     mapped: bool,
     mem_ptr: *mut u32,
