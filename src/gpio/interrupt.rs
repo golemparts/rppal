@@ -389,7 +389,7 @@ impl fmt::Debug for AsyncInterrupt {
         f.debug_struct("AsyncInterrupt")
             .field("pin", &self.pin)
             .field("poll_thread", &self.poll_thread)
-            .field("tx", &"")
+            .field("tx", &())
             .finish()
     }
 }
