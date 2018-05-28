@@ -102,9 +102,13 @@
 //! [`Mode1`]: enum.Mode.html
 //! [`Mode3`]: enum.Mode.html
 //! [`reverse_bits`]: fn.reverse_bits.html
+
+#![allow(dead_code)]
+
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
+use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
@@ -273,6 +277,10 @@ pub enum BitOrder {
 /// [here]: index.html
 pub struct Spi {
     spidev: File,
+    // Temporary fix to force !Sync. Spi isn't safe for Sync because of ioctl().
+    // This avoids needing #![feature(optin_builtin_traits)] to manually add
+    // impl !Sync for Spi.
+    no_sync: PhantomData<*const ()>,
 }
 
 impl Spi {
@@ -310,7 +318,10 @@ impl Spi {
             }
         }
 
-        let spi = Spi { spidev };
+        let spi = Spi {
+            spidev,
+            no_sync: PhantomData,
+        };
 
         // Set defaults and user-specified settings
         spi.set_bits_per_word(8)?;
@@ -541,3 +552,7 @@ impl Spi {
         Ok(())
     }
 }
+
+// Send is safe for Spi, but we're marked !Send because of the dummy pointer that's
+// needed to force !Sync.
+unsafe impl Send for Spi {}
