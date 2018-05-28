@@ -23,7 +23,10 @@
 //! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
 //! Zero and Zero W.
 
-#![recursion_limit = "128"] // Needed for the quick_error! macro
+// Used by rustdoc to link other crates to rppal's docs
+#![doc(html_root_url = "https://docs.rs/rppal/0.5.1")]
+// Needed for the quick_error! macro
+#![recursion_limit = "128"]
 
 extern crate libc;
 extern crate mio;
