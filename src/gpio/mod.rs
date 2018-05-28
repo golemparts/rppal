@@ -261,7 +261,7 @@ impl Gpio {
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
-        try!(gpio.gpio_mem.open());
+        gpio.gpio_mem.open()?;
 
         // Save the original pin states, so we can reset them with cleanup()
         for n in 0..GPIO_MAX_PINS {
