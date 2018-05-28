@@ -67,7 +67,7 @@ pub const MODE_TX_QUAD: u32 = 0x200; // Send on 4 outgoing lines
 pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
 pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
 
-/// TODO: Doc comments
+/// Part of a multi-segment transfer
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct TransferSegment<'a, 'b> {
@@ -98,7 +98,21 @@ pub struct TransferSegment<'a, 'b> {
 }
 
 impl<'a, 'b> TransferSegment<'a, 'b> {
-    /// TODO: Doc comments
+    /// Creates a new `TransferSegment` with the default settings.
+    ///
+    /// If `read_buffer` is set to `None`, any incoming data is discarded.
+    ///
+    /// If `write_buffer` is set to `None`, a zero-value byte will be sent for every
+    /// byte read.
+    ///
+    /// If both `read_buffer` and `write_buffer` are specified, [`transfer_segments`]
+    /// will only transfer as many bytes as the shortest of the two buffers contains.
+    ///
+    /// By default, all customizable settings are set to 0, which means it uses
+    /// the same values as set for [`Spi`].
+    ///
+    /// [`transfer_segments`]: index.html
+    /// [`Spi`]: index.html
     pub fn new(
         read_buffer: Option<&'a mut [u8]>,
         write_buffer: Option<&'b [u8]>,
@@ -106,14 +120,36 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
     }
 
-    /// TODO: Doc comments
+    /// Creates a new `TransferSegment` with the specified settings.
+    ///
+    /// These settings override the values set for [`Spi`], and are only used
+    /// for this specific segment.
+    ///
+    /// If `read_buffer` is set to `None`, any incoming data is discarded.
+    ///
+    /// If `write_buffer` is set to `None`, a zero-value byte will be sent for every
+    /// byte read.
+    ///
+    /// If both `read_buffer` and `write_buffer` are specified, [`transfer_segments`]
+    /// will only transfer as many bytes as the shortest of the two buffers contains.
+    ///
+    /// `clock_speed` sets an alternate clock speed in hertz (Hz).
+    ///
+    /// `delay` sets a delay in microseconds (µs).
+    ///
+    /// `bits_per_word` sets the number of bits per word. The Raspberry Pi currently only supports 8 bits per word.
+    ///
+    /// `ss_change` changes how Slave Select behaves in between two segments (toggle SS), or after the final segment (keep SS active).
+    ///
+    /// [`transfer_segments`]: index.html
+    /// [`Spi`]: index.html
     pub fn with_settings(
         read_buffer: Option<&'a mut [u8]>,
         write_buffer: Option<&'b [u8]>,
         clock_speed: u32,
         delay: u16,
         bits_per_word: u8,
-        cs_change: bool,
+        ss_change: bool,
     ) -> TransferSegment<'a, 'b> {
         // Len will contain the length of the shortest of the supplied buffers
         let mut len: u32 = 0;
@@ -141,7 +177,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
             speed_hz: clock_speed,
             delay_usecs: delay,
             bits_per_word,
-            cs_change: cs_change as u8,
+            cs_change: ss_change as u8,
             tx_nbits: 0,
             rx_nbits: 0,
             pad: 0,
