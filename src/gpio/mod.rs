@@ -232,6 +232,14 @@ pub struct Gpio {
 
 impl Gpio {
     /// Constructs a new `Gpio`.
+    ///
+    /// Only a single instance of `Gpio` can exist at any time. Constructing
+    /// another instance before the existing one goes out of scope will return
+    /// an [`Error::InstanceExists`]. You can share a `Gpio` instance with other
+    /// threads using channels, cloning an `Arc<Mutex<Gpio>>` or globally sharing
+    /// a `Mutex<Gpio>`.
+    ///
+    /// [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
     pub fn new() -> Result<Gpio> {
         unsafe {
             if GPIO_INSTANCED.load(Ordering::SeqCst) {
