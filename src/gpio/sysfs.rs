@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use std::ffi::CString;
 use std::fs;
 use std::fs::File;
 use std::io;
@@ -28,7 +29,7 @@ use std::result;
 use std::thread;
 use std::time::Duration;
 
-use users;
+use libc;
 
 use gpio::Trigger;
 
@@ -43,6 +44,21 @@ pub enum Direction {
     High,
 }
 
+// Find group ID for specified group name
+fn group_name_to_gid(name: &str) -> Option<u32> {
+    if let Ok(name_cstr) = CString::new(name) {
+        unsafe {
+            let group_ptr = libc::getgrnam(name_cstr.as_ptr());
+
+            if !group_ptr.is_null() {
+                return Some((*group_ptr).gr_gid);
+            }
+        }
+    }
+
+    None
+}
+
 pub fn export(pin: u8) -> Result<()> {
     // Only export if the pin isn't already exported
     if !Path::new(&format!("/sys/class/gpio/gpio{}", pin)).exists() {
@@ -52,8 +68,8 @@ pub fn export(pin: u8) -> Result<()> {
     // The symlink created by exporting a pin starts off owned by root:root. There's
     // a short delay before the group is changed to gpio. Since rppal should work for
     // non-root users, we'll wait for max. 1s for the group to change to gpio.
-    let gid_gpio = if let Some(group) = users::get_group_by_name("gpio") {
-        group.gid()
+    let gid_gpio = if let Some(gid) = group_name_to_gid("gpio") {
+        gid
     } else {
         0
     };
