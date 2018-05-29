@@ -44,6 +44,7 @@
 use std::fmt;
 use std::io;
 use std::result;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -61,6 +62,9 @@ const GPIO_OFFSET_GPCLR: usize = 10;
 const GPIO_OFFSET_GPLEV: usize = 13;
 const GPIO_OFFSET_GPPUD: usize = 37;
 const GPIO_OFFSET_GPPUDCLK: usize = 38;
+
+// Used to limit Gpio to a single instance
+static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
 
 quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
@@ -90,7 +94,19 @@ quick_error! {
 /// privileged user through `sudo`. A better solution that doesn't require `sudo` would be
 /// to upgrade to a version of Raspbian that implements `/dev/gpiomem`.
         PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
-/// GPIO isn't initialized.
+/// An instance of Gpio already exists.
+///
+/// Multiple instances of `Gpio` can cause race conditions or pin configuration issues when
+/// several threads write to the same register simultaneously. While other applications
+/// can't be prevented from writing to the GPIO registers at the same time, limiting `Gpio`
+/// to a single instance will at least make the Rust interface less error-prone.
+///
+/// If you need to access `Gpio` from multiple threads, you can either send your `Gpio`
+/// instance to another thread using `std::sync::mpsc::channel`, or clone it wrapped in an
+/// `Arc` and a `Mutex`. Although discouraged, you could also share it globally
+/// wrapped in a `Mutex` using the `lazy_static` crate.
+        InstanceExists { description("an instance of Gpio already exists") }
+/// Gpio isn't initialized.
 ///
 /// You should normally only see this error when you call a method after
 /// running [`cleanup`].
@@ -217,6 +233,12 @@ pub struct Gpio {
 impl Gpio {
     /// Constructs a new `Gpio`.
     pub fn new() -> Result<Gpio> {
+        unsafe {
+            if GPIO_INSTANCED.load(Ordering::SeqCst) {
+                return Err(Error::InstanceExists);
+            }
+        }
+
         let mut gpio = Gpio {
             initialized: true,
             clear_on_drop: true,
@@ -239,6 +261,10 @@ impl Gpio {
         // Initialize sync_interrupts while circumventing the Copy/Clone requirement
         for _ in 0..gpio.async_interrupts.capacity() {
             gpio.async_interrupts.push(None);
+        }
+
+        unsafe {
+            GPIO_INSTANCED.store(true, Ordering::SeqCst);
         }
 
         Ok(gpio)
@@ -576,6 +602,10 @@ impl Drop for Gpio {
     fn drop(&mut self) {
         if self.clear_on_drop {
             self.cleanup();
+        }
+
+        unsafe {
+            GPIO_INSTANCED.store(false, Ordering::SeqCst);
         }
     }
 }
