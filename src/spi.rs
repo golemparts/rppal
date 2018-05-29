@@ -105,6 +105,7 @@
 
 #![allow(dead_code)]
 
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
@@ -275,7 +276,6 @@ pub enum BitOrder {
 /// and Slave Select pins enabled. More information can be found [here].
 ///
 /// [here]: index.html
-#[derive(Debug)]
 pub struct Spi {
     spidev: File,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for
@@ -557,3 +557,9 @@ impl Spi {
 // Send is safe for Spi, but we're marked !Send because of the dummy pointer that's
 // needed to force !Sync.
 unsafe impl Send for Spi {}
+
+impl fmt::Debug for Spi {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Spi").field("spidev", &self.spidev).finish()
+    }
+}

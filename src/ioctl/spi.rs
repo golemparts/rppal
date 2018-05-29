@@ -21,6 +21,7 @@
 #![allow(dead_code)]
 
 use libc::{c_int, c_ulong, ioctl};
+use std::fmt;
 use std::marker;
 use std::mem::size_of;
 
@@ -68,7 +69,7 @@ pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
 pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
 
 /// Part of a multi-segment transfer
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct TransferSegment<'a, 'b> {
     // Pointer to write buffer, or 0.
@@ -260,6 +261,23 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     /// By default, `ss_change` is set to `false`.
     pub fn set_ss_change(&mut self, ss_change: bool) {
         self.cs_change = ss_change as u8;
+    }
+}
+
+impl<'a, 'b> fmt::Debug for TransferSegment<'a, 'b> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("TransferSegment")
+            .field("tx_buf", &self.tx_buf)
+            .field("rx_buf", &self.rx_buf)
+            .field("len", &self.len)
+            .field("speed_hz", &self.speed_hz)
+            .field("delay_usecs", &self.delay_usecs)
+            .field("bits_per_word", &self.bits_per_word)
+            .field("cs_change", &self.cs_change)
+            .field("tx_nbits", &self.tx_nbits)
+            .field("rx_nbits", &self.rx_nbits)
+            .field("pad", &self.pad)
+            .finish()
     }
 }
 

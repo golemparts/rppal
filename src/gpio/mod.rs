@@ -239,7 +239,6 @@ impl PinState {
 }
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
-#[derive(Debug)]
 pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,
@@ -607,5 +606,18 @@ impl Drop for Gpio {
         if self.clear_on_drop {
             self.cleanup();
         }
+    }
+}
+
+impl fmt::Debug for Gpio {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Gpio")
+            .field("initialized", &self.initialized)
+            .field("clear_on_drop", &self.clear_on_drop)
+            .field("gpio_mem", &self.gpio_mem)
+            .field("orig_pin_state", &format_args!("{{ .. }}"))
+            .field("sync_interrupts", &format_args!("{{ .. }}"))
+            .field("async_interrupts", &format_args!("{{ .. }}"))
+            .finish()
     }
 }
