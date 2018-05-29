@@ -16,7 +16,7 @@ Documentation for the latest release can be found at [docs.golemparts.com/rppal]
 
 ### GPIO
 
-To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO pin interrupts are controlled using the sysfs interface.
+To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the sysfs interface.
 
 #### Features
 
@@ -29,15 +29,17 @@ To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directl
 
 _Coming in release 0.6.0._
 
+RPPAL accesses the SPI peripheral through the spidev device interface.
+
 #### Features
 
-* SPI mode 0-3, Slave Select active-low/active-high, 8 bits per word, configurable clock speed
+* SPI master, mode 0-3, Slave Select active-low/active-high, 8 bits per word, configurable clock speed
 * Half-duplex reads, writes, and multi-segment transfers
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
 
-#### Unsupported SPI features
+#### Unsupported features
 
 Several features offered by the generic spidev interface aren't fully
 supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
@@ -47,9 +49,7 @@ SPI_TX_DUAL/SPI_RX_DUAL (dual SPI), SPI_TX_QUAD/SPI_RX_QUAD (quad SPI),
 and any number of bits per word other than 8.
 
 If your slave device requires SPI_LSB_FIRST, you can use the
-reverse_bits function instead to reverse the bit order in software by
-converting your write buffer before sending it to the slave device, and
-your read buffer after reading any incoming data.
+`reverse_bits` function instead to reverse the bit order in software.
 
 SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
 together.

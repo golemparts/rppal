@@ -75,7 +75,7 @@
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
 //! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
 //!
-//! ## Unsupported SPI features
+//! ## Unsupported features
 //!
 //! Several features offered by the generic spidev interface aren't fully
 //! supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
@@ -85,9 +85,7 @@
 //! and any number of bits per word other than 8.
 //!
 //! If your slave device requires SPI_LSB_FIRST, you can use the
-//! [`reverse_bits`] function instead to reverse the bit order in software by
-//! converting your write buffer before sending it to the slave device, and
-//! your read buffer after reading any incoming data.
+//! [`reverse_bits`] function instead to reverse the bit order in software.
 //!
 //! SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
 //! together.
