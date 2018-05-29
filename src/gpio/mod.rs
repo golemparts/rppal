@@ -41,7 +41,6 @@
 
 #![allow(dead_code)]
 
-use std::error;
 use std::fmt;
 use std::io;
 use std::result;
@@ -79,53 +78,18 @@ quick_error! {
 ///
 /// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi's SoC.
         UnknownSoC { description("unknown SoC") }
-/// Unable to find `/dev/gpiomem` in the filesystem.
-///
-/// Try upgrading to a more recent version of Raspbian (or
-/// equivalent) that implements `/dev/gpiomem`.
-        DevGpioMemNotFound { description("/dev/gpiomem not found") }
-/// Permission denied when opening `/dev/gpiomem` for read/write access.
-///
-/// Make sure the user has read and write access to `/dev/gpiomem`.
-/// Common causes are either incorrect file permissions on
-/// `/dev/gpiomem`, or the user isn't part of the gpio group.
-        DevGpioMemPermissionDenied { description("/dev/gpiomem insufficient permissions") }
-/// `/dev/gpiomem` IO error.
-        DevGpioMemIoError(err: io::Error) {
-            description(err.description())
-            display("/dev/gpiomem IO error ({})", error::Error::description(err))
-            cause(err)
-        }
-/// Unable to memory-map `/dev/gpiomem`.
-        DevGpioMemMapFailed { description("/dev/gpiomem map failed") }
-/// Unable to find `/dev/mem` in the filesystem.
-        DevMemNotFound { description("/dev/mem not found") }
-/// Permission denied when opening `/dev/mem` for read/write access.
-///
-/// Getting read and write access to `/dev/mem` is typically
-/// accomplished by executing the program as a privileged user through
-/// `sudo`. A better solution that doesn't require `sudo` would be to
-/// upgrade to a version of Raspbian that implements `/dev/gpiomem`.
-        DevMemPermissionDenied { description("/dev/mem insufficient permissions") }
-/// `/dev/mem` IO error.
-        DevMemIoError(err: io::Error) {
-            description(err.description())
-            display("/dev/mem IO error ({})", error::Error::description(err))
-            cause(err)
-        }
-/// Unable to memory-map `/dev/mem`.
-        DevMemMapFailed { description("/dev/mem map failed") }
-/// Permission denied when opening both `/dev/gpiomem` and `/dev/mem` for read/write access.
+/// Permission denied when opening `/dev/gpiomem` and/or `/dev/mem` for read/write access.
 ///
 /// Make sure the user has read and write access to `/dev/gpiomem`.
 /// Common causes are either incorrect file permissions on `/dev/gpiomem`, or
-/// the user isn't part of the gpio group.
+/// the user isn't part of the `gpio` group. If `/dev/gpiomem` is missing, upgrade to a more
+/// recent version of Raspbian.
 ///
-/// Getting read and write access to `/dev/mem` is typically
-/// accomplished by executing the program as a privileged user through
-/// `sudo`. A better solution that doesn't require `sudo` would be to
-/// upgrade to a version of Raspbian that implements `/dev/gpiomem`.
-        PermissionDenied { description("/dev/gpiomem and /dev/mem insufficient permissions") }
+/// `/dev/mem` is a fallback when `/dev/gpiomem` can't be accessed. Getting read and write
+/// access to `/dev/mem` is typically accomplished by executing the program as a
+/// privileged user through `sudo`. A better solution that doesn't require `sudo` would be
+/// to upgrade to a version of Raspbian that implements `/dev/gpiomem`.
+        PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
 /// GPIO isn't initialized.
 ///
 /// You should normally only see this error when you call a method after

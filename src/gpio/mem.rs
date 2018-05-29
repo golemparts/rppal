@@ -53,27 +53,18 @@ impl GpioMem {
             return Ok(());
         }
 
-        // Try /dev/gpiomem first. Report back any errors the user can fix,
-        // otherwise try /dev/mem instead.
+        // Try /dev/gpiomem first. If that fails, try /dev/mem instead. If neither works,
+        // report back the error that's the most relevant.
         self.mem_ptr = match self.map_devgpiomem() {
             Ok(ptr) => ptr,
-            Err(gpiomem_err) => {
-                match self.map_devmem() {
-                    Ok(ptr) => ptr,
-                    // Special case when both /dev/gpiomem and /dev/mem have permission issues
-                    Err(e @ Error::DevMemPermissionDenied) => match gpiomem_err {
-                        Error::DevGpioMemPermissionDenied => {
-                            return Err(Error::PermissionDenied);
-                        }
-                        _ => {
-                            return Err(e);
-                        }
-                    },
-                    Err(e) => {
-                        return Err(e);
-                    }
+            Err(gpiomem_err) => match self.map_devmem() {
+                Ok(ptr) => ptr,
+                Err(Error::Io(ref e)) if e.kind() == io::ErrorKind::PermissionDenied => {
+                    return Err(Error::PermissionDenied)
                 }
-            }
+                Err(Error::UnknownSoC) => return Err(Error::UnknownSoC),
+                _ => return Err(gpiomem_err),
+            },
         };
 
         self.mapped = true;
@@ -92,12 +83,8 @@ impl GpioMem {
             .custom_flags(libc::O_SYNC)
             .open("/dev/gpiomem")
         {
-            Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => return Err(Error::DevGpioMemNotFound),
-                io::ErrorKind::PermissionDenied => return Err(Error::DevGpioMemPermissionDenied),
-                _ => return Err(Error::DevGpioMemIoError(e)),
-            },
             Ok(file) => file,
+            Err(e) => return Err(Error::Io(e)),
         };
 
         // Memory-map /dev/gpiomem at offset 0
@@ -113,7 +100,7 @@ impl GpioMem {
         };
 
         if gpiomem_ptr == libc::MAP_FAILED {
-            return Err(Error::DevGpioMemMapFailed);
+            return Err(Error::Io(io::Error::last_os_error()));
         }
 
         Ok(gpiomem_ptr as *mut u32)
@@ -132,12 +119,8 @@ impl GpioMem {
             .custom_flags(libc::O_SYNC)
             .open("/dev/mem")
         {
-            Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => return Err(Error::DevMemNotFound),
-                io::ErrorKind::PermissionDenied => return Err(Error::DevMemPermissionDenied),
-                _ => return Err(Error::DevMemIoError(e)),
-            },
             Ok(file) => file,
+            Err(e) => return Err(Error::Io(e)),
         };
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
@@ -153,7 +136,7 @@ impl GpioMem {
         };
 
         if mem_ptr == libc::MAP_FAILED {
-            return Err(Error::DevMemMapFailed);
+            return Err(Error::Io(io::Error::last_os_error()));
         }
 
         Ok(mem_ptr as *mut u32)

@@ -1,7 +1,8 @@
 # 0.6.0 (TBD)
 
-* Gpio: (Breaking change) Remove InterruptError. Merge remaining errors with gpio::Error.
-* Gpio: (Breaking change) Change poll_interrupt() and poll_interrupts() return value to Ok(Option) on success, with Some() indicating an interrupt triggered, and None indicating a timeout occurred.
+* Gpio: (Breaking change) Remove InterruptError. Merge remaining errors with Error.
+* Gpio: (Breaking change) Replace all DevGpioMem and DevMem errors with Error::PermissionDenied and Error::Io.
+* Gpio: (Breaking change) Change the return value for poll_interrupt() and poll_interrupts() to Ok(Option) on success, with Some() indicating an interrupt triggered, and None indicating a timeout occurred.
 * Spi: Add support for SPI with half-duplex reads/writes and full-duplex multi-segment transfers.
 
 # 0.5.1 (May 19, 2018)
