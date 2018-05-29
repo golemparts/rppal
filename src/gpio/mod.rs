@@ -52,8 +52,6 @@ mod interrupt;
 mod mem;
 mod sysfs;
 
-pub use self::interrupt::Error as InterruptError;
-
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
 const GPIO_MAX_PINS: u8 = 54;
@@ -135,8 +133,12 @@ quick_error! {
 ///
 /// [`cleanup`]: struct.Gpio.html#method.cleanup
         NotInitialized { description("not initialized") }
-/// Interrupt error.
-        Interrupt(err: InterruptError) { description(err.description()) from() }
+/// IO error.
+        Io(err: io::Error) { description(err.description()) from() }
+/// Disconnected while communicating with the interrupt polling thread.
+        ChannelDisconnected { description("channel has disconnected") }
+/// Interrupt polling thread panicked.
+        ThreadPanic { description("interrupt polling thread panicked") }
     }
 }
 
@@ -488,21 +490,27 @@ impl Gpio {
     /// Setting `reset` to `true` clears any cached trigger events for the selected pin.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
-    /// for interrupt trigger events, after which an [`Err(Error::Interrupt(InterruptError::TimeOut))`] is returned.
+    /// for interrupt trigger events, after which an [`Ok(None))`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    /// [`Err(Error::Interrupt(InterruptError::TimeOut))`]: enum.Error.html
     pub fn poll_interrupt(
         &mut self,
         pin: u8,
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Level> {
-        Ok(self.poll_interrupts(&[pin], reset, timeout)?.1)
+    ) -> Result<Option<Level>> {
+        match self.poll_interrupts(&[pin], reset, timeout) {
+            Ok(opt) => if let Some(trigger) = opt {
+                Ok(Some(trigger.1))
+            } else {
+                Ok(None)
+            },
+            Err(e) => Err(e),
+        }
     }
 
     /// Blocks until a synchronous interrupt is triggered on any of the selected pins, or a timeout occurs.
@@ -515,25 +523,24 @@ impl Gpio {
     /// Setting `reset` to `true` clears any cached trigger events for the selected pins.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
-    /// for interrupt trigger events, after which an [`Err(Error::Interrupt(InterruptError::TimeOut))`] is returned.
+    /// for interrupt trigger events, after which an [`Ok(None))`] is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
-    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts` returns a
-    /// tuple containing the corresponding pin number and logic level. If multiple events trigger at
-    /// the same time, only the first one is returned. The remaining events are cached and will be returned
+    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts` returns
+    /// `Ok((u8, Level))` containing the corresponding pin number and logic level. If multiple events trigger
+    /// at the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time `poll_interrupts` is called.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
     /// differ from the logic level that actually triggered the interrupt.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    /// [`Err(Error::Interrupt(InterruptError::TimeOut))`]: enum.Error.html
     pub fn poll_interrupts(
         &mut self,
         pins: &[u8],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<(u8, Level)> {
+    ) -> Result<Option<(u8, Level)>> {
         if !self.initialized {
             return Err(Error::NotInitialized);
         }

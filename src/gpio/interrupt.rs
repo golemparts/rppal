@@ -23,7 +23,6 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use std::os::unix::io::AsRawFd;
-use std::result;
 use std::sync::mpsc::TryRecvError;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -34,38 +33,16 @@ use mio::{Events, Poll, PollOpt, Ready, Token};
 use mio_extras::channel;
 
 use gpio::sysfs;
-
-pub use gpio::sysfs::Direction;
-pub use gpio::{Level, Trigger};
-
-quick_error! {
-/// Errors that can occur while working with interrupts.
-    #[derive(Debug)]
-    pub enum Error {
-/// Synchronous interrupt isn't initialized.
-        NotInitialized { description("not initialized") }
-/// Time out.
-        TimeOut { description("interrupt polling timed out while waiting for a trigger") }
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-/// Disconnected while sending a control message to the interrupt polling thread.
-        SendDisconnected { description("receiving half of the channel has disconnected") }
-/// Interrupt polling thread panicked.
-        ThreadPanic { description("interrupt polling thread panicked") }
-    }
-}
+use gpio::{Error, Level, Result, Trigger};
 
 impl<T> From<channel::SendError<T>> for Error {
     fn from(err: channel::SendError<T>) -> Error {
         match err {
             channel::SendError::Io(e) => Error::Io(e),
-            channel::SendError::Disconnected(_) => Error::SendDisconnected,
+            channel::SendError::Disconnected(_) => Error::ChannelDisconnected,
         }
     }
 }
-
-/// Result type returned from methods that can have `rppal::gpio::interrupt::Error`s.
-pub type Result<T> = result::Result<T, Error>;
 
 const TOKEN_RX: usize = 0;
 const TOKEN_PIN: usize = 1;
@@ -82,7 +59,7 @@ impl Interrupt {
         // Export the GPIO pin so we can configure it through sysfs, set its mode to
         // input, and set the trigger type.
         sysfs::export(pin)?;
-        sysfs::set_direction(pin, Direction::In)?;
+        sysfs::set_direction(pin, sysfs::Direction::In)?;
         sysfs::set_edge(pin, trigger)?;
 
         Ok(Interrupt {
@@ -186,10 +163,10 @@ impl EventLoop {
         pins: &[u8],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<(u8, Level)> {
+    ) -> Result<Option<(u8, Level)>> {
         for pin in pins {
             if *pin as usize >= self.trigger_status.capacity() {
-                return Err(Error::NotInitialized);
+                return Err(Error::InvalidPin(*pin));
             }
 
             // Did we cache any trigger events during the previous poll?
@@ -197,7 +174,7 @@ impl EventLoop {
                 self.trigger_status[*pin as usize].triggered = false;
 
                 if !reset {
-                    return Ok((*pin, self.trigger_status[*pin as usize].level));
+                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
                 }
             }
 
@@ -216,7 +193,7 @@ impl EventLoop {
 
             // No events means a timeout occurred
             if self.events.is_empty() {
-                return Err(Error::TimeOut);
+                return Ok(None);
             }
 
             for event in &self.events {
@@ -240,7 +217,7 @@ impl EventLoop {
             for pin in pins {
                 if self.trigger_status[*pin as usize].triggered {
                     self.trigger_status[*pin as usize].triggered = false;
-                    return Ok((*pin, self.trigger_status[*pin as usize].level));
+                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
                 }
             }
 
@@ -250,7 +227,7 @@ impl EventLoop {
             // the requested timeout.
             if let Some(t) = timeout {
                 if now.elapsed() > t {
-                    return Err(Error::TimeOut);
+                    return Ok(None);
                 }
             }
         }
