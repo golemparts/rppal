@@ -1,6 +1,6 @@
 [package]
 name = "rppal"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
 description = "Interface for the Raspberry Pi's GPIO and SPI peripherals."
 documentation = "https://docs.golemparts.com/rppal"
