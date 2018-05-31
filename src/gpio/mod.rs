@@ -22,7 +22,7 @@
 //!
 //! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
 //! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
-//! GPIO pin interrupts are controlled using the sysfs interface.
+//! GPIO interrupts are controlled using the sysfs interface.
 //!
 //! On a typical up-to-date Raspbian installation, any user that's part of the
 //! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
@@ -36,8 +36,20 @@
 //! drop methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
 //!
+//! Only a single instance of [`Gpio`] can exist at any time. Multiple instances of [`Gpio`]
+//! can cause race conditions or pin configuration issues when several threads write to
+//! the same register simultaneously. While other applications can't be prevented from
+//! writing to the GPIO registers at the same time, limiting [`Gpio`] to a single instance
+//! will at least make the Rust interface less error-prone.
+//!
+//! Constructing another instance before the existing one goes out of scope will return
+//! an [`Error::InstanceExists`]. You can share a [`Gpio`] instance with other
+//! threads using channels, cloning an `Arc<Mutex<Gpio>>` or globally sharing
+//! a `Mutex<Gpio>`.
+//!
 //! [`Gpio`]: struct.Gpio.html
 //! [`set_clear_on_drop(false)`]: struct.Gpio.html#method.set_clear_on_drop
+//! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
 #![allow(dead_code)]
 
@@ -72,7 +84,7 @@ quick_error! {
     pub enum Error {
 /// Invalid GPIO pin number.
 ///
-/// The GPIO pin number is not accessible on this Raspberry Pi model.
+/// The GPIO pin number is not available on this Raspberry Pi model.
         InvalidPin(pin: u8) { description("invalid GPIO pin number") }
 /// Unknown GPIO pin mode.
 ///
@@ -94,19 +106,18 @@ quick_error! {
 /// privileged user through `sudo`. A better solution that doesn't require `sudo` would be
 /// to upgrade to a version of Raspbian that implements `/dev/gpiomem`.
         PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
-/// An instance of Gpio already exists.
+/// An instance of [`Gpio`] already exists.
 ///
-/// Multiple instances of `Gpio` can cause race conditions or pin configuration issues when
+/// Multiple instances of [`Gpio`] can cause race conditions or pin configuration issues when
 /// several threads write to the same register simultaneously. While other applications
-/// can't be prevented from writing to the GPIO registers at the same time, limiting `Gpio`
+/// can't be prevented from writing to the GPIO registers at the same time, limiting [`Gpio`]
 /// to a single instance will at least make the Rust interface less error-prone.
 ///
-/// If you need to access `Gpio` from multiple threads, you can either send your `Gpio`
-/// instance to another thread using `std::sync::mpsc::channel`, or clone it wrapped in an
-/// `Arc` and a `Mutex`. Although discouraged, you could also share it globally
+/// You can share a [`Gpio`] instance with other threads using channels, or cloning an
+/// `Arc<Mutex<Gpio>>`. Although discouraged, you could also share it globally
 /// wrapped in a `Mutex` using the `lazy_static` crate.
         InstanceExists { description("an instance of Gpio already exists") }
-/// Gpio isn't initialized.
+/// [`Gpio`] isn't initialized.
 ///
 /// You should normally only see this error when you call a method after
 /// running [`cleanup`].
@@ -115,7 +126,7 @@ quick_error! {
         NotInitialized { description("not initialized") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Disconnected while communicating with the interrupt polling thread.
+/// Disconnected while communicating with an interrupt polling thread.
         ChannelDisconnected { description("channel has disconnected") }
 /// Interrupt polling thread panicked.
         ThreadPanic { description("interrupt polling thread panicked") }
@@ -278,6 +289,11 @@ impl Gpio {
         Ok(gpio)
     }
 
+    /// Returns the current value of `clear_on_drop`.
+    pub fn clear_on_drop(&self) -> bool {
+        self.clear_on_drop
+    }
+
     /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
     ///
     /// Drop methods aren't called when a program is abnormally terminated,
@@ -285,7 +301,7 @@ impl Gpio {
     /// caught. You'll either have to catch those using crates such as
     /// [`simple_signal`], or manually call [`cleanup`].
     ///
-    /// Enabled by default.
+    /// By default, `clear_on_drop` is set to `true`.
     ///
     /// [`simple_signal`]: https://crates.io/crates/simple-signal
     /// [`cleanup`]: #method.cleanup
@@ -314,7 +330,7 @@ impl Gpio {
         }
     }
 
-    /// Reads the current GPIO pin mode.
+    /// Gets the current GPIO pin mode.
     pub fn mode(&self, pin: u8) -> Result<Mode> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -346,7 +362,7 @@ impl Gpio {
         }
     }
 
-    /// Changes the GPIO pin mode to input, output or one of the alternative functions.
+    /// Sets the GPIO pin mode to input, output or one of the alternative functions.
     pub fn set_mode(&mut self, pin: u8, mode: Mode) {
         if !self.initialized || (pin >= GPIO_MAX_PINS) {
             return;
@@ -478,17 +494,17 @@ impl Gpio {
         Ok(())
     }
 
-    /// Blocks until a synchronous interrupt is triggered on the selected pin, or a timeout occurs.
+    /// Blocks until a synchronous interrupt is triggered on the specified pin, or a timeout occurs.
     ///
     /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
     /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
     ///
     /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
     /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
-    /// Setting `reset` to `true` clears any cached trigger events for the selected pin.
+    /// Setting `reset` to `true` clears any cached trigger events for the pin.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
-    /// for interrupt trigger events, after which an [`Ok(None))`] is returned.
+    /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// The returned pin logic level is read when the trigger event is processed, and may
@@ -511,20 +527,20 @@ impl Gpio {
         }
     }
 
-    /// Blocks until a synchronous interrupt is triggered on any of the selected pins, or a timeout occurs.
+    /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
     ///
     /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
     /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
     ///
     /// Setting `reset` to `false` causes `poll_interrupts` to return immediately if any of the interrupts
     /// have been triggered since the previous call to [`set_interrupt`] or `poll_interrupts`.
-    /// Setting `reset` to `true` clears any cached trigger events for the selected pins.
+    /// Setting `reset` to `true` clears any cached trigger events for the pins.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
-    /// for interrupt trigger events, after which an [`Ok(None))`] is returned.
+    /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
-    /// When an interrupt event is triggered on any of the selected pins, `poll_interrupts` returns
+    /// When an interrupt event is triggered, `poll_interrupts` returns
     /// `Ok((u8, Level))` containing the corresponding pin number and logic level. If multiple events trigger
     /// at the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time `poll_interrupts` is called.

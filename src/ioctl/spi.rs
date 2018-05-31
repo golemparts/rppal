@@ -68,7 +68,11 @@ pub const MODE_TX_QUAD: u32 = 0x200; // Send on 4 outgoing lines
 pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
 pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
 
-/// Part of a multi-segment transfer
+/// Part of a multi-segment transfer.
+///
+/// `TransferSegment`s are transferred using the [`transfer_segments`] method.
+///
+/// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
 #[derive(PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct TransferSegment<'a, 'b> {
@@ -112,8 +116,8 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     /// By default, all customizable settings are set to 0, which means it uses
     /// the same values as set for [`Spi`].
     ///
-    /// [`transfer_segments`]: index.html
-    /// [`Spi`]: index.html
+    /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+    /// [`Spi`]: struct.Spi.html
     pub fn new(
         read_buffer: Option<&'a mut [u8]>,
         write_buffer: Option<&'b [u8]>,
@@ -134,7 +138,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     /// If both `read_buffer` and `write_buffer` are specified, [`transfer_segments`]
     /// will only transfer as many bytes as the shortest of the two buffers contains.
     ///
-    /// `clock_speed` sets an alternate clock speed in hertz (Hz).
+    /// `clock_speed` sets a custom clock speed in hertz (Hz).
     ///
     /// `delay` sets a delay in microseconds (µs).
     ///
@@ -142,8 +146,8 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     ///
     /// `ss_change` changes how Slave Select behaves in between two segments (toggle SS), or after the final segment (keep SS active).
     ///
-    /// [`transfer_segments`]: index.html
-    /// [`Spi`]: index.html
+    /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+    /// [`Spi`]: struct.Spi.html
     pub fn with_settings(
         read_buffer: Option<&'a mut [u8]>,
         write_buffer: Option<&'b [u8]>,
@@ -202,15 +206,19 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         self.len == 0
     }
 
-    /// Gets the alternate clock speed in hertz (Hz) for this segment.
+    /// Gets the custom clock speed in hertz (Hz) for this segment.
     pub fn clock_speed(&self) -> u32 {
         self.speed_hz
     }
 
-    /// Sets an alternate clock speed in hertz (Hz) for this segment.
+    /// Sets a custom clock speed in hertz (Hz) for this segment.
     ///
-    /// By default, `clock_speed` is set to 0, which means
-    /// it will use the same value as configured for `Spi`.
+    /// The SPI driver will automatically select the closest valid frequency.
+    ///
+    /// By default, `clock_speed` is set to `0`, which means
+    /// it will use the same value as configured for [`Spi`].
+    ///
+    /// [`Spi`]: struct.Spi.html
     pub fn set_clock_speed(&mut self, clock_speed: u32) {
         self.speed_hz = clock_speed;
     }
@@ -225,7 +233,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     /// `set_delay` adds a delay at the end of this segment,
     /// before the (optional) Slave Select change.
     ///
-    /// By default, `delay` is set to 0.
+    /// By default, `delay` is set to `0`.
     pub fn set_delay(&mut self, delay: u16) {
         self.delay_usecs = delay;
     }
@@ -239,8 +247,10 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     ///
     /// The Raspberry Pi currently only supports 8 bit words.
     ///
-    /// By default, `bits_per_word` is set to 0, which means
-    /// it will use the same value as configured for `Spi`.
+    /// By default, `bits_per_word` is set to `0`, which means
+    /// it will use the same value as configured for [`Spi`].
+    ///
+    /// [`Spi`]: struct.Spi.html
     pub fn set_bits_per_word(&mut self, bits_per_word: u8) {
         self.bits_per_word = bits_per_word;
     }
@@ -250,7 +260,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         self.cs_change == 1
     }
 
-    /// Sets alternate Slave Select behavior for this segment.
+    /// Changes Slave Select's behavior for this segment.
     ///
     /// If `ss_change` is set to `true`, and this is not the last
     /// segment of the transfer, the Slave Select line will briefly

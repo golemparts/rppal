@@ -20,10 +20,10 @@
 
 //! Interface for the SPI peripherals.
 //!
-//! RPPAL provides access to the available SPI peripherals by using the `/dev/spidevB.S`
-//! devices, where B points to an SPI bus (0, 1, 2), and S to a Slave Select pin (0, 1, 2).
-//! Which of these buses and pins is available depends on your Raspberry Pi model and
-//! configuration, as explained below.
+//! RPPAL provides access to the available SPI peripherals by using the spidev interface
+//! through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to a Slave Select
+//! pin (0, 1, 2). Which of these buses and pins is available depends on your Raspberry
+//! Pi model and configuration, as explained below.
 //!
 //! ## SPI buses
 //!
@@ -123,17 +123,19 @@ quick_error! {
         Io(err: io::Error) { description(err.description()) from() }
 /// The specified number of bits per word is not supported.
 ///
-/// The Raspberry Pi currently only supports 8 bit words (or 9 bits in LoSSI
-/// mode). Any other value will trigger this error.
+/// The Raspberry Pi currently only supports 8 bit words. Any other value
+/// will trigger this error.
         BitsPerWordNotSupported(bits_per_word: u8) { description("bits per word value not supported") }
 /// The specified bit order is not supported.
 ///
-/// The Raspberry Pi currently only supports the MsbFirst bit order. If you
-/// need the LsbFirst bit order, you can use the [`reverse_bits`] function
+/// The Raspberry Pi currently only supports the [`MsbFirst`] bit order. If you
+/// need the [`LsbFirst`] bit order, you can use the [`reverse_bits`] function
 /// instead to reverse the bit order in software by converting your write
 /// buffer before sending it to the slave device, and your read buffer after
 /// reading any incoming data.
 ///
+/// [`MsbFirst`]: enum.BitOrder.html
+/// [`LsbFirst`]: enum.BitOrder.html
 /// [`reverse_bits`]: fn.reverse_bits.html
         BitOrderNotSupported(bit_order: BitOrder) { description("bit order value not supported") }
 /// The specified clock speed is not supported.
@@ -219,7 +221,7 @@ pub enum Polarity {
     ActiveHigh = 1,
 }
 
-/// SPI modes.
+/// SPI modes indicating the clock polarity and phase.
 ///
 /// Select the appropriate SPI mode for your device. Each mode configures the
 /// clock polarity (CPOL) and clock phase (CPHA) as shown below:
@@ -255,8 +257,8 @@ pub enum Mode {
 /// `MsbFirst` will transfer the most-significant bit first. `LsbFirst` will
 /// transfer the least-significant bit first.
 ///
-/// The Raspberry Pi currently only supports the MsbFirst bit order. If you
-/// need the LsbFirst bit order, you can use the [`reverse_bits`] function
+/// The Raspberry Pi currently only supports the `MsbFirst` bit order. If you
+/// need the `LsbFirst` bit order, you can use the [`reverse_bits`] function
 /// instead to reverse the bit order in software by converting your write
 /// buffer before sending it to the slave device, and your read buffer after
 /// reading any incoming data.
@@ -344,14 +346,16 @@ impl Spi {
 
     /// Sets the order in which bits are shifted out and in.
     ///
-    /// The Raspberry Pi currently only supports the MsbFirst bit order. If you
-    /// need the LsbFirst bit order, you can use the [`reverse_bits`] function
+    /// The Raspberry Pi currently only supports the [`MsbFirst`] bit order. If you
+    /// need the [`LsbFirst`] bit order, you can use the [`reverse_bits`] function
     /// instead to reverse the bit order in software by converting your write
     /// buffer before sending it to the slave device, and your read buffer after
     /// reading any incoming data.
     ///
-    /// By default, bit order is set to `MsbFirst`.
+    /// By default, `bit_order` is set to `MsbFirst`.
     ///
+    /// [`MsbFirst`]: enum.BitOrder.html
+    /// [`LsbFirst`]: enum.BitOrder.html
     /// [`reverse_bits`]: fn.reverse_bits.html
     pub fn set_bit_order(&self, bit_order: BitOrder) -> Result<()> {
         match unsafe { ioctl::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) } {
@@ -377,7 +381,7 @@ impl Spi {
     ///
     /// The Raspberry Pi currently only supports 8 bit words.
     ///
-    /// By default, bits per word is set to 8.
+    /// By default, `bits_per_word` is set to 8.
     pub fn set_bits_per_word(&self, bits_per_word: u8) -> Result<()> {
         match unsafe { ioctl::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) } {
             Ok(_) => Ok(()),
@@ -399,6 +403,8 @@ impl Spi {
     }
 
     /// Sets the clock speed frequency in herz (Hz).
+    ///
+    /// The SPI driver will automatically select the closest valid frequency.
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
         match unsafe { ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
             Ok(_) => Ok(()),
@@ -409,7 +415,7 @@ impl Spi {
         }
     }
 
-    /// Gets the mode.
+    /// Gets the SPI mode.
     pub fn mode(&self) -> Result<Mode> {
         let mut mode: u8 = 0;
         unsafe {
@@ -424,7 +430,10 @@ impl Spi {
         })
     }
 
-    /// Sets the mode.
+    /// Sets the SPI mode.
+    ///
+    /// The SPI mode indicates the serial clock polarity and phase. Some modes
+    /// may not be available depending on the SPI bus that's used.
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
         let mut new_mode: u8 = 0;
         unsafe {
@@ -517,8 +526,8 @@ impl Spi {
     /// the MISO line. `transfer` stores the incoming data in `read_buffer`,
     /// and sends the outgoing data contained in `write_buffer`.
     ///
-    /// Because data is sent and received simultaneously, `transfer` only
-    /// transfers as many bytes as the shortest of the two buffers contains.
+    /// Because data is sent and received simultaneously, `transfer` can only
+    /// transfer as many bytes as the shortest of the two buffers contains.
     ///
     /// Slave Select is set to active at the start of the transfer, and inactive
     /// when the transfer completes.
@@ -536,7 +545,7 @@ impl Spi {
 
     /// Transfers multiple half-duplex or full-duplex segments.
     ///
-    /// `transfer_segments` processes multiple transfers in
+    /// `transfer_segments` transfers multiple segments in
     /// a single call. Each [`TransferSegment`] contains a reference
     /// to a read buffer, a write buffer, or both, and optional
     /// settings that override the SPI bus settings for that
