@@ -2,6 +2,10 @@
 
 ## 0.6.0 (TBD)
 
+* DeviceInfo: (Breaking change) Return model and soc by value, rather than by reference.
+* DeviceInfo: (Breaking change) Remove SoC::Bcm2837 to reduce ambiguity. The Pi 3B and Compute Module 3 now return the more accurate SoC::Bcm2837A1.
+* DeviceInfo: (Breaking change) Remove SoC::Unknown. An unknown SoC is now treated as a failure.
+* DeviceInfo: Return the actual SoC based on the Raspberry Pi model, rather than the inaccurate /proc/cpuinfo data.
 * Gpio: (Breaking change) Remove InterruptError. Merge remaining errors with Error.
 * Gpio: (Breaking change) Replace all DevGpioMem and DevMem errors with Error::PermissionDenied and Error::Io.
 * Gpio: (Breaking change) Change the return value for poll_interrupt() and poll_interrupts() to Ok(Option) on success, with Some() indicating an interrupt triggered, and None indicating a timeout occurred.

@@ -94,10 +94,8 @@ impl fmt::Display for Model {
 pub enum SoC {
     Bcm2835,
     Bcm2836,
-    Bcm2837,
     Bcm2837A1,
     Bcm2837B0,
-    Unknown,
 }
 
 impl fmt::Display for SoC {
@@ -105,10 +103,8 @@ impl fmt::Display for SoC {
         match *self {
             SoC::Bcm2835 => write!(f, "BCM2835"),
             SoC::Bcm2836 => write!(f, "BCM2836"),
-            SoC::Bcm2837 => write!(f, "BCM2837"),
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
-            SoC::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -125,7 +121,7 @@ pub struct DeviceInfo {
 impl DeviceInfo {
     /// Constructs a new `DeviceInfo`.
     pub fn new() -> Result<DeviceInfo> {
-        // Parse hardware/revision from /proc/cpuinfo to figure out model/SoC
+        // Parse revision from /proc/cpuinfo to figure out model
         let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
             Err(_) => return Err(Error::CantAccessProcCpuInfo),
             Ok(file) => file,
@@ -141,6 +137,13 @@ impl DeviceInfo {
                     revision = String::from(&line[11..]).to_lowercase();
                 }
             }
+        }
+
+        // Return an error if we can't identify the SoC
+        match &hardware[..] {
+            "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
+            | "BCM2837B0" => {}
+            _ => return Err(Error::UnknownModel),
         }
 
         let model = if revision.len() >= 6 {
@@ -175,17 +178,7 @@ impl DeviceInfo {
             return Err(Error::UnknownModel);
         };
 
-        // Allow unknown SoCs
-        let soc = match &hardware[..] {
-            "BCM2708" | "BCM2835" => SoC::Bcm2835,
-            "BCM2709" | "BCM2836" => SoC::Bcm2836,
-            "BCM2710" | "BCM2837" => SoC::Bcm2837,
-            "BCM2837A1" => SoC::Bcm2837A1,
-            "BCM2837B0" => SoC::Bcm2837B0,
-            _ => SoC::Unknown,
-        };
-
-        // Set memory offsets based on hardware model
+        // Set SoC and memory offsets based on model
         match model {
             Model::RaspberryPiA
             | Model::RaspberryPiAPlus
@@ -195,21 +188,25 @@ impl DeviceInfo {
             | Model::RaspberryPiZero
             | Model::RaspberryPiZeroW => Ok(DeviceInfo {
                 model,
-                soc,
+                soc: SoC::Bcm2835,
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi2B | Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 => {
-                Ok(DeviceInfo {
-                    model,
-                    soc,
-                    peripheral_base: PERIPHERAL_BASE_RPI2,
-                    gpio_offset: GPIO_OFFSET,
-                })
-            }
+            Model::RaspberryPi2B => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2836,
+                peripheral_base: PERIPHERAL_BASE_RPI2,
+                gpio_offset: GPIO_OFFSET,
+            }),
+            Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2837A1,
+                peripheral_base: PERIPHERAL_BASE_RPI2,
+                gpio_offset: GPIO_OFFSET,
+            }),
             Model::RaspberryPi3BPlus => Ok(DeviceInfo {
                 model,
-                soc: SoC::Bcm2837B0, // Don't rely on /proc/cpuinfo for accurate 3B+ info
+                soc: SoC::Bcm2837B0,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
