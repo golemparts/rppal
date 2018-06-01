@@ -25,6 +25,7 @@ use std::io;
 use std::mem::size_of;
 use std::result;
 
+pub mod i2c;
 pub mod spi;
 
 pub type Result<T> = result::Result<T, io::Error>;

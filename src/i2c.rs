@@ -18,25 +18,30 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO and SPI peripherals.
-//! Support for additional peripherals will be added in future updates. The library is
-//! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
-//! Zero and Zero W.
+use std::io;
+use std::result;
 
-// Used by rustdoc to link other crates to rppal's docs
-#![doc(html_root_url = "https://docs.rs/rppal/0.6.0")]
-// Needed for the quick_error! macro
-#![recursion_limit = "128"]
+quick_error! {
+/// Errors that can occur when accessing the I2C peripherals.
+    #[derive(Debug)]
+    pub enum Error {
+/// IO error.
+        Io(err: io::Error) { description(err.description()) from() }
+    }
+}
 
-extern crate libc;
-extern crate mio;
-extern crate mio_extras;
-#[macro_use]
-extern crate quick_error;
+/// Result type returned from methods that can have `i2c::Error`s.
+pub type Result<T> = result::Result<T, Error>;
 
-mod ioctl;
 
-pub mod gpio;
-pub mod i2c;
-pub mod spi;
-pub mod system;
+pub struct I2c {
+
+}
+
+impl I2c {
+    pub fn new() -> Result<I2c> {
+        Ok(I2c {
+
+        })
+    }
+}
