@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 (TBD)
+## 0.6.0 (June 1, 2018)
 
 * DeviceInfo: (Breaking change) Return model and soc by value, rather than by reference.
 * DeviceInfo: (Breaking change) Remove SoC::Bcm2837 to reduce ambiguity. The Pi 3B and Compute Module 3 now return the more accurate SoC::Bcm2837A1.
@@ -24,16 +24,16 @@
 * Gpio: Add support for asynchronous interrupts (set_async_interrupt(), clear_async_interrupt()).
 * Gpio: Add support for synchronous interrupts (set_interrupt(), clear_interrupt(), poll_interrupt()).
 
-## 0.4.0 (Mar 19, 2018)
+## 0.4.0 (March 19, 2018)
 
 * Gpio: Replace &mut self with &self where possible.
 
-## 0.3.0 (Mar 16, 2018)
+## 0.3.0 (March 16, 2018)
 
 * DeviceInfo: Add support for Raspberry Pi 3 B+.
 * DeviceInfo: Set memory offsets based on model info rather than SoC.
 
-## 0.2.0 (Oct 6, 2017)
+## 0.2.0 (October 6, 2017)
 
 * To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU somewhere in their name have been changed to Gpio, Io, Bcm and Cpu respectively.
 * GPIO has been added as a temporary (deprecated) type alias for Gpio.

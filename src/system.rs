@@ -120,8 +120,11 @@ pub struct DeviceInfo {
 
 impl DeviceInfo {
     /// Constructs a new `DeviceInfo`.
+    ///
+    /// `new` parses the contents of `/proc/cpuinfo` to identify the Raspberry
+    /// Pi's model and SoC.
     pub fn new() -> Result<DeviceInfo> {
-        // Parse revision from /proc/cpuinfo to figure out model
+        // Parse /proc/cpuinfo to extract hardware/revision
         let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
             Err(_) => return Err(Error::CantAccessProcCpuInfo),
             Ok(file) => file,
@@ -139,7 +142,9 @@ impl DeviceInfo {
             }
         }
 
-        // Return an error if we can't identify the SoC
+        // Return an error if we don't recognize the SoC. This check is
+        // done to prevent accidentally identifying a non-Pi SBC as a Pi
+        // solely based on the revision field.
         match &hardware[..] {
             "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
             | "BCM2837B0" => {}
@@ -213,13 +218,12 @@ impl DeviceInfo {
         }
     }
 
-    /// Returns the Raspberry Pi's model identified by parsing the
-    /// contents of `/proc/cpuinfo`.
+    /// Returns the Raspberry Pi's model.
     pub fn model(&self) -> Model {
         self.model
     }
 
-    /// Returns the Raspberry Pi's SoC identified by parsing the contents of `/proc/cpuinfo`.
+    /// Returns the Raspberry Pi's SoC.
     pub fn soc(&self) -> SoC {
         self.soc
     }
@@ -229,7 +233,7 @@ impl DeviceInfo {
         self.peripheral_base
     }
 
-    /// Returns the offset memory address for the GPIO section.
+    /// Returns the offset from the base memory address for the GPIO section.
     pub fn gpio_offset(&self) -> u32 {
         self.gpio_offset
     }

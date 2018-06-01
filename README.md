@@ -22,14 +22,12 @@ To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directl
 
 * Get/set pin modes.
 * Read/write pin logic levels.
-* Set built-in pull-up/pull-down resistors.
-* Set synchronous and asynchronous interrupts.
+* Activate built-in pull-up/pull-down resistors.
+* Configure synchronous and asynchronous interrupt handlers.
 
 ### SPI
 
-_Coming in release 0.6.0._
-
-RPPAL accesses the SPI peripheral through the spidev device interface.
+RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the spidev device interface.
 
 #### Features
 
@@ -64,7 +62,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.5"
+rppal = "0.6"
 ```
 
 Link and import `rppal` from your crate root.

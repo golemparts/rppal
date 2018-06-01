@@ -198,7 +198,7 @@ impl fmt::Display for PullUpDown {
     }
 }
 
-/// Interrupt trigger types.
+/// Interrupt trigger conditions.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Trigger {
     Disabled,
@@ -289,7 +289,7 @@ impl Gpio {
         Ok(gpio)
     }
 
-    /// Returns the current value of `clear_on_drop`.
+    /// Returns the value of `clear_on_drop`.
     pub fn clear_on_drop(&self) -> bool {
         self.clear_on_drop
     }
@@ -363,6 +363,11 @@ impl Gpio {
     }
 
     /// Sets the GPIO pin mode to input, output or one of the alternative functions.
+    ///
+    /// More information about the alternative functions can be found in the
+    /// [`BCM2835`] documentation.
+    ///
+    /// [`BCM2835`]: https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
     pub fn set_mode(&mut self, pin: u8, mode: Mode) {
         if !self.initialized || (pin >= GPIO_MAX_PINS) {
             return;
@@ -452,13 +457,13 @@ impl Gpio {
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
     }
 
-    /// Configures a synchronous interrupt.
+    /// Configures a synchronous interrupt trigger.
     ///
-    /// After configuring a synchronous interrupt, you can use [`poll_interrupt`]
-    /// to wait for a trigger event.
+    /// After configuring a synchronous interrupt trigger, you can use
+    /// [`poll_interrupt`] to wait for a trigger event.
     ///
-    /// Configuring an interrupt will remove any previously configured
-    /// (a)synchronous interrupts for the same pin.
+    /// `set_interrupt` will remove any previously configured
+    /// (a)synchronous interrupt triggers for the same pin.
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
@@ -479,7 +484,7 @@ impl Gpio {
         Ok(())
     }
 
-    /// Removes a configured synchronous interrupt.
+    /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
@@ -494,10 +499,10 @@ impl Gpio {
         Ok(())
     }
 
-    /// Blocks until a synchronous interrupt is triggered on the specified pin, or a timeout occurs.
+    /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
     ///
     /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
-    /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
+    /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
     /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
     /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
@@ -530,10 +535,10 @@ impl Gpio {
     /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
     ///
     /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
-    /// [`set_interrupt`]. Asynchronous interrupts are automatically polled on a separate thread.
+    /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
     /// Setting `reset` to `false` causes `poll_interrupts` to return immediately if any of the interrupts
-    /// have been triggered since the previous call to [`set_interrupt`] or `poll_interrupts`.
+    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupts`.
     /// Setting `reset` to `true` clears any cached trigger events for the pins.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
@@ -568,15 +573,15 @@ impl Gpio {
         Ok(self.sync_interrupts.poll(pins, reset, timeout)?)
     }
 
-    /// Configures an asynchronous interrupt, which will execute the callback on a
+    /// Configures an asynchronous interrupt trigger, which will execute the callback on a
     /// separate thread when the interrupt is triggered.
     ///
     /// The callback closure or function pointer is called with a single [`Level`] argument.
     /// The pin logic level is read when the trigger event is processed, and may differ from the logic
     /// level that actually triggered the interrupt.
     ///
-    /// Configuring an interrupt will remove any previously configured
-    /// (a)synchronous interrupts for the same pin.
+    /// `set_async_interrupt` will remove any previously configured
+    /// (a)synchronous interrupt triggers for the same pin.
     ///
     /// [`Level`]: enum.Level.html
     pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
@@ -603,7 +608,7 @@ impl Gpio {
         Ok(())
     }
 
-    /// Removes a configured asynchronous interrupt.
+    /// Removes a previously configured asynchronous interrupt trigger.
     pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
         if !self.initialized {
             return Err(Error::NotInitialized);
