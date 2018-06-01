@@ -90,7 +90,7 @@ use std::time::Duration;
 use rppal::gpio::{Gpio, Mode, Level};
 use rppal::system::DeviceInfo;
 
-// The GPIO module uses BCM pin numbering. BCM 18 equates to physical pin 12.
+// The GPIO module uses BCM pin numbering. BCM GPIO 18 can be accessed through physical pin 12.
 const GPIO_LED: u8 = 18;
 
 fn main() {
