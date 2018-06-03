@@ -60,7 +60,8 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
-    RaspberryPiB,
+    RaspberryPiBRev1,
+    RaspberryPiBRev2,
     RaspberryPiBPlus,
     RaspberryPi2B,
     RaspberryPi3B,
@@ -76,7 +77,8 @@ impl fmt::Display for Model {
         match *self {
             Model::RaspberryPiA => write!(f, "Raspberry Pi A"),
             Model::RaspberryPiAPlus => write!(f, "Raspberry Pi A+"),
-            Model::RaspberryPiB => write!(f, "Raspberry Pi B"),
+            Model::RaspberryPiBRev1 => write!(f, "Raspberry Pi B Rev 1"),
+            Model::RaspberryPiBRev2 => write!(f, "Raspberry Pi B Rev 2"),
             Model::RaspberryPiBPlus => write!(f, "Raspberry Pi B+"),
             Model::RaspberryPi2B => write!(f, "Raspberry Pi 2 B"),
             Model::RaspberryPi3B => write!(f, "Raspberry Pi 3 B"),
@@ -155,9 +157,8 @@ impl DeviceInfo {
             // Older revisions are 4 characters long, or 8 if they've been over-volted
             match &revision[revision.len() - 4..] {
                 "0007" | "0008" | "0009" | "0015" => Model::RaspberryPiA,
-                "Beta" | "0002" | "0003" | "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => {
-                    Model::RaspberryPiB
-                }
+                "Beta" | "0002" | "0003" => Model::RaspberryPiBRev1,
+                "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => Model::RaspberryPiBRev2,
                 "0012" => Model::RaspberryPiAPlus,
                 "0010" | "0013" => Model::RaspberryPiBPlus,
                 "0011" | "0014" => Model::RaspberryPiComputeModule,
@@ -167,7 +168,7 @@ impl DeviceInfo {
             // Newer revisions consist of at least 6 characters
             match &revision[revision.len() - 3..revision.len() - 1] {
                 "00" => Model::RaspberryPiA,
-                "01" => Model::RaspberryPiB,
+                "01" => Model::RaspberryPiBRev2,
                 "02" => Model::RaspberryPiAPlus,
                 "03" => Model::RaspberryPiBPlus,
                 "04" => Model::RaspberryPi2B,
@@ -187,7 +188,8 @@ impl DeviceInfo {
         match model {
             Model::RaspberryPiA
             | Model::RaspberryPiAPlus
-            | Model::RaspberryPiB
+            | Model::RaspberryPiBRev1
+            | Model::RaspberryPiBRev2
             | Model::RaspberryPiBPlus
             | Model::RaspberryPiComputeModule
             | Model::RaspberryPiZero
