@@ -27,7 +27,15 @@ use std::mem::size_of;
 
 use super::*;
 
-const TYPE_SPI: c_ulong = (b'k' as c_ulong) << TYPESHIFT;
+const NRBITS: u8 = 8;
+const TYPEBITS: u8 = 8;
+const SIZEBITS: u8 = 14;
+const DIRBITS: u8 = 2;
+
+const NRSHIFT: u8 = 0;
+const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
+const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
+const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
 
 const NR_MESSAGE: c_ulong = 0 << NRSHIFT;
 const NR_MODE: c_ulong = 1 << NRSHIFT;
@@ -35,6 +43,15 @@ const NR_LSB_FIRST: c_ulong = 2 << NRSHIFT;
 const NR_BITS_PER_WORD: c_ulong = 3 << NRSHIFT;
 const NR_MAX_SPEED_HZ: c_ulong = 4 << NRSHIFT;
 const NR_MODE32: c_ulong = 5 << NRSHIFT;
+
+const TYPE_SPI: c_ulong = (b'k' as c_ulong) << TYPESHIFT;
+
+const SIZE_U8: c_ulong = (size_of::<u8>() as c_ulong) << SIZESHIFT;
+const SIZE_U32: c_ulong = (size_of::<u32>() as c_ulong) << SIZESHIFT;
+
+const DIR_NONE: c_ulong = 0;
+const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
+const DIR_READ: c_ulong = 2 << DIRSHIFT;
 
 const REQ_RD_MODE: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE | SIZE_U8);
 const REQ_RD_LSB_FIRST: c_ulong = (DIR_READ | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);

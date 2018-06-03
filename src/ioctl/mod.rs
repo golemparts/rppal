@@ -20,32 +20,14 @@
 
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong};
+use libc::c_int;
 use std::io;
-use std::mem::size_of;
 use std::result;
 
 pub mod i2c;
 pub mod spi;
 
 pub type Result<T> = result::Result<T, io::Error>;
-
-const NRBITS: u8 = 8;
-const TYPEBITS: u8 = 8;
-const SIZEBITS: u8 = 14;
-const DIRBITS: u8 = 2;
-
-const NRSHIFT: u8 = 0;
-const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
-const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
-const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
-
-const DIR_NONE: c_ulong = 0;
-const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
-const DIR_READ: c_ulong = 2 << DIRSHIFT;
-
-const SIZE_U8: c_ulong = (size_of::<u8>() as c_ulong) << SIZESHIFT;
-const SIZE_U32: c_ulong = (size_of::<u32>() as c_ulong) << SIZESHIFT;
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
