@@ -17,3 +17,25 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
+
+#![allow(dead_code)]
+
+use libc::{c_int, c_ulong, ioctl};
+
+use super::*;
+
+const REQ_RETRIES: c_ulong = 0x0701; // How many retries when waiting for an ACK
+const REQ_TIMEOUT: c_ulong = 0x0702; // Timeout in 10ms units
+const REQ_SLAVE: c_ulong = 0x0706; // Set slave address
+const REQ_SLAVE_FORCE: c_ulong = 0x0703; // Set slave address, even if it's already in use by a driver
+const REQ_TENBIT: c_ulong = 0x0704; // Use 10-bit slave addresses
+const REQ_FUNCS: c_ulong = 0x0705; // Read I2C bus capabilities
+const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single STOP
+const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
+const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer
+
+// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
+
+pub unsafe fn set_slave_address(fd: c_int, value: i32) -> Result<i32> {
+    parse_retval(ioctl(fd, REQ_SLAVE, &value))
+}
