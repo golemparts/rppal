@@ -60,6 +60,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
+mod epoll;
 mod interrupt;
 mod mem;
 mod sysfs;

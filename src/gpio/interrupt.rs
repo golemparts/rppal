@@ -20,32 +20,14 @@
 
 use std::fmt;
 use std::fs::File;
-use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use std::os::unix::io::AsRawFd;
-use std::sync::mpsc::TryRecvError;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use mio::event::Evented;
-use mio::unix::{EventedFd, UnixReady};
-use mio::{Events, Poll, PollOpt, Ready, Token};
-use mio_extras::channel;
-
+use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use gpio::sysfs;
 use gpio::{Error, Level, Result, Trigger};
-
-impl<T> From<channel::SendError<T>> for Error {
-    fn from(err: channel::SendError<T>) -> Error {
-        match err {
-            channel::SendError::Io(e) => Error::Io(e),
-            channel::SendError::Disconnected(_) => Error::ChannelDisconnected,
-        }
-    }
-}
-
-const TOKEN_RX: usize = 0;
-const TOKEN_PIN: usize = 1;
 
 #[derive(Debug)]
 struct Interrupt {
@@ -73,6 +55,10 @@ impl Interrupt {
         self.trigger
     }
 
+    fn fd(&self) -> i32 {
+        self.sysfs_value.as_raw_fd()
+    }
+
     fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
         self.trigger = trigger;
         sysfs::set_edge(self.pin, trigger)?;
@@ -98,32 +84,6 @@ impl Drop for Interrupt {
     }
 }
 
-impl Evented for Interrupt {
-    fn register(
-        &self,
-        poll: &Poll,
-        token: Token,
-        interest: Ready,
-        opts: PollOpt,
-    ) -> io::Result<()> {
-        EventedFd(&self.sysfs_value.as_raw_fd()).register(poll, token, interest, opts)
-    }
-
-    fn reregister(
-        &self,
-        poll: &Poll,
-        token: Token,
-        interest: Ready,
-        opts: PollOpt,
-    ) -> io::Result<()> {
-        EventedFd(&self.sysfs_value.as_raw_fd()).reregister(poll, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        EventedFd(&self.sysfs_value.as_raw_fd()).deregister(poll)
-    }
-}
-
 #[derive(Debug)]
 struct TriggerStatus {
     interrupt: Option<Interrupt>,
@@ -131,11 +91,20 @@ struct TriggerStatus {
     level: Level,
 }
 
-#[derive(Debug)]
 pub struct EventLoop {
-    poll: Poll,
-    events: Events,
+    poll: Epoll,
+    events: Vec<epoll_event>,
     trigger_status: Vec<TriggerStatus>,
+}
+
+impl fmt::Debug for EventLoop {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("EventLoop")
+            .field("poll", &self.poll)
+            .field("events", &format_args!("{{ .. }}"))
+            .field("trigger_status", &format_args!("{{ .. }}"))
+            .finish()
+    }
 }
 
 impl EventLoop {
@@ -152,8 +121,8 @@ impl EventLoop {
         }
 
         Ok(EventLoop {
-            poll: Poll::new()?,
-            events: Events::with_capacity(capacity),
+            poll: Epoll::new()?,
+            events: vec![epoll_event { events: 0, u64: 0 }; capacity],
             trigger_status,
         })
     }
@@ -189,26 +158,23 @@ impl EventLoop {
         // Loop until we get any of the events we're waiting for, or a timeout occurs
         let now = Instant::now();
         loop {
-            self.poll.poll(&mut self.events, timeout)?;
+            let num_events = self.poll.wait(&mut self.events, timeout)?;
 
             // No events means a timeout occurred
-            if self.events.is_empty() {
+            if num_events == 0 {
                 return Ok(None);
             }
 
-            for event in &self.events {
-                if event.token().0 < self.trigger_status.capacity()
-                    && event.readiness().is_readable()
-                    && UnixReady::from(event.readiness()).is_error()
-                {
-                    self.trigger_status[event.token().0].triggered = true;
-                    self.trigger_status[event.token().0].level = if let Some(ref mut interrupt) =
-                        self.trigger_status[event.token().0].interrupt
-                    {
-                        interrupt.level()?
-                    } else {
-                        Level::Low
-                    };
+            for idx in 0..num_events {
+                let pin = self.events[idx].u64 as usize;
+                if pin < self.trigger_status.capacity() {
+                    self.trigger_status[pin].triggered = true;
+                    self.trigger_status[pin].level =
+                        if let Some(ref mut interrupt) = self.trigger_status[pin].interrupt {
+                            interrupt.level()?
+                        } else {
+                            Level::Low
+                        };
                 }
             }
 
@@ -247,15 +213,9 @@ impl EventLoop {
 
         // Register a new interrupt
         let mut base = Interrupt::new(pin, trigger)?;
-
         base.level()?;
-        self.poll.register(
-            &base,
-            Token(pin as usize),
-            Ready::readable() | UnixReady::error(),
-            PollOpt::edge(),
-        )?;
-
+        self.poll
+            .add(base.fd(), u64::from(pin), EPOLLERR | EPOLLET | EPOLLPRI)?;
         self.trigger_status[pin as usize].interrupt = Some(base);
 
         Ok(())
@@ -265,21 +225,17 @@ impl EventLoop {
         self.trigger_status[pin as usize].triggered = false;
 
         if let Some(interrupt) = self.trigger_status[pin as usize].interrupt.take() {
-            self.poll.deregister(&interrupt)?;
+            self.poll.delete(interrupt.fd())?;
         }
 
         Ok(())
     }
 }
 
-enum ControlMsg {
-    Stop,
-}
-
 pub struct AsyncInterrupt {
     pin: u8,
     poll_thread: Option<thread::JoinHandle<Result<()>>>,
-    tx: channel::Sender<ControlMsg>,
+    tx: EventFd,
 }
 
 impl AsyncInterrupt {
@@ -287,46 +243,31 @@ impl AsyncInterrupt {
     where
         C: FnMut(Level) + Send + 'static,
     {
-        let (tx, rx) = channel::channel();
+        let tx = EventFd::new()?;
+        let rx = tx.fd();
 
         let poll_thread = thread::spawn(move || -> Result<()> {
-            let poll = Poll::new()?;
-            let mut events = Events::with_capacity(2);
+            let poll = Epoll::new()?;
 
-            poll.register(&rx, Token(TOKEN_RX), Ready::readable(), PollOpt::edge())?;
+            // rx becomes readable when the main thread calls notify()
+            poll.add(rx, rx as u64, EPOLLERR | EPOLLET | EPOLLIN)?;
 
+            // Triggering an interrupt sets error and priority
             let mut base = Interrupt::new(pin, trigger)?;
+            let base_fd = base.fd();
             base.level()?;
-            poll.register(
-                &base,
-                Token(TOKEN_PIN),
-                Ready::readable() | UnixReady::error(),
-                PollOpt::edge(),
-            )?;
+            poll.add(base_fd, base_fd as u64, EPOLLERR | EPOLLET | EPOLLPRI)?;
 
+            let mut events = [epoll_event { events: 0, u64: 0 }; 2];
             loop {
-                poll.poll(&mut events, None)?;
-
-                for event in &events {
-                    if event.token() == Token(TOKEN_RX) {
-                        match rx.try_recv() {
-                            Ok(ControlMsg::Stop) => {
-                                return Ok(());
-                            }
-                            Err(TryRecvError::Disconnected) => {
-                                return Ok(());
-                            }
-                            Err(TryRecvError::Empty) => {
-                                break;
-                            }
+                let num_events = poll.wait(&mut events, None)?;
+                if num_events > 0 {
+                    for event in &events[0..num_events] {
+                        if event.u64 == rx as u64 {
+                            return Ok(()); // The main thread asked us to stop
+                        } else if event.u64 == base.fd() as u64 {
+                            callback(base.level()?);
                         }
-                    } else if event.token() == Token(TOKEN_PIN)
-                        && event.readiness().is_readable()
-                        && UnixReady::from(event.readiness()).is_error()
-                    {
-                        let interrupt_value = base.level()?;
-
-                        callback(interrupt_value);
                     }
                 }
             }
@@ -340,7 +281,7 @@ impl AsyncInterrupt {
     }
 
     pub fn stop(&mut self) -> Result<()> {
-        self.tx.send(ControlMsg::Stop)?;
+        self.tx.notify()?;
 
         if let Some(poll_thread) = self.poll_thread.take() {
             match poll_thread.join() {
@@ -366,7 +307,7 @@ impl fmt::Debug for AsyncInterrupt {
         f.debug_struct("AsyncInterrupt")
             .field("pin", &self.pin)
             .field("poll_thread", &self.poll_thread)
-            .field("tx", &())
+            .field("tx", &self.tx)
             .finish()
     }
 }

@@ -29,8 +29,6 @@
 #![recursion_limit = "128"]
 
 extern crate libc;
-extern crate mio;
-extern crate mio_extras;
 #[macro_use]
 extern crate quick_error;
 
