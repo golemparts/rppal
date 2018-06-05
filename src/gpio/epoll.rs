@@ -35,20 +35,6 @@ fn parse_retval(retval: libc::c_int) -> Result<i32> {
         Ok(retval)
     }
 }
-// EPOLLIN
-//               The associated file is available for read(2) operations.
-
-//        EPOLLOUT
-//               The associated file is available for write(2) operations.
-
-//        EPOLLRDHUP (since Linux 2.6.17)
-//               Stream socket peer closed connection, or shut down writing
-//               half of connection.  (This flag is especially useful for writ‐
-//               ing simple code to detect peer shutdown when using Edge Trig‐
-//               gered monitoring.)
-
-//        EPOLLPRI
-//               There is an exceptional condition on the file descriptor.  See
 
 // We're using EventFd to wake up another thread
 // that's waiting for epoll_wait() to return.
