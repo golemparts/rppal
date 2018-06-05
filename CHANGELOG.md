@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 (TBD)
+
+* Gpio: (Breaking change) Removed Error::ChannelDisconnected.
+* I2c: Add support for I2C.
+* Reduced external dependencies.
+
 ## 0.6.0 (June 1, 2018)
 
 * DeviceInfo: (Breaking change) Return model and soc by value, rather than by reference.

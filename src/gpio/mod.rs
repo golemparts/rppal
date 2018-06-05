@@ -127,8 +127,6 @@ quick_error! {
         NotInitialized { description("not initialized") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
-/// Disconnected while communicating with an interrupt polling thread.
-        ChannelDisconnected { description("channel has disconnected") }
 /// Interrupt polling thread panicked.
         ThreadPanic { description("interrupt polling thread panicked") }
     }
