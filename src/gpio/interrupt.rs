@@ -165,8 +165,8 @@ impl EventLoop {
                 return Ok(None);
             }
 
-            for idx in 0..num_events {
-                let pin = self.events[idx].u64 as usize;
+            for event in &self.events[0..num_events] {
+                let pin = event.u64 as usize;
                 if pin < self.trigger_status.capacity() {
                     self.trigger_status[pin].triggered = true;
                     self.trigger_status[pin].level =
@@ -263,9 +263,10 @@ impl AsyncInterrupt {
                 let num_events = poll.wait(&mut events, None)?;
                 if num_events > 0 {
                     for event in &events[0..num_events] {
-                        if event.u64 == rx as u64 {
+                        let fd = event.u64 as i32;
+                        if fd == rx {
                             return Ok(()); // The main thread asked us to stop
-                        } else if event.u64 == base.fd() as u64 {
+                        } else if fd == base.fd() {
                             callback(base.level()?);
                         }
                     }
