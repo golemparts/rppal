@@ -4,7 +4,7 @@
 [![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
+RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
@@ -20,10 +20,23 @@ To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directl
 
 #### Features
 
-* Get/set pin modes.
-* Read/write pin logic levels.
-* Activate built-in pull-up/pull-down resistors.
-* Configure synchronous and asynchronous interrupt handlers.
+* Get/set pin modes
+* Read/write pin logic levels
+* Activate built-in pull-up/pull-down resistors
+* Configure synchronous and asynchronous interrupt handlers
+
+### I2C
+
+_Coming in Release 0.7.0_
+
+The Broadcom Serial Controller (BSC) peripheral offers a proprietary bus compliant with the I2C bus/interface. RPPAL accesses the BSC through the i2cdev device interface.
+
+#### Features
+
+* I2C single master
+* Up to 400kbit/s (Fast-mode) transfer rates
+* 7-bit and 10-bit addressing
+* Clock stretching
 
 ### SPI
 

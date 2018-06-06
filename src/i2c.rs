@@ -20,31 +20,45 @@
 
 //! Interface for the I2C peripherals.
 //!
-//! More information can be found in NXP's [UM10204] datasheet/user manual.
+//! The Broadcom Serial Controller (BSC) peripheral offers a proprietary bus
+//! compliant with the I2C bus/interface. RPPAL accesses the BSC through the
+//! i2cdev device interface.
 //!
 //! ## I2C buses
 //!
-//! i2c_arm
-//! i2c_vc
-//! i2c-gpio
+//! The Raspberry Pi's BCM283x SoC offers three I2C buses, however only one
+//! of those should be used for slave devices you want to communicate with.
+//! The other two buses are used internally as an HDMI interface, and for
+//! HAT identification.
 //!
-//! ## Clock speed
+//! The I2C bus connected to physical pins 3 (SDA) and 5 (SCL) is disabled by
+//! default. You can enable it by running `sudo raspi-config`, or by manually
+//! adding `dtparam=i2c_arm=on` to `/boot/config.txt`. Remember to reboot
+//! the Raspberry Pi afterwards.
 //!
-//! The Broadcom Serial Controller (BSC), responsible for the I2C
-//! interface, supports data transfer rates up to 400kbit/s (Fast-mode).
+//! In addition to the hardware I2C buses, it's possible to configure a
+//! bit-banged I2C bus in software on any available GPIO pins through `i2c-gpio`.
+//! More details on enabling and configuring `i2c-gpio` can be found in `/boot/overlays/README`.
 //!
-//! By default, the I2C bus speed is set to 100kbit/s (Standard-mode).
+//! ## Transmission speed
 //!
-//! i2c_arm_baudrate
-//! i2c_vc_baudrate
+//! The Raspberry Pi's BCM283x SoC supports I2C data transfer rates up to
+//! 400 kbit/s (Fast-mode).
 //!
+//! By default, the I2C bus clock speed is set to 100 kHz. Transferring
+//! 1 bit takes 1 clock cycle. You can change the
+//! transfer rate by adding `dtparam=i2c_arm_baudrate=XXX` to
+//! `/boot/config.txt`, where XXX should be replaced with the
+//! clock frequency in herz (Hz). Remember to reboot
+//! the Raspberry Pi afterwards.
 //!
 //! ## Troubleshooting
 //!
-//! User must be in the `i2c` group, or have superuser privileges.
+//! ### Permission Denied
 //!
-//!
-//! [UM10204]: https://www.nxp.com/docs/en/user-guide/UM10204.pdf
+//! If constructing a new `Spi` instance returns a Permission Denied
+//! error, either the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
+//! are incorrect, or the user isn't part of the `i2c` group.
 
 use std::fmt;
 use std::fs::{File, OpenOptions};
@@ -102,10 +116,9 @@ impl I2c {
     ///
     /// `new` tries to identify which I2C bus is bound to physical pins 3 (SDA)
     /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
-    /// it will open bus 0. For every other model, it will use bus 1.
+    /// it will select bus 0. For every other model, bus 1 is used.
     ///
-    /// More information on configuring the I2C buses, including bus speed, can
-    /// be found [here].
+    /// More information on configuring the I2C buses can be found [here].
     ///
     /// [here]: index.html
     pub fn new() -> Result<I2c> {
@@ -120,10 +133,9 @@ impl I2c {
     /// `bus` indicates the selected I2C bus. You'll typically want to select the
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
     /// Pi Model B Rev 1, those pins are tied to bus 0. On every other Raspberry
-    /// Pi model, they're tied to bus 1.
+    /// Pi model, they're connected to bus 1.
     ///
-    /// More information on configuring the I2C buses, including bus speed, can
-    /// be found [here].
+    /// More information on configuring the I2C buses can be found [here].
     ///
     /// [here]: index.html
     pub fn with_bus(bus: u8) -> Result<I2c> {
@@ -141,8 +153,8 @@ impl I2c {
         })
     }
 
-    /// Returns the bus speed in bits per second (bit/s).
-    pub fn speed(&self) -> Result<u32> {
+    /// Returns the clock frequency in herz (Hz).
+    pub fn clock_speed(&self) -> Result<u32> {
         let mut buffer = [0u8; 4];
 
         File::open(format!(
