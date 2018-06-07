@@ -32,8 +32,6 @@ extern crate libc;
 #[macro_use]
 extern crate quick_error;
 
-mod ioctl;
-
 pub mod gpio;
 pub mod i2c;
 pub mod spi;

@@ -111,9 +111,9 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use ioctl::spi as ioctl;
+mod ioctl;
 
-pub use ioctl::spi::TransferSegment;
+pub use self::ioctl::TransferSegment;
 
 quick_error! {
 /// Errors that can occur when accessing the SPI peripherals.

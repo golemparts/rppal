@@ -2,9 +2,9 @@
 
 ## 0.7.0 (TBD)
 
-* Gpio: (Breaking change) Removed Error::ChannelDisconnected.
+* Gpio: (Breaking change) Remove Error::ChannelDisconnected.
 * I2c: Add support for I2C.
-* Reduced external dependencies.
+* Reduce external dependencies.
 
 ## 0.6.0 (June 1, 2018)
 

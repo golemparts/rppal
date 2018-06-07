@@ -68,9 +68,10 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use ioctl::i2c as ioctl;
 use system;
 use system::{DeviceInfo, Model};
+
+mod ioctl;
 
 quick_error! {
 /// Errors that can occur when accessing the I2C peripherals.

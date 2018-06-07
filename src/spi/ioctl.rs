@@ -22,10 +22,20 @@
 
 use libc::{c_int, c_ulong, ioctl};
 use std::fmt;
+use std::io;
 use std::marker;
 use std::mem::size_of;
+use std::result;
 
-use super::*;
+pub type Result<T> = result::Result<T, io::Error>;
+
+fn parse_retval(retval: c_int) -> Result<i32> {
+    if retval == -1 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(retval)
+    }
+}
 
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
