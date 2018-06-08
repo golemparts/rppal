@@ -68,10 +68,14 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
+use libc::{c_ulong};
+
 use system;
 use system::{DeviceInfo, Model};
 
 mod ioctl;
+
+pub use self::ioctl::Capabilities;
 
 quick_error! {
 /// Errors that can occur when accessing the I2C peripherals.
@@ -172,7 +176,7 @@ impl I2c {
     /// Sets a 7-bit or 10-bit slave address.
     ///
     /// `slave_address` refers to the slave device you're communicating with.
-    /// The specified address shouldn't include the additional R/W bit.
+    /// The specified address shouldn't include the R/W bit.
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
         // Filter out reserved addresses
         if (slave_address < 8) || ((slave_address >> 3) == 0b1111) {
@@ -180,10 +184,20 @@ impl I2c {
         }
 
         unsafe {
-            ioctl::set_slave_address(self.i2cdev.as_raw_fd(), i32::from(slave_address))?;
+            ioctl::set_slave_address(self.i2cdev.as_raw_fd(), slave_address as c_ulong)?;
         }
 
         Ok(())
+    }
+
+    /// Checks what functionality is supported by the I2C bus.
+    ///
+    /// The returned instance of [`Capabilities`] will tell you which
+    /// I2C and SMBus features are available.
+    ///
+    /// [`Capabilities`]: index.html
+    pub fn capabilities(&self) -> Result<Capabilities> {
+        unsafe { Ok(ioctl::get_funcs(self.i2cdev.as_raw_fd())?) }
     }
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
@@ -212,20 +226,16 @@ impl I2c {
     }
 
     /// max 32 bytes
-    pub fn read_block(&self, command: u8, buffer: &mut [u8]) {
+    pub fn read_block(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
         unimplemented!()
     }
 
     /// max 32 bytes
-    pub fn write_block(&self, command: u8, buffer: &[u8]) {
+    pub fn write_block(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unimplemented!()
     }
 
-    pub fn smbus_quick_command(&self, command: bool) {
-        unimplemented!()
-    }
-
-    pub fn smbus_send_byte(&self, command: u8) {
+    pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
         unimplemented!()
     }
 
@@ -233,11 +243,15 @@ impl I2c {
         unimplemented!()
     }
 
+    pub fn smbus_send_byte(&self, command: u8) -> Result<()> {
+        unimplemented!()
+    }
+
     pub fn smbus_read_byte(&self, command: u8) -> Result<u8> {
         unimplemented!()
     }
 
-    pub fn smbus_write_byte(&self, command: u8, buffer: u8) {
+    pub fn smbus_write_byte(&self, command: u8, buffer: u8) -> Result<()> {
         unimplemented!()
     }
 
@@ -245,7 +259,7 @@ impl I2c {
         unimplemented!()
     }
 
-    pub fn smbus_write_word(&self, command: u8, buffer: u16) {
+    pub fn smbus_write_word(&self, command: u8, buffer: u16) -> Result<()> {
         unimplemented!()
     }
 
@@ -253,11 +267,14 @@ impl I2c {
         unimplemented!()
     }
 
-    pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) {
+    pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unimplemented!()
     }
 
-    pub fn smbus_set_pec(&self, pec: bool) {
+    /// Enables or disables SMBus Packet Error Correction.
+    ///
+    /// By default, `pec` is set to `false`.
+    pub fn smbus_set_pec(&self, pec: bool) -> Result<()> {
         unimplemented!()
     }
 }
