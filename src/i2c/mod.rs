@@ -20,9 +20,9 @@
 
 //! Interface for the I2C peripherals.
 //!
-//! The Broadcom Serial Controller (BSC) peripheral offers a proprietary bus
-//! compliant with the I2C bus/interface. RPPAL accesses the BSC through the
-//! i2cdev device interface.
+//! The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus
+//! compliant with the I2C bus/interface. RPPAL communicates with the BSC
+//! using the i2cdev device interface.
 //!
 //! ## I2C buses
 //!
@@ -68,7 +68,7 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use libc::{c_ulong};
+use libc::c_ulong;
 
 use system;
 use system::{DeviceInfo, Model};
@@ -107,8 +107,22 @@ impl From<system::Error> for Error {
 /// Result type returned from methods that can have `i2c::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
+/// Provides access to the Raspberry Pi's I2C peripherals.
+///
+/// Before using `I2c`, make sure your Raspberry Pi has the necessary I2C buses
+/// enabled. More information can be found [here].
+///
+/// Besides basic I2C communication through buffer reads and writes, `I2c` can
+/// also be used with devices that require SMBus (System Management Bus). SMBus
+/// is based on I2C, and defines more structured message transactions
+/// through its various protocols. More details can be found in the latest SMBus
+/// [specification].
+///
+/// [here]: index.html
+/// [specification]: http://smbus.org/specs/SMBus_3_1_20180319.pdf
 pub struct I2c {
     bus: u8,
+    capabilities: Capabilities,
     i2cdev: File,
     // The not_sync field is a workaround to force !Sync. I2c isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
@@ -153,6 +167,7 @@ impl I2c {
 
         Ok(I2c {
             bus,
+            capabilities: unsafe { ioctl::funcs(i2cdev.as_raw_fd())? },
             i2cdev,
             not_sync: PhantomData,
         })
@@ -178,9 +193,20 @@ impl I2c {
     /// `slave_address` refers to the slave device you're communicating with.
     /// The specified address shouldn't include the R/W bit.
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
-        // Filter out reserved addresses
-        if (slave_address < 8) || ((slave_address >> 3) == 0b1111) {
+        // Filter out reserved, invalid and unsupported addresses
+        if (slave_address < 8)
+            || ((slave_address >> 3) == 0b1111)
+            || (slave_address > 0x03FF)
+            || ((slave_address > 0x7F) && !self.capabilities.addr_10bit())
+        {
             return Err(Error::InvalidSlaveAddress(slave_address));
+        }
+
+        // If this is a 10-bit address, make sure we enable 10-bit addressing first
+        if slave_address > 0x7F {
+            unsafe {
+                ioctl::set_10bit(self.i2cdev.as_raw_fd(), 1)?;
+            }
         }
 
         unsafe {
@@ -196,8 +222,8 @@ impl I2c {
     /// I2C and SMBus features are available.
     ///
     /// [`Capabilities`]: index.html
-    pub fn capabilities(&self) -> Result<Capabilities> {
-        unsafe { Ok(ioctl::get_funcs(self.i2cdev.as_raw_fd())?) }
+    pub fn capabilities(&self) -> Capabilities {
+        self.capabilities
     }
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
@@ -205,9 +231,7 @@ impl I2c {
     /// The I2C protocol doesn't indicate how much incoming data is waiting,
     /// so the maximum number of bytes read depends on the length of `buffer`.
     ///
-    /// A START condition is sent before transmitting the slave address, and a STOP
-    /// condition is sent after reading the last byte. No START or STOP is sent in
-    /// between bytes.
+    /// Sequence: START -> Address + Read Bit -> Buffer -> STOP
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
@@ -220,29 +244,52 @@ impl I2c {
     /// condition is sent after writing the last byte. No START or STOP is sent in
     /// between bytes.
     ///
+    /// Sequence: START -> Address + Write Bit -> Buffer -> STOP
+    ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         Ok(self.i2cdev.write(buffer)?)
     }
 
-    /// max 32 bytes
+    /// Writes `command` to the slave device, and then fills `buffer` with
+    /// incoming data.
+    ///
+    /// Although `read_block` isn't part of the SMBus protocol, it uses the
+    /// SMBus functionality to offer this commonly used I2C transaction format.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
+    /// -> Address + Read Bit -> Buffer -> STOP
+    ///
+    /// The buffer can't be longer than 32 bytes.
     pub fn read_block(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
         unimplemented!()
     }
 
-    /// max 32 bytes
+    /// Writes `command` to the slave device, and then sends `buffer`.
+    ///
+    /// Although `write_block` isn't part of the SMBus protocol, it uses the
+    /// SMBus functionality to offer this commonly used I2C transaction format.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Buffer -> STOP
+    ///
+    /// The buffer can't be longer than 32 bytes.
     pub fn write_block(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unimplemented!()
     }
 
+    /// Sends a 1-bit command in place of the R/W bit.
+    ///
+    /// Sequence: START -> Address + Command Bit -> STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
         unimplemented!()
     }
 
+    ///
     pub fn smbus_receive_byte(&self) -> Result<u8> {
         unimplemented!()
     }
 
+    /// SMBus Send Byte
     pub fn smbus_send_byte(&self, command: u8) -> Result<()> {
         unimplemented!()
     }
@@ -275,7 +322,11 @@ impl I2c {
     ///
     /// By default, `pec` is set to `false`.
     pub fn smbus_set_pec(&self, pec: bool) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            ioctl::set_pec(self.i2cdev.as_raw_fd(), pec as c_ulong)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -287,6 +338,7 @@ impl fmt::Debug for I2c {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("I2c")
             .field("bus", &self.bus)
+            .field("capabilities", &self.capabilities)
             .field("i2cdev", &self.i2cdev)
             .finish()
     }

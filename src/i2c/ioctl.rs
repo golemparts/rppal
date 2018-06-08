@@ -34,18 +34,6 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
-const REQ_RETRIES: c_ulong = 0x0701; // How many retries when waiting for an ACK
-const REQ_TIMEOUT: c_ulong = 0x0702; // Timeout in 10ms units
-const REQ_SLAVE: c_ulong = 0x0706; // Set slave address
-const REQ_SLAVE_FORCE: c_ulong = 0x0703; // Set slave address, even if it's already in use by a driver
-const REQ_TENBIT: c_ulong = 0x0704; // Use 10-bit slave addresses
-const REQ_FUNCS: c_ulong = 0x0705; // Read I2C bus capabilities
-const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single STOP
-const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
-const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer
-
-// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
-
 // Capabilities returned by REQ_FUNCS
 const FUNC_I2C: c_ulong = 0x01;
 const FUNC_10BIT_ADDR: c_ulong = 0x02;
@@ -68,6 +56,7 @@ const FUNC_SMBUS_READ_I2C_BLOCK: c_ulong = 0x04000000;
 const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x08000000;
 const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x10000000;
 
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Capabilities {
     funcs: c_ulong,
 }
@@ -158,6 +147,19 @@ impl Capabilities {
     }
 }
 
+// ioctl() requests supported by i2cdev
+const REQ_RETRIES: c_ulong = 0x0701; // How many retries when waiting for an ACK
+const REQ_TIMEOUT: c_ulong = 0x0702; // Timeout in 10ms units
+const REQ_SLAVE: c_ulong = 0x0706; // Set slave address
+const REQ_SLAVE_FORCE: c_ulong = 0x0703; // Set slave address, even if it's already in use by a driver
+const REQ_TENBIT: c_ulong = 0x0704; // Use 10-bit slave addresses
+const REQ_FUNCS: c_ulong = 0x0705; // Read I2C bus capabilities
+const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single STOP
+const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
+const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer
+
+// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
+
 // All ioctl commands take an unsigned long parameter, except for
 // REQ_FUNCS (pointer to an unsigned long), REQ_RDWR (pointer to
 // ic2_rdwr_ioctl_data) and REQ_SMBUS (pointer to i2c_smbus_ioctl_data)
@@ -166,7 +168,15 @@ pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<i32> {
     parse_retval(ioctl(fd, REQ_SLAVE, value))
 }
 
-pub unsafe fn get_funcs(fd: c_int) -> Result<Capabilities> {
+pub unsafe fn set_10bit(fd: c_int, value: c_ulong) -> Result<i32> {
+    parse_retval(ioctl(fd, REQ_TENBIT, value))
+}
+
+pub unsafe fn set_pec(fd: c_int, value: c_ulong) -> Result<i32> {
+    parse_retval(ioctl(fd, REQ_PEC, value))
+}
+
+pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
     let mut funcs: c_ulong = 0;
 
     parse_retval(ioctl(fd, REQ_FUNCS, &mut funcs))?;
