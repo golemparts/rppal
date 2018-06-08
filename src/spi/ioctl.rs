@@ -90,10 +90,10 @@ pub const MODE_3WIRE: u8 = 0x10; // Set bidirectional mode
 pub const MODE_LOOP: u8 = 0x20; // Set loopback mode
 pub const MODE_NO_CS: u8 = 0x40; // Don't assert SS
 pub const MODE_READY: u8 = 0x80; // Slave sends a ready signal
-pub const MODE_TX_DUAL: u32 = 0x100; // Send on 2 outgoing lines
-pub const MODE_TX_QUAD: u32 = 0x200; // Send on 4 outgoing lines
-pub const MODE_RX_DUAL: u32 = 0x400; // Receive on 2 incoming lines
-pub const MODE_RX_QUAD: u32 = 0x800; // Receive on 4 incoming lines
+pub const MODE_TX_DUAL: u32 = 0x0100; // Send on 2 outgoing lines
+pub const MODE_TX_QUAD: u32 = 0x0200; // Send on 4 outgoing lines
+pub const MODE_RX_DUAL: u32 = 0x0400; // Receive on 2 incoming lines
+pub const MODE_RX_QUAD: u32 = 0x0800; // Receive on 4 incoming lines
 
 /// Part of a multi-segment transfer.
 ///
