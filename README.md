@@ -29,14 +29,13 @@ To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directl
 
 _Coming in Release 0.7.0_
 
-The Broadcom Serial Controller (BSC) peripheral offers a proprietary bus compliant with the I2C bus/interface. RPPAL accesses the BSC through the i2cdev device interface.
+The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compliant with the I2C bus/interface. RPPAL communicates with the BSC using the i2cdev device interface. Basic I2C reads/writes are supported, as well as several SMBus protocols.
 
 #### Features
 
-* I2C single master
-* Up to 400kbit/s (Fast-mode) transfer rates
-* 7-bit and 10-bit addressing
-* Clock stretching
+* I2C single master, 7-bit and 10-bit slave addresses, clock stretching
+* Transfer rates up to 400kbit/s (Fast-mode)
+* SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 
 ### SPI
 

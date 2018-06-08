@@ -85,7 +85,7 @@ quick_error! {
 /// are reserved, and can't be used as slave addresses. A list of
 /// those reserved addresses can be found [here].
 ///
-/// [here]: https://www.i2c-bus.org/addressing/
+/// [here]: https://en.wikipedia.org/wiki/I%C2%B2C#Reserved_addresses_in_7-bit_address_space
         InvalidSlaveAddress(slave_address: u16) { description("invalid slave address") }
 /// Unknown SoC.
 ///
@@ -191,6 +191,10 @@ impl I2c {
     /// The I2C protocol doesn't indicate how much incoming data is waiting,
     /// so the maximum number of bytes read depends on the length of `buffer`.
     ///
+    /// A START condition is sent before transmitting the slave address, and a STOP
+    /// condition is sent after reading the last byte. No START or STOP is sent in
+    /// between bytes.
+    ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         Ok(self.i2cdev.read(buffer)?)
@@ -198,9 +202,63 @@ impl I2c {
 
     /// Sends the outgoing data contained in `buffer` to the slave device.
     ///
+    /// A START condition is sent before transmitting the slave address, and a STOP
+    /// condition is sent after writing the last byte. No START or STOP is sent in
+    /// between bytes.
+    ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         Ok(self.i2cdev.write(buffer)?)
+    }
+
+    /// max 32 bytes
+    pub fn read_block(&self, command: u8, buffer: &mut [u8]) {
+        unimplemented!()
+    }
+
+    /// max 32 bytes
+    pub fn write_block(&self, command: u8, buffer: &[u8]) {
+        unimplemented!()
+    }
+
+    pub fn smbus_quick_command(&self, command: bool) {
+        unimplemented!()
+    }
+
+    pub fn smbus_send_byte(&self, command: u8) {
+        unimplemented!()
+    }
+
+    pub fn smbus_receive_byte(&self) -> Result<u8> {
+        unimplemented!()
+    }
+
+    pub fn smbus_read_byte(&self, command: u8) -> Result<u8> {
+        unimplemented!()
+    }
+
+    pub fn smbus_write_byte(&self, command: u8, buffer: u8) {
+        unimplemented!()
+    }
+
+    pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
+        unimplemented!()
+    }
+
+    pub fn smbus_write_word(&self, command: u8, buffer: u16) {
+        unimplemented!()
+    }
+
+    pub fn smbus_process_call(&self, command: u8, buffer: u16) -> Result<u16> {
+        unimplemented!()
+    }
+
+    pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) {
+        unimplemented!()
+    }
+
+    pub fn smbus_set_pec(&self, pec: bool) {
+        unimplemented!()
     }
 }
 
