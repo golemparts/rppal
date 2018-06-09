@@ -168,7 +168,7 @@ pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<i32> {
     parse_retval(ioctl(fd, REQ_SLAVE, value))
 }
 
-pub unsafe fn set_10bit(fd: c_int, value: c_ulong) -> Result<i32> {
+pub unsafe fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<i32> {
     parse_retval(ioctl(fd, REQ_TENBIT, value))
 }
 

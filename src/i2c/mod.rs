@@ -124,6 +124,7 @@ pub struct I2c {
     bus: u8,
     capabilities: Capabilities,
     i2cdev: File,
+    addr_10bit: bool,
     // The not_sync field is a workaround to force !Sync. I2c isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
     // #![feature(optin_builtin_traits)] to manually add impl !Sync for I2c.
@@ -158,19 +159,46 @@ impl I2c {
     ///
     /// [here]: index.html
     pub fn with_bus(bus: u8) -> Result<I2c> {
-        // bus is a u8, because any bus ID could potentially
+        // bus is a u8, because any 8-bit bus ID could potentially
         // be configured for bit banging I2C using i2c-gpio.
         let i2cdev = OpenOptions::new()
             .read(true)
             .write(true)
             .open(format!("/dev/i2c-{}", bus))?;
 
+        let capabilities = unsafe { ioctl::funcs(i2cdev.as_raw_fd())? };
+
+        // Disable 10-bit addressing if it's supported
+        if capabilities.addr_10bit() {
+            unsafe {
+                ioctl::set_addr_10bit(i2cdev.as_raw_fd(), 0)?;
+            }
+        }
+
+        // Disable PEC if it's supported
+        if capabilities.smbus_pec() {
+            unsafe {
+                ioctl::set_pec(i2cdev.as_raw_fd(), 0)?;
+            }
+        }
+
         Ok(I2c {
             bus,
-            capabilities: unsafe { ioctl::funcs(i2cdev.as_raw_fd())? },
+            capabilities,
             i2cdev,
+            addr_10bit: false,
             not_sync: PhantomData,
         })
+    }
+
+    /// Returns information on the functionality supported by the I2C drivers.
+    ///
+    /// The returned [`Capabilities`] instance lists the available
+    /// I2C and SMBus features.
+    ///
+    /// [`Capabilities`]: index.html
+    pub fn capabilities(&self) -> Capabilities {
+        self.capabilities
     }
 
     /// Returns the clock frequency in herz (Hz).
@@ -192,21 +220,27 @@ impl I2c {
     ///
     /// `slave_address` refers to the slave device you're communicating with.
     /// The specified address shouldn't include the R/W bit.
+    ///
+    /// By default, 10-bit addressing is disabled, which means
+    /// `set_slave_address` only accepts 7-bit addresses. 10-bit addressing
+    /// can be enabled with [`set_addr_10bit`]. Note that setting a 7-bit
+    /// address when 10-bit addressing is enabled won't correctly target a
+    /// slave device that doesn't support 10-bit addresses.
+    ///
+    /// [`set_addr_10bit`]: index.html
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
+        // linux/Documentation/i2c/ten-bit-addresses mentions adding
+        // an 0xa000 offset to 10-bit addresses to prevent overlap with
+        // 7-bit addresses. However, i2c-dev.c doesn't seem to have
+        // that implemented and returns EINVALID for anything > 0x03FF.
+        // TODO: Try 10-bit addresses both with and without the offset to make sure we're not missing something obvious.
+
         // Filter out reserved, invalid and unsupported addresses
-        if (slave_address < 8)
-            || ((slave_address >> 3) == 0b1111)
-            || (slave_address > 0x03FF)
-            || ((slave_address > 0x7F) && !self.capabilities.addr_10bit())
+        if (!self.addr_10bit
+            && (slave_address < 8 || (slave_address >> 3) == 0b1111 || slave_address > 0x7F))
+            || (self.addr_10bit && slave_address > 0x03FF)
         {
             return Err(Error::InvalidSlaveAddress(slave_address));
-        }
-
-        // If this is a 10-bit address, make sure we enable 10-bit addressing first
-        if slave_address > 0x7F {
-            unsafe {
-                ioctl::set_10bit(self.i2cdev.as_raw_fd(), 1)?;
-            }
         }
 
         unsafe {
@@ -216,14 +250,17 @@ impl I2c {
         Ok(())
     }
 
-    /// Checks what functionality is supported by the I2C bus.
+    /// Enables or disables 10-bit addressing.
     ///
-    /// The returned instance of [`Capabilities`] will tell you which
-    /// I2C and SMBus features are available.
-    ///
-    /// [`Capabilities`]: index.html
-    pub fn capabilities(&self) -> Capabilities {
-        self.capabilities
+    /// By default, `addr_10bit` is set to `false`.
+    pub fn set_addr_10bit(&mut self, addr_10bit: bool) -> Result<()> {
+        unsafe {
+            ioctl::set_addr_10bit(self.i2cdev.as_raw_fd(), addr_10bit as c_ulong)?;
+        }
+
+        self.addr_10bit = addr_10bit;
+
+        Ok(())
     }
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
@@ -251,74 +288,124 @@ impl I2c {
         Ok(self.i2cdev.write(buffer)?)
     }
 
-    /// Writes `command` to the slave device, and then fills `buffer` with
+    /// Sends a `command` byte, and then fills a multi-byte `buffer` with
     /// incoming data.
     ///
     /// Although `read_block` isn't part of the SMBus protocol, it uses the
     /// SMBus functionality to offer this commonly used I2C transaction format.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
-    /// -> Address + Read Bit -> Buffer -> STOP
-    ///
     /// The buffer can't be longer than 32 bytes.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
+    /// -> Address + Read Bit -> Incoming Bytes -> STOP
     pub fn read_block(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
         unimplemented!()
     }
 
-    /// Writes `command` to the slave device, and then sends `buffer`.
+    /// Sends a `command` byte followed by a multi-byte `buffer`.
     ///
     /// Although `write_block` isn't part of the SMBus protocol, it uses the
     /// SMBus functionality to offer this commonly used I2C transaction format.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Buffer -> STOP
-    ///
     /// The buffer can't be longer than 32 bytes.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Bytes -> STOP
     pub fn write_block(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unimplemented!()
     }
 
-    /// Sends a 1-bit command in place of the R/W bit.
+    /// Sends a 1-bit `command` in place of the R/W bit.
     ///
     /// Sequence: START -> Address + Command Bit -> STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
         unimplemented!()
     }
 
+    /// Receives a byte.
     ///
+    /// Sequence: START -> Address + Read Bit -> Incoming Byte -> STOP
     pub fn smbus_receive_byte(&self) -> Result<u8> {
         unimplemented!()
     }
 
-    /// SMBus Send Byte
-    pub fn smbus_send_byte(&self, command: u8) -> Result<()> {
+    /// Sends a byte `value`.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Outgoing Byte -> STOP
+    pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
         unimplemented!()
     }
 
+    /// Sends a `command` byte, and receives a byte.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
+    /// -> Address + Read Bit -> Incoming Byte -> STOP
     pub fn smbus_read_byte(&self, command: u8) -> Result<u8> {
         unimplemented!()
     }
 
-    pub fn smbus_write_byte(&self, command: u8, buffer: u8) -> Result<()> {
+    /// Sends a `command` byte and a byte `value`.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte -> STOP
+    pub fn smbus_write_byte(&self, command: u8, value: u8) -> Result<()> {
         unimplemented!()
     }
 
+    /// Sends a `command` byte, and receives a 16-bit value.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
+    /// -> Address + Read Bit -> Incoming Byte Low -> Incoming Byte High -> STOP
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
         unimplemented!()
     }
 
-    pub fn smbus_write_word(&self, command: u8, buffer: u16) -> Result<()> {
+    /// Sends a `command` byte and a 16-bit `value`.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low -> Outgoing Byte High -> STOP
+    pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
         unimplemented!()
     }
 
-    pub fn smbus_process_call(&self, command: u8, buffer: u16) -> Result<u16> {
+    /// Sends a `command` byte and a 16-bit `value`, and then receives a 16-bit value in response.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low ->
+    /// Outgoing Byte High -> Repeated START -> Address + Read Bit -> Incoming Byte Low ->
+    /// Incoming Byte High -> STOP
+    pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
         unimplemented!()
     }
 
+    /// Sends a 'command' byte, and then receives a byte count along with a
+    /// multi-byte `buffer`.
+    ///
+    /// `smbus_block_read` can read a maximum of 255 bytes. If the provided
+    /// `buffer` is too small to hold all incoming data, the remaining data
+    /// is discarded.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
+    /// Address + Read Bit -> Incoming Byte Count -> Incoming Bytes -> STOP
+    ///
+    /// Returns the length of the incoming data.
+    pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<u8> {
+        // TODO: Try to implement smbus_block_read using i2c_block_read
+        let mut max_buffer = [0u8; 256]; // 1 byte count + 255 data bytes max
+
+        unimplemented!()
+    }
+
+    /// Sends a `command` byte and a byte count along with a multi-byte `buffer`.
+    ///
+    /// `smbus_block_write` can write a maximum of 255 bytes.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Count
+    /// -> Outgoing Bytes -> STOP
     pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unimplemented!()
     }
 
     /// Enables or disables SMBus Packet Error Correction.
+    ///
+    /// PEC inserts a CRC-8 error-checking byte before each STOP condition
+    /// for all SMBus protocols, except Quick Command and Host Notify.
     ///
     /// By default, `pec` is set to `false`.
     pub fn smbus_set_pec(&self, pec: bool) -> Result<()> {
