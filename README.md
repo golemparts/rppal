@@ -35,7 +35,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 * I2C single master, 7-bit and 10-bit slave addresses, clock stretching
 * Transfer rates up to 400kbit/s (Fast-mode)
-* I2C read/write bytes, block read/write
+* I2C basic read/write, block read/write
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 
 ### SPI
@@ -103,7 +103,7 @@ use std::time::Duration;
 use rppal::gpio::{Gpio, Mode, Level};
 use rppal::system::DeviceInfo;
 
-// The GPIO module uses BCM pin numbering. BCM GPIO 18 can be accessed through physical pin 12.
+// The GPIO module uses BCM pin numbering. BCM GPIO 18 is located on physical pin 12.
 const GPIO_LED: u8 = 18;
 
 fn main() {
