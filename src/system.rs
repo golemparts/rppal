@@ -31,9 +31,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
-const PERIPHERAL_BASE_RPI: u32 = 0x20_000_000;
-const PERIPHERAL_BASE_RPI2: u32 = 0x3f_000_000;
-const GPIO_OFFSET: u32 = 0x200_000;
+const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
+const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
+const GPIO_OFFSET: u32 = 0x20_0000;
 
 quick_error! {
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.

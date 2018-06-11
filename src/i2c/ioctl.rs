@@ -42,19 +42,19 @@ const FUNC_SMBUS_PEC: c_ulong = 0x08;
 const FUNC_NOSTART: c_ulong = 0x10;
 const FUNC_SLAVE: c_ulong = 0x20;
 const FUNC_SMBUS_BLOCK_PROC_CALL: c_ulong = 0x8000;
-const FUNC_SMBUS_QUICK: c_ulong = 0x010000;
-const FUNC_SMBUS_READ_BYTE: c_ulong = 0x020000;
-const FUNC_SMBUS_WRITE_BYTE: c_ulong = 0x040000;
-const FUNC_SMBUS_READ_BYTE_DATA: c_ulong = 0x080000;
-const FUNC_SMBUS_WRITE_BYTE_DATA: c_ulong = 0x100000;
-const FUNC_SMBUS_READ_WORD_DATA: c_ulong = 0x200000;
-const FUNC_SMBUS_WRITE_WORD_DATA: c_ulong = 0x400000;
-const FUNC_SMBUS_PROC_CALL: c_ulong = 0x800000;
-const FUNC_SMBUS_READ_BLOCK_DATA: c_ulong = 0x01000000;
-const FUNC_SMBUS_WRITE_BLOCK_DATA: c_ulong = 0x02000000;
-const FUNC_SMBUS_READ_I2C_BLOCK: c_ulong = 0x04000000;
-const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x08000000;
-const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x10000000;
+const FUNC_SMBUS_QUICK: c_ulong = 0x01_0000;
+const FUNC_SMBUS_READ_BYTE: c_ulong = 0x02_0000;
+const FUNC_SMBUS_WRITE_BYTE: c_ulong = 0x04_0000;
+const FUNC_SMBUS_READ_BYTE_DATA: c_ulong = 0x08_0000;
+const FUNC_SMBUS_WRITE_BYTE_DATA: c_ulong = 0x10_0000;
+const FUNC_SMBUS_READ_WORD_DATA: c_ulong = 0x20_0000;
+const FUNC_SMBUS_WRITE_WORD_DATA: c_ulong = 0x40_0000;
+const FUNC_SMBUS_PROC_CALL: c_ulong = 0x80_0000;
+const FUNC_SMBUS_READ_BLOCK_DATA: c_ulong = 0x0100_0000;
+const FUNC_SMBUS_WRITE_BLOCK_DATA: c_ulong = 0x0200_0000;
+const FUNC_SMBUS_READ_I2C_BLOCK: c_ulong = 0x0400_0000;
+const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x0800_0000;
+const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x1000_0000;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Capabilities {

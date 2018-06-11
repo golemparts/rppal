@@ -244,7 +244,7 @@ impl I2c {
         }
 
         unsafe {
-            ioctl::set_slave_address(self.i2cdev.as_raw_fd(), slave_address as c_ulong)?;
+            ioctl::set_slave_address(self.i2cdev.as_raw_fd(), c_ulong::from(slave_address))?;
         }
 
         Ok(())
@@ -386,7 +386,9 @@ impl I2c {
     ///
     /// Returns the length of the incoming data.
     pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<u8> {
-        // TODO: Try to implement smbus_block_read using i2c_block_read
+        // TODO: Try to implement smbus_block_read using i2c_block_read. But
+        // what happens when too many bytes are read? Plus we can only read
+        // 32 bytes max with i2c_block_read...
         let mut max_buffer = [0u8; 256]; // 1 byte count + 255 data bytes max
 
         unimplemented!()
@@ -399,6 +401,7 @@ impl I2c {
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Count
     /// -> Outgoing Bytes -> STOP
     pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
+        // TODO: SMBus standard says 255 bytes max. Linux docs mention 32 bytes max.
         unimplemented!()
     }
 
