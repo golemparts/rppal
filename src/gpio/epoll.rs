@@ -47,10 +47,7 @@ impl EventFd {
     pub fn new() -> Result<EventFd> {
         Ok(EventFd {
             fd: unsafe {
-                parse_retval(libc::eventfd(
-                    0 as libc::c_uint,
-                    libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE,
-                ))?
+                parse_retval(libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE))?
             },
         })
     }
@@ -86,7 +83,7 @@ pub struct Epoll {
 impl Epoll {
     pub fn new() -> Result<Epoll> {
         Ok(Epoll {
-            fd: unsafe { parse_retval(libc::epoll_create1(0 as libc::c_int))? },
+            fd: unsafe { parse_retval(libc::epoll_create1(0))? },
         })
     }
 
