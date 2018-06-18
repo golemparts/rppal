@@ -34,6 +34,9 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
+// Based on values copied from i2c.h, i2c-dev.h and the documentation
+// at https://www.kernel.org/doc/Documentation/i2c
+
 // Capabilities returned by REQ_FUNCS
 const FUNC_I2C: c_ulong = 0x01;
 const FUNC_10BIT_ADDR: c_ulong = 0x02;
@@ -158,11 +161,67 @@ const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single 
 const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
 const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer
 
+const SMBUS_BLOCK_MAX: usize = 32; // Maximum bytes per block transfer
+
+// SMBus read or write request
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum SmbusReadWrite {
+    Read = 1,
+    Write = 0,
+}
+
+// Size/Type identifiers for the data contained in SmbusBuffer
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum SmbusSize {
+    ByteData = 2,
+}
+
+// Holds data transferred by REQ_SMBUS requests. Data can either consist of a
+// single byte, a 16-bit word, or a block, where the first byte contains the length,
+// followed by up to 32 bytes of data, with the final byte used as padding.
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct SmbusBuffer {
+    data: [u8; SMBUS_BLOCK_MAX + 2],
+}
+
+impl SmbusBuffer {
+    pub fn new() -> SmbusBuffer {
+        SmbusBuffer {
+            data: [0u8; SMBUS_BLOCK_MAX + 2],
+        }
+    }
+}
+
+// Specifies SMBus request parameters
+#[repr(C)]
+struct SmbusRequest<'a> {
+    read_write: u8,
+    command: u8,
+    size: u32,
+    data: &'a mut SmbusBuffer,
+}
+
+impl<'a> SmbusRequest<'a> {
+    pub fn new(
+        read_write: SmbusReadWrite,
+        command: u8,
+        size: SmbusSize,
+        data: &mut SmbusBuffer,
+    ) -> SmbusRequest {
+        SmbusRequest {
+            read_write: read_write as u8,
+            command,
+            size: size as u32,
+            data,
+        }
+    }
+}
+
 // TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
 
 // All ioctl commands take an unsigned long parameter, except for
-// REQ_FUNCS (pointer to an unsigned long), REQ_RDWR (pointer to
-// ic2_rdwr_ioctl_data) and REQ_SMBUS (pointer to i2c_smbus_ioctl_data)
+// REQ_FUNCS, REQ_RDWR (pointer to ic2_rdwr_ioctl_data) and REQ_SMBUS
 
 pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<i32> {
     parse_retval(ioctl(fd, REQ_SLAVE, value))
@@ -182,4 +241,22 @@ pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
     parse_retval(ioctl(fd, REQ_FUNCS, &mut funcs))?;
 
     Ok(Capabilities::new(funcs))
+}
+
+pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
+    let mut buffer = SmbusBuffer::new();
+    {
+        let mut request = SmbusRequest::new(
+            SmbusReadWrite::Read,
+            command,
+            SmbusSize::ByteData,
+            &mut buffer,
+        );
+
+        if ioctl(fd, REQ_SMBUS, &mut request) == -1 {
+            return Err(io::Error::last_os_error());
+        }
+    }
+
+    Ok(buffer.data[0])
 }
