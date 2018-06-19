@@ -201,6 +201,11 @@ impl I2c {
         self.capabilities
     }
 
+    /// Returns the I2C bus ID.
+    pub fn bus(&self) -> u8 {
+        self.bus
+    }
+
     /// Returns the clock frequency in herz (Hz).
     pub fn clock_speed(&self) -> Result<u32> {
         let mut buffer = [0u8; 4];
