@@ -22,6 +22,7 @@
 
 use libc::{c_int, c_ulong, ioctl};
 use std::io;
+use std::ptr;
 use std::result;
 
 pub type Result<T> = result::Result<T, io::Error>;
@@ -34,7 +35,7 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
-// Based on i2c.h, i2c-dev.h and the documentation at https://www.kernel.org/doc/Documentation/i2c
+// Based on i2c.h, i2c-dev.c, i2c-dev.h and the documentation at https://www.kernel.org/doc/Documentation/i2c
 // and http://smbus.org/specs/SMBus_3_1_20180319.pdf
 
 // Capabilities returned by REQ_FUNCS
@@ -173,6 +174,7 @@ enum SmbusReadWrite {
 // Size/Type identifiers for the data contained in SmbusBuffer
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum SmbusSize {
+    Byte = 1,
     ByteData = 2,
     WordData = 3,
 }
@@ -218,11 +220,15 @@ impl SmbusBuffer {
 
 // Specifies SMBus request parameters
 #[repr(C)]
-struct SmbusRequest<'a> {
+struct SmbusRequest {
+    // Read (1) or write (0) request.
     read_write: u8,
+    // User-specified 8-bit command value.
     command: u8,
+    // Request type identifier.
     size: u32,
-    data: &'a mut SmbusBuffer,
+    // Pointer to buffer, or 0.
+    data: *mut SmbusBuffer,
 }
 
 unsafe fn smbus_request(
@@ -230,16 +236,38 @@ unsafe fn smbus_request(
     read_write: SmbusReadWrite,
     command: u8,
     size: SmbusSize,
-    data: &mut SmbusBuffer,
+    data: Option<&mut SmbusBuffer>,
 ) -> Result<i32> {
     let mut request = SmbusRequest {
         read_write: read_write as u8,
         command,
         size: size as u32,
-        data,
+        data: if let Some(buffer) = data {
+            buffer
+        } else {
+            ptr::null_mut()
+        },
     };
 
     parse_retval(ioctl(fd, REQ_SMBUS, &mut request))
+}
+
+pub unsafe fn smbus_receive_byte(fd: c_int) -> Result<u8> {
+    let mut buffer = SmbusBuffer::new();
+    smbus_request(
+        fd,
+        SmbusReadWrite::Read,
+        0,
+        SmbusSize::Byte,
+        Some(&mut buffer),
+    )?;
+
+    Ok(buffer.data[0])
+}
+
+pub unsafe fn smbus_send_byte(fd: c_int, value: u8) -> Result<i32> {
+    // Send Byte uses the command field, instead of the data buffer
+    smbus_request(fd, SmbusReadWrite::Write, value, SmbusSize::Byte, None)
 }
 
 pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
@@ -249,7 +277,7 @@ pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
         SmbusReadWrite::Read,
         command,
         SmbusSize::ByteData,
-        &mut buffer,
+        Some(&mut buffer),
     )?;
 
     Ok(buffer.data[0])
@@ -262,7 +290,7 @@ pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
         SmbusReadWrite::Read,
         command,
         SmbusSize::WordData,
-        &mut buffer,
+        Some(&mut buffer),
     )?;
 
     // Low byte is received first (SMBus 3.1 spec @ 6.5.5)
@@ -276,7 +304,7 @@ pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<i32>
         SmbusReadWrite::Write,
         command,
         SmbusSize::ByteData,
-        &mut buffer,
+        Some(&mut buffer),
     )
 }
 
@@ -287,7 +315,7 @@ pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<i32
         SmbusReadWrite::Write,
         command,
         SmbusSize::WordData,
-        &mut buffer,
+        Some(&mut buffer),
     )
 }
 

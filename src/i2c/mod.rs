@@ -330,14 +330,16 @@ impl I2c {
     ///
     /// Sequence: START -> Address + Read Bit -> Incoming Byte -> STOP
     pub fn smbus_receive_byte(&self) -> Result<u8> {
-        unimplemented!()
+        unsafe { Ok(ioctl::smbus_receive_byte(self.i2cdev.as_raw_fd())?) }
     }
 
     /// Sends a byte `value`.
     ///
     /// Sequence: START -> Address + Write Bit -> Outgoing Byte -> STOP
     pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
-        unimplemented!()
+        unsafe { ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?; }
+
+        Ok(())
     }
 
     /// Sends a `command` byte, and receives a byte.
