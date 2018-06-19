@@ -196,7 +196,7 @@ impl I2c {
     /// The returned [`Capabilities`] instance lists the available
     /// I2C and SMBus features.
     ///
-    /// [`Capabilities`]: index.html
+    /// [`Capabilities`]: struct.Capabilities.html
     pub fn capabilities(&self) -> Capabilities {
         self.capabilities
     }
@@ -232,7 +232,7 @@ impl I2c {
     /// address when 10-bit addressing is enabled won't correctly target a
     /// slave device that doesn't support 10-bit addresses.
     ///
-    /// [`set_addr_10bit`]: index.html
+    /// [`set_addr_10bit`]: #method.set_addr_10bit
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
         // linux/Documentation/i2c/ten-bit-addresses mentions adding
         // an 0xa000 offset to 10-bit addresses to prevent overlap with
@@ -357,15 +357,30 @@ impl I2c {
 
     /// Sends a `command` byte, and receives a 16-bit value.
     ///
+    /// Based on the SMBus protocol definition, the first byte received is
+    /// stored as the low byte of the 16-bit value, and the second byte as
+    /// the high byte. Some devices may require you to swap these bytes afterwards.
+    /// Alternatively, you can use [`read_block`] to receive the value as two
+    /// separate bytes.
+    ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
     /// -> Address + Read Bit -> Incoming Byte Low -> Incoming Byte High -> STOP
+    ///
+    /// [`read_block`]: #method.read_block
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
         unsafe { Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?) }
     }
 
     /// Sends a `command` byte and a 16-bit `value`.
     ///
+    /// Based on the SMBus protocol definition, the first byte sent is the low byte
+    /// of the 16-bit value, and the second byte is the high byte. Some devices may
+    /// require you to swap these bytes beforehand. Alternatively, you can use
+    /// [`write_block`] to send the value as two separate bytes.
+    ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low -> Outgoing Byte High -> STOP
+    ///
+    /// [`write_block`]: #method.write_block
     pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
         unimplemented!()
     }
