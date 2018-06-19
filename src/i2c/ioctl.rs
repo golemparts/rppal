@@ -34,8 +34,8 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
-// Based on values copied from i2c.h, i2c-dev.h and the documentation
-// at https://www.kernel.org/doc/Documentation/i2c
+// Based on i2c.h, i2c-dev.h and the documentation at https://www.kernel.org/doc/Documentation/i2c
+// and http://smbus.org/specs/SMBus_3_1_20180319.pdf
 
 // Capabilities returned by REQ_FUNCS
 const FUNC_I2C: c_ulong = 0x01;
@@ -192,6 +192,28 @@ impl SmbusBuffer {
             data: [0u8; SMBUS_BLOCK_MAX + 2],
         }
     }
+
+    pub fn with_byte(value: u8) -> SmbusBuffer {
+        let mut buffer = SmbusBuffer {
+            data: [0u8; SMBUS_BLOCK_MAX + 2],
+        };
+
+        buffer.data[0] = value;
+
+        buffer
+    }
+
+    pub fn with_word(value: u16) -> SmbusBuffer {
+        let mut buffer = SmbusBuffer {
+            data: [0u8; SMBUS_BLOCK_MAX + 2],
+        };
+
+        // Low byte is sent first (SMBus 3.1 spec @ 6.5.4)
+        buffer.data[0] = (value & 0xFF) as u8;
+        buffer.data[1] = (value >> 8) as u8;
+
+        buffer
+    }
 }
 
 // Specifies SMBus request parameters
@@ -203,20 +225,70 @@ struct SmbusRequest<'a> {
     data: &'a mut SmbusBuffer,
 }
 
-impl<'a> SmbusRequest<'a> {
-    pub fn new(
-        read_write: SmbusReadWrite,
-        command: u8,
-        size: SmbusSize,
-        data: &mut SmbusBuffer,
-    ) -> SmbusRequest {
-        SmbusRequest {
-            read_write: read_write as u8,
-            command,
-            size: size as u32,
-            data,
-        }
-    }
+unsafe fn smbus_request(
+    fd: c_int,
+    read_write: SmbusReadWrite,
+    command: u8,
+    size: SmbusSize,
+    data: &mut SmbusBuffer,
+) -> Result<i32> {
+    let mut request = SmbusRequest {
+        read_write: read_write as u8,
+        command,
+        size: size as u32,
+        data,
+    };
+
+    parse_retval(ioctl(fd, REQ_SMBUS, &mut request))
+}
+
+pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
+    let mut buffer = SmbusBuffer::new();
+    smbus_request(
+        fd,
+        SmbusReadWrite::Read,
+        command,
+        SmbusSize::ByteData,
+        &mut buffer,
+    )?;
+
+    Ok(buffer.data[0])
+}
+
+pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
+    let mut buffer = SmbusBuffer::new();
+    smbus_request(
+        fd,
+        SmbusReadWrite::Read,
+        command,
+        SmbusSize::WordData,
+        &mut buffer,
+    )?;
+
+    // Low byte is received first (SMBus 3.1 spec @ 6.5.5)
+    Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
+}
+
+pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<i32> {
+    let mut buffer = SmbusBuffer::with_byte(value);
+    smbus_request(
+        fd,
+        SmbusReadWrite::Write,
+        command,
+        SmbusSize::ByteData,
+        &mut buffer,
+    )
+}
+
+pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<i32> {
+    let mut buffer = SmbusBuffer::with_word(value);
+    smbus_request(
+        fd,
+        SmbusReadWrite::Write,
+        command,
+        SmbusSize::WordData,
+        &mut buffer,
+    )
 }
 
 // TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
@@ -242,41 +314,4 @@ pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
     parse_retval(ioctl(fd, REQ_FUNCS, &mut funcs))?;
 
     Ok(Capabilities::new(funcs))
-}
-
-pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
-    let mut buffer = SmbusBuffer::new();
-    {
-        let mut request = SmbusRequest::new(
-            SmbusReadWrite::Read,
-            command,
-            SmbusSize::ByteData,
-            &mut buffer,
-        );
-
-        if ioctl(fd, REQ_SMBUS, &mut request) == -1 {
-            return Err(io::Error::last_os_error());
-        }
-    }
-
-    Ok(buffer.data[0])
-}
-
-pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
-    let mut buffer = SmbusBuffer::new();
-    {
-        let mut request = SmbusRequest::new(
-            SmbusReadWrite::Read,
-            command,
-            SmbusSize::WordData,
-            &mut buffer,
-        );
-
-        if ioctl(fd, REQ_SMBUS, &mut request) == -1 {
-            return Err(io::Error::last_os_error());
-        }
-    }
-
-    // Low byte is received first (SMBus 3.1 spec @ 6.5.5)
-    Ok((buffer.data[0] as u16) | ((buffer.data[1] as u16) << 8))
 }

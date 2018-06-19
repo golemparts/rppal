@@ -352,7 +352,11 @@ impl I2c {
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte -> STOP
     pub fn smbus_write_byte(&self, command: u8, value: u8) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            ioctl::smbus_write_byte(self.i2cdev.as_raw_fd(), command, value)?;
+        }
+
+        Ok(())
     }
 
     /// Sends a `command` byte, and receives a 16-bit value.
@@ -382,7 +386,11 @@ impl I2c {
     ///
     /// [`write_block`]: #method.write_block
     pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            ioctl::smbus_write_word(self.i2cdev.as_raw_fd(), command, value)?;
+        }
+
+        Ok(())
     }
 
     /// Sends a `command` byte and a 16-bit `value`, and then receives a 16-bit value in response.
@@ -409,7 +417,7 @@ impl I2c {
         // TODO: Try to implement smbus_block_read using i2c_block_read. But
         // what happens when too many bytes are read? Plus we can only read
         // 32 bytes max with i2c_block_read...
-        let mut max_buffer = [0u8; 256]; // 1 byte count + 255 data bytes max
+        // let mut max_buffer = [0u8; 256]; // 1 byte count + 255 data bytes max
 
         unimplemented!()
     }
