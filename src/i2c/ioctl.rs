@@ -174,6 +174,7 @@ enum SmbusReadWrite {
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum SmbusSize {
     ByteData = 2,
+    WordData = 3,
 }
 
 // Holds data transferred by REQ_SMBUS requests. Data can either consist of a
@@ -259,4 +260,23 @@ pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
     }
 
     Ok(buffer.data[0])
+}
+
+pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
+    let mut buffer = SmbusBuffer::new();
+    {
+        let mut request = SmbusRequest::new(
+            SmbusReadWrite::Read,
+            command,
+            SmbusSize::WordData,
+            &mut buffer,
+        );
+
+        if ioctl(fd, REQ_SMBUS, &mut request) == -1 {
+            return Err(io::Error::last_os_error());
+        }
+    }
+
+    // Low byte is received first (SMBus 3.1 spec @ 6.5.5)
+    Ok((buffer.data[0] as u16) | ((buffer.data[1] as u16) << 8))
 }

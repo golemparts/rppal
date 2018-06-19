@@ -355,7 +355,7 @@ impl I2c {
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
     /// -> Address + Read Bit -> Incoming Byte Low -> Incoming Byte High -> STOP
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
-        unimplemented!()
+        unsafe { Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?) }
     }
 
     /// Sends a `command` byte and a 16-bit `value`.
