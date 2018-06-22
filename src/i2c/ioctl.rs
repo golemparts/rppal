@@ -178,6 +178,7 @@ enum SmbusSize {
     Byte = 1,
     ByteData = 2,
     WordData = 3,
+    ProcCall = 4,
 }
 
 // Holds data transferred by REQ_SMBUS requests. Data can either consist of a
@@ -333,6 +334,20 @@ pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<i32
         SmbusSize::WordData,
         Some(&mut buffer),
     )
+}
+
+pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u16> {
+    let mut buffer = SmbusBuffer::with_word(value);
+    smbus_request(
+        fd,
+        SmbusReadWrite::Write,
+        command,
+        SmbusSize::ProcCall,
+        Some(&mut buffer),
+    )?;
+
+    // Low byte is received first (SMBus 3.1 spec @ 6.5.6)
+    Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
 // TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers

@@ -402,13 +402,13 @@ impl I2c {
 
     // TODO: smbus_write_word_swapped?
 
-    /// Sends a `command` byte and a 16-bit `value`, and then receives a 16-bit value in response.
+    /// Sends an 8-bit `command` and a 16-bit `value`, and then receives a 16-bit value in response.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low ->
     /// Outgoing Byte High -> Repeated START -> Address + Read Bit -> Incoming Byte Low ->
     /// Incoming Byte High -> STOP
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
-        unimplemented!()
+        unsafe { Ok(ioctl::smbus_process_call(self.i2cdev.as_raw_fd(), command, value)?) }
     }
 
     // TODO: smbus_process_call_swapped?
