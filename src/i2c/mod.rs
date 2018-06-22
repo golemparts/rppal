@@ -290,7 +290,7 @@ impl I2c {
         Ok(self.i2cdev.write(buffer)?)
     }
 
-    /// Sends a `command` byte, and then fills a multi-byte `buffer` with
+    /// Sends an 8-bit `command`, and then fills a multi-byte `buffer` with
     /// incoming data.
     ///
     /// Although `read_block` isn't part of the SMBus protocol, it uses the
@@ -304,7 +304,7 @@ impl I2c {
         unimplemented!()
     }
 
-    /// Sends a `command` byte followed by a multi-byte `buffer`.
+    /// Sends an 8-bit `command` followed by a multi-byte `buffer`.
     ///
     /// Although `write_block` isn't part of the SMBus protocol, it uses the
     /// SMBus functionality to offer this commonly used I2C transaction format.
@@ -316,7 +316,7 @@ impl I2c {
         unimplemented!()
     }
 
-    /// Sends a `command` bit in place of the R/W bit.
+    /// Sends a 1-bit `command` in place of the R/W bit.
     ///
     /// Sequence: START -> Address + Command Bit -> STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
@@ -327,14 +327,14 @@ impl I2c {
         Ok(())
     }
 
-    /// Receives a byte.
+    /// Receives an 8-bit value.
     ///
     /// Sequence: START -> Address + Read Bit -> Incoming Byte -> STOP
     pub fn smbus_receive_byte(&self) -> Result<u8> {
         unsafe { Ok(ioctl::smbus_receive_byte(self.i2cdev.as_raw_fd())?) }
     }
 
-    /// Sends a byte `value`.
+    /// Sends an 8-bit `value`.
     ///
     /// Sequence: START -> Address + Write Bit -> Outgoing Byte -> STOP
     pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
@@ -345,7 +345,7 @@ impl I2c {
         Ok(())
     }
 
-    /// Sends a `command` byte, and receives a byte.
+    /// Sends an 8-bit `command`, and receives an 8-bit value.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
     /// -> Address + Read Bit -> Incoming Byte -> STOP
@@ -353,7 +353,7 @@ impl I2c {
         unsafe { Ok(ioctl::smbus_read_byte(self.i2cdev.as_raw_fd(), command)?) }
     }
 
-    /// Sends a `command` byte and a byte `value`.
+    /// Sends an 8-bit `command` and an 8-bit `value`.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte -> STOP
     pub fn smbus_write_byte(&self, command: u8, value: u8) -> Result<()> {
@@ -364,34 +364,44 @@ impl I2c {
         Ok(())
     }
 
-    /// Sends a `command` byte, and receives a 16-bit value.
+    /// Sends an 8-bit `command`, and receives a 16-bit value.
     ///
     /// Based on the SMBus protocol definition, the first byte received is
     /// stored as the low byte of the 16-bit value, and the second byte as
-    /// the high byte. Some devices may require you to swap these bytes afterwards.
-    /// Alternatively, you can use [`read_block`] to receive the value as two
-    /// separate bytes.
+    /// the high byte. Some devices may require you to swap these bytes. In those
+    /// cases you can use the convenience method [`smbus_read_word_swapped`] instead.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
     /// -> Address + Read Bit -> Incoming Byte Low -> Incoming Byte High -> STOP
     ///
-    /// [`read_block`]: #method.read_block
+    /// [`smbus_read_word_swapped`]: #method.smbus_read_word_swapped
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
         unsafe { Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?) }
     }
 
-    // TODO: smbus_read_word_swapped?
+    /// Sends an 8-bit `command`, and receives a 16-bit `value` in a non-standard swapped byte order.
+    ///
+    /// `smbus_read_word_swapped` is a convenience method that works similarly to [`smbus_read_word`],
+    /// but reverses the byte order of the incoming 16-bit value. The high byte is received first,
+    /// and the low byte second.
+    ///
+    /// [`smbus_read_word`]: #method.smbus_read_word
+    pub fn smbus_read_word_swapped(&self, command: u8) -> Result<u16> {
+        let value = unsafe { ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)? };
 
-    /// Sends a `command` byte and a 16-bit `value`.
+        Ok(((value & 0xFF00) >> 8) | ((value & 0xFF) << 8))
+    }
+
+    /// Sends an 8-bit `command` and a 16-bit `value`.
     ///
     /// Based on the SMBus protocol definition, the first byte sent is the low byte
     /// of the 16-bit value, and the second byte is the high byte. Some devices may
-    /// require you to swap these bytes beforehand. Alternatively, you can use
-    /// [`write_block`] to send the value as two separate bytes.
+    /// require you to swap these bytes. In those cases you can use the convenience method
+    /// [`smbus_write_word_swapped`] instead.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low -> Outgoing Byte High -> STOP
     ///
-    /// [`write_block`]: #method.write_block
+    /// [`smbus_write_word_swapped`]: #method.smbus_write_word_swapped
     pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
         unsafe {
             ioctl::smbus_write_word(self.i2cdev.as_raw_fd(), command, value)?;
@@ -400,7 +410,23 @@ impl I2c {
         Ok(())
     }
 
-    // TODO: smbus_write_word_swapped?
+    /// Sends an 8-bit `command` and a 16-bit `value` in a non-standard swapped byte order.
+    ///
+    /// `smbus_write_word_swapped` is a convenience method that works similarly to [`smbus_write_word`], but reverses the byte
+    /// order of the outgoing 16-bit value. The high byte is sent first, and the low byte second.
+    ///
+    /// [`smbus_write_word`]: #method.smbus_write_word
+    pub fn smbus_write_word_swapped(&self, command: u8, value: u16) -> Result<()> {
+        unsafe {
+            ioctl::smbus_write_word(
+                self.i2cdev.as_raw_fd(),
+                command,
+                ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
+            )?;
+        }
+
+        Ok(())
+    }
 
     /// Sends an 8-bit `command` and a 16-bit `value`, and then receives a 16-bit value in response.
     ///
@@ -408,17 +434,22 @@ impl I2c {
     /// Outgoing Byte High -> Repeated START -> Address + Read Bit -> Incoming Byte Low ->
     /// Incoming Byte High -> STOP
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
-        unsafe { Ok(ioctl::smbus_process_call(self.i2cdev.as_raw_fd(), command, value)?) }
+        unsafe {
+            Ok(ioctl::smbus_process_call(
+                self.i2cdev.as_raw_fd(),
+                command,
+                value,
+            )?)
+        }
     }
 
     // TODO: smbus_process_call_swapped?
 
-    /// Sends a 'command' byte, and then receives a byte count along with a
+    /// Sends an 8-bit 'command', and then receives an 8-bit byte count along with a
     /// multi-byte `buffer`.
     ///
     /// `smbus_block_read` can read a maximum of 255 bytes. If the provided
-    /// `buffer` is too small to hold all incoming data, the remaining data
-    /// is discarded.
+    /// `buffer` is too small to hold all incoming data, an error is returned.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
     /// Address + Read Bit -> Incoming Byte Count -> Incoming Bytes -> STOP
@@ -433,7 +464,7 @@ impl I2c {
         unimplemented!()
     }
 
-    /// Sends a `command` byte and a byte count along with a multi-byte `buffer`.
+    /// Sends an 8-bit `command` and an 8-bit byte count along with a multi-byte `buffer`.
     ///
     /// `smbus_block_write` can write a maximum of 255 bytes.
     ///
