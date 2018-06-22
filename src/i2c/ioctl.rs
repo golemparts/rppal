@@ -174,6 +174,7 @@ enum SmbusReadWrite {
 // Size/Type identifiers for the data contained in SmbusBuffer
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum SmbusSize {
+    Quick = 0,
     Byte = 1,
     ByteData = 2,
     WordData = 3,
@@ -250,6 +251,21 @@ unsafe fn smbus_request(
     };
 
     parse_retval(ioctl(fd, REQ_SMBUS, &mut request))
+}
+
+pub unsafe fn smbus_quick_command(fd: c_int, value: bool) -> Result<i32> {
+    // Quick Command uses the read_write field, instead of the data buffer
+    smbus_request(
+        fd,
+        if value {
+            SmbusReadWrite::Read
+        } else {
+            SmbusReadWrite::Write
+        },
+        0,
+        SmbusSize::Quick,
+        None,
+    )
 }
 
 pub unsafe fn smbus_receive_byte(fd: c_int) -> Result<u8> {

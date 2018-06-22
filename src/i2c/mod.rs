@@ -270,26 +270,23 @@ impl I2c {
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
-    /// The I2C protocol doesn't indicate how much incoming data is waiting,
-    /// so the maximum number of bytes read depends on the length of `buffer`.
+    /// `read` will read as many bytes as can fit in `buffer`.
     ///
-    /// Sequence: START -> Address + Read Bit -> Buffer -> STOP
+    /// Sequence: START -> Address + Read Bit -> Incoming Bytes -> STOP
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        // TODO: Is there a maximum buffer length?
         Ok(self.i2cdev.read(buffer)?)
     }
 
     /// Sends the outgoing data contained in `buffer` to the slave device.
     ///
-    /// A START condition is sent before transmitting the slave address, and a STOP
-    /// condition is sent after writing the last byte. No START or STOP is sent in
-    /// between bytes.
-    ///
-    /// Sequence: START -> Address + Write Bit -> Buffer -> STOP
+    /// Sequence: START -> Address + Write Bit -> Outgoing Bytes -> STOP
     ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
+        // TODO: Is there a maximum buffer length?
         Ok(self.i2cdev.write(buffer)?)
     }
 
@@ -319,11 +316,15 @@ impl I2c {
         unimplemented!()
     }
 
-    /// Sends a 1-bit `command` in place of the R/W bit.
+    /// Sends a `command` bit in place of the R/W bit.
     ///
     /// Sequence: START -> Address + Command Bit -> STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            ioctl::smbus_quick_command(self.i2cdev.as_raw_fd(), command)?;
+        }
+
+        Ok(())
     }
 
     /// Receives a byte.
@@ -337,7 +338,9 @@ impl I2c {
     ///
     /// Sequence: START -> Address + Write Bit -> Outgoing Byte -> STOP
     pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
-        unsafe { ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?; }
+        unsafe {
+            ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?;
+        }
 
         Ok(())
     }
@@ -377,6 +380,8 @@ impl I2c {
         unsafe { Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?) }
     }
 
+    // TODO: smbus_read_word_swapped?
+
     /// Sends a `command` byte and a 16-bit `value`.
     ///
     /// Based on the SMBus protocol definition, the first byte sent is the low byte
@@ -395,6 +400,8 @@ impl I2c {
         Ok(())
     }
 
+    // TODO: smbus_write_word_swapped?
+
     /// Sends a `command` byte and a 16-bit `value`, and then receives a 16-bit value in response.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low ->
@@ -403,6 +410,8 @@ impl I2c {
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
         unimplemented!()
     }
+
+    // TODO: smbus_process_call_swapped?
 
     /// Sends a 'command' byte, and then receives a byte count along with a
     /// multi-byte `buffer`.
