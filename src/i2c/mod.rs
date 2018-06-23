@@ -430,9 +430,16 @@ impl I2c {
 
     /// Sends an 8-bit `command` and a 16-bit `value`, and then receives a 16-bit value in response.
     ///
+    /// Based on the SMBus protocol definition, for both the outgoing and incoming 16-bit value,
+    /// the first byte transferred is the low byte of the 16-bit value, and the second byte is the
+    /// high byte. Some devices may require you to swap these bytes. In those cases you can use the
+    /// convenience method [`smbus_process_call_swapped`] instead.
+    ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low ->
     /// Outgoing Byte High -> Repeated START -> Address + Read Bit -> Incoming Byte Low ->
     /// Incoming Byte High -> STOP
+    ///
+    /// [`smbus_process_call_swapped`]: #method.smbus_process_call_swapped
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
         unsafe {
             Ok(ioctl::smbus_process_call(
@@ -443,13 +450,31 @@ impl I2c {
         }
     }
 
-    // TODO: smbus_process_call_swapped?
+    /// Sends an 8-bit `command` and a 16-bit `value`, and then receives a 16-bit value in response, in
+    /// a non-standard byte order.
+    ///
+    /// `smbus_process_call_swapped` is a convenience method that works similarly to [`smbus_process_call`],
+    /// but reverses the byte order of the outgoing and incoming 16-bit value. The high byte is transferred
+    /// first, and the low byte second.
+    ///
+    /// [`smbus_process_call`]: #method.smbus_process_call
+    pub fn smbus_process_call_swapped(&self, command: u8, value: u16) -> Result<u16> {
+        let response = unsafe {
+            ioctl::smbus_process_call(
+                self.i2cdev.as_raw_fd(),
+                command,
+                ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
+            )?
+        };
+
+        Ok(((response & 0xFF00) >> 8) | ((response & 0xFF) << 8))
+    }
 
     /// Sends an 8-bit 'command', and then receives an 8-bit byte count along with a
     /// multi-byte `buffer`.
     ///
-    /// `smbus_block_read` can read a maximum of 32 bytes. If the provided
-    /// `buffer` is too small to hold all incoming data, an error is returned.
+    /// `smbus_block_read` can read a maximum of 32 bytes. Any data that doesn't fit
+    /// in `buffer` is discarded.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
     /// Address + Read Bit -> Incoming Byte Count -> Incoming Bytes -> STOP
