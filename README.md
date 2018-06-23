@@ -33,10 +33,16 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 #### Features
 
-* I2C single master, 7-bit and 10-bit slave addresses, clock stretching
+* I2C single master, 7-bit slave addresses, clock stretching
 * Transfer rates up to 400kbit/s (Fast-mode)
 * I2C basic read/write, block read/write
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
+
+#### Unsupported features
+
+Several I2C and SMBus features aren't fully supported by the i2cdev interface, the underlying driver or
+the BCM283x SoC: 10-bit slave addresses, SMBus Block Read, SMBus Block Process Call, SMBus Host Notify,
+SMBus Read/Write 32/64, SMBus Address Resolution Protocol.
 
 ### SPI
 

@@ -505,7 +505,10 @@ impl I2c {
     ///
     /// `smbus_block_read` currently isn't supported on the Raspberry Pi, and returns
     /// an [`Error::FeatureNotSupported`] error unless underlying driver support is
-    /// detected.
+    /// detected. You might be able to emulate the `smbus_block_read` functionality
+    /// with either [`block_read`] or [`read`] if the length of the expected incoming
+    /// data is known beforehand, or if the slave device allows the master to read
+    /// more data than it wants to send.
     ///
     /// `smbus_block_read` can read a maximum of 32 bytes. Any data that doesn't fit
     /// in `buffer` is discarded.
@@ -516,6 +519,8 @@ impl I2c {
     /// Returns how many bytes were read.
     ///
     /// [`Error::FeatureNotSupported`]: enum.Error.html#variant.FeatureNotSupported
+    /// [`block_read`]: #method.block_read
+    /// [`read`]: #method.read
     pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<usize> {
         if !self.capabilities().smbus_block_read() {
             return Err(Error::FeatureNotSupported);
