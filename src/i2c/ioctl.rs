@@ -20,10 +20,12 @@
 
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong, ioctl};
+use std::fmt;
 use std::io;
 use std::ptr;
 use std::result;
+
+use libc::{c_int, c_ulong, ioctl};
 
 pub type Result<T> = result::Result<T, io::Error>;
 
@@ -60,7 +62,7 @@ const FUNC_SMBUS_READ_I2C_BLOCK: c_ulong = 0x0400_0000;
 const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x0800_0000;
 const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x1000_0000;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct Capabilities {
     funcs: c_ulong,
 }
@@ -148,6 +150,33 @@ impl Capabilities {
 
     pub fn smbus_host_notify(&self) -> bool {
         (self.funcs & FUNC_SMBUS_HOST_NOTIFY) > 0
+    }
+}
+
+impl fmt::Debug for Capabilities {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Capabilities")
+            .field("i2c", &self.i2c())
+            .field("slave", &self.slave())
+            .field("addr_10bit", &self.addr_10bit())
+            .field("i2c_block_read", &self.i2c_block_read())
+            .field("i2c_block_write", &self.i2c_block_write())
+            .field("protocol_mangling", &self.protocol_mangling())
+            .field("nostart", &self.nostart())
+            .field("smbus_quick_command", &self.smbus_quick_command())
+            .field("smbus_receive_byte", &self.smbus_receive_byte())
+            .field("smbus_send_byte", &self.smbus_send_byte())
+            .field("smbus_read_byte", &self.smbus_read_byte())
+            .field("smbus_write_byte", &self.smbus_write_byte())
+            .field("smbus_read_word", &self.smbus_read_word())
+            .field("smbus_write_word", &self.smbus_write_word())
+            .field("smbus_process_call", &self.smbus_process_call())
+            .field("smbus_block_read", &self.smbus_block_read())
+            .field("smbus_block_write", &self.smbus_block_write())
+            .field("smbus_block_process_call", &self.smbus_block_process_call())
+            .field("smbus_pec", &self.smbus_pec())
+            .field("smbus_host_notify", &self.smbus_host_notify())
+            .finish()
     }
 }
 
