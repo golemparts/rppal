@@ -179,6 +179,7 @@ enum SmbusSize {
     ByteData = 2,
     WordData = 3,
     ProcCall = 4,
+    BlockData = 5,
 }
 
 // Holds data transferred by REQ_SMBUS requests. Data can either consist of a
@@ -215,6 +216,22 @@ impl SmbusBuffer {
         // Low byte is sent first (SMBus 3.1 spec @ 6.5.4)
         buffer.data[0] = (value & 0xFF) as u8;
         buffer.data[1] = (value >> 8) as u8;
+
+        buffer
+    }
+
+    pub fn with_buffer(value: &[u8]) -> SmbusBuffer {
+        let mut buffer = SmbusBuffer {
+            data: [0u8; SMBUS_BLOCK_MAX + 2],
+        };
+
+        buffer.data[0] = if value.len() > SMBUS_BLOCK_MAX {
+            buffer.data[1..SMBUS_BLOCK_MAX + 1].copy_from_slice(&value[..SMBUS_BLOCK_MAX]);
+            SMBUS_BLOCK_MAX as u8
+        } else {
+            buffer.data[1..value.len() + 1].copy_from_slice(&value);
+            value.len() as u8
+        };
 
         buffer
     }
@@ -350,10 +367,18 @@ pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
-// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
+pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i32> {
+    let mut buffer = SmbusBuffer::with_buffer(value);
+    smbus_request(
+        fd,
+        SmbusReadWrite::Write,
+        command,
+        SmbusSize::BlockData,
+        Some(&mut buffer),
+    )
+}
 
-// All ioctl commands take an unsigned long parameter, except for
-// REQ_FUNCS, REQ_RDWR (pointer to ic2_rdwr_ioctl_data) and REQ_SMBUS
+// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
 
 pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<i32> {
     parse_retval(ioctl(fd, REQ_SLAVE, value))

@@ -448,7 +448,7 @@ impl I2c {
     /// Sends an 8-bit 'command', and then receives an 8-bit byte count along with a
     /// multi-byte `buffer`.
     ///
-    /// `smbus_block_read` can read a maximum of 255 bytes. If the provided
+    /// `smbus_block_read` can read a maximum of 32 bytes. If the provided
     /// `buffer` is too small to hold all incoming data, an error is returned.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
@@ -466,13 +466,17 @@ impl I2c {
 
     /// Sends an 8-bit `command` and an 8-bit byte count along with a multi-byte `buffer`.
     ///
-    /// `smbus_block_write` can write a maximum of 255 bytes.
+    /// `smbus_block_write` can write a maximum of 32 bytes. Any additional data contained
+    /// in `buffer` will be ignored.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Count
     /// -> Outgoing Bytes -> STOP
     pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
-        // TODO: SMBus standard says 255 bytes max. Linux docs mention 32 bytes max.
-        unimplemented!()
+        unsafe {
+            ioctl::smbus_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
+        }
+
+        Ok(())
     }
 
     /// Enables or disables SMBus Packet Error Correction.
