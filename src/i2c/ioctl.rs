@@ -180,6 +180,7 @@ enum SmbusSize {
     WordData = 3,
     ProcCall = 4,
     BlockData = 5,
+    I2cBlockData = 8,
 }
 
 // Holds data transferred by REQ_SMBUS requests. Data can either consist of a
@@ -374,6 +375,17 @@ pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<
         SmbusReadWrite::Write,
         command,
         SmbusSize::BlockData,
+        Some(&mut buffer),
+    )
+}
+
+pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i32> {
+    let mut buffer = SmbusBuffer::with_buffer(value);
+    smbus_request(
+        fd,
+        SmbusReadWrite::Write,
+        command,
+        SmbusSize::I2cBlockData,
         Some(&mut buffer),
     )
 }

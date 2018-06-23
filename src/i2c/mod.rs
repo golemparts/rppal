@@ -136,7 +136,7 @@ impl I2c {
     ///
     /// `new` tries to identify which I2C bus is bound to physical pins 3 (SDA)
     /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
-    /// it will select bus 0. For every other model, bus 1 is used.
+    /// bus 0 is selected. For every other model, bus 1 is used.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
@@ -270,7 +270,7 @@ impl I2c {
 
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
-    /// `read` will read as many bytes as can fit in `buffer`.
+    /// `read` reads as many bytes as can fit in `buffer`.
     ///
     /// Sequence: START -> Address + Read Bit -> Incoming Bytes -> STOP
     ///
@@ -293,27 +293,41 @@ impl I2c {
     /// Sends an 8-bit `command`, and then fills a multi-byte `buffer` with
     /// incoming data.
     ///
-    /// Although `read_block` isn't part of the SMBus protocol, it uses the
-    /// SMBus functionality to offer this commonly used I2C transaction format.
+    /// `block_read` can read a maximum of 32 bytes. Any data that doesn't fit
+    /// in `buffer` is discarded.
     ///
-    /// The buffer can't be longer than 32 bytes.
+    /// Although `block_read` isn't part of the SMBus protocol, it uses the
+    /// SMBus functionality to offer this commonly used I2C transaction format.
+    /// The difference between `block_read` and [`smbus_block_read`] is that the
+    /// latter also expects a byte count from the slave device.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
     /// -> Address + Read Bit -> Incoming Bytes -> STOP
-    pub fn read_block(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
+    ///
+    /// [`smbus_block_read`]: #method.smbus_block_read
+    pub fn block_read(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
         unimplemented!()
     }
 
     /// Sends an 8-bit `command` followed by a multi-byte `buffer`.
     ///
-    /// Although `write_block` isn't part of the SMBus protocol, it uses the
-    /// SMBus functionality to offer this commonly used I2C transaction format.
+    /// `block_write` can write a maximum of 32 bytes. Any additional data contained
+    /// in `buffer` is ignored.
     ///
-    /// The buffer can't be longer than 32 bytes.
+    /// Although `block_write` isn't part of the SMBus protocol, it uses the
+    /// SMBus functionality to offer this commonly used I2C transaction format. The
+    /// difference between `block_write` and [`smbus_block_write`] is that the latter
+    /// also sends a byte count to the slave device.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Bytes -> STOP
-    pub fn write_block(&self, command: u8, buffer: &[u8]) -> Result<()> {
-        unimplemented!()
+    ///
+    /// [`smbus_block_write`]: #method.smbus_block_write
+    pub fn block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
+        unsafe {
+            ioctl::i2c_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
+        }
+
+        Ok(())
     }
 
     /// Sends a 1-bit `command` in place of the R/W bit.
@@ -492,7 +506,7 @@ impl I2c {
     /// Sends an 8-bit `command` and an 8-bit byte count along with a multi-byte `buffer`.
     ///
     /// `smbus_block_write` can write a maximum of 32 bytes. Any additional data contained
-    /// in `buffer` will be ignored.
+    /// in `buffer` is ignored.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Count
     /// -> Outgoing Bytes -> STOP
