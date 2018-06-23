@@ -261,8 +261,16 @@ impl I2c {
 
     /// Enables or disables 10-bit addressing.
     ///
+    /// 10-bit addressing currently isn't supported on the Raspberry Pi, and returns
+    /// an [`Error::FeatureNotSupported`] error unless underlying driver support is
+    /// detected.
+    ///
     /// By default, `addr_10bit` is set to `false`.
     pub fn set_addr_10bit(&mut self, addr_10bit: bool) -> Result<()> {
+        if !self.capabilities().addr_10bit() {
+            return Err(Error::FeatureNotSupported);
+        }
+
         unsafe {
             ioctl::set_addr_10bit(self.i2cdev.as_raw_fd(), addr_10bit as c_ulong)?;
         }
