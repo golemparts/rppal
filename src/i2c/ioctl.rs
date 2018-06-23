@@ -370,6 +370,34 @@ pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
+pub unsafe fn smbus_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<usize> {
+    let mut buffer = SmbusBuffer::new();
+    smbus_request(
+        fd,
+        SmbusReadWrite::Read,
+        command,
+        SmbusSize::BlockData,
+        Some(&mut buffer),
+    )?;
+
+    // Verify the length in case we're receiving corrupted data
+    let incoming_length = if buffer.data[0] as usize > SMBUS_BLOCK_MAX {
+        SMBUS_BLOCK_MAX
+    } else {
+        buffer.data[0] as usize
+    };
+
+    // Make sure the incoming data fits in the value buffer
+    let value_length = value.len();
+    if incoming_length > value_length {
+        value.copy_from_slice(&buffer.data[1..value_length + 1]);
+    } else {
+        value[..incoming_length].copy_from_slice(&buffer.data[1..incoming_length + 1]);
+    }
+
+    Ok(incoming_length)
+}
+
 pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(

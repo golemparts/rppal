@@ -60,7 +60,6 @@
 //! error, either the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are incorrect, or the user isn't part of the `i2c` group.
 
-use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
@@ -91,6 +90,10 @@ quick_error! {
 ///
 /// [here]: https://en.wikipedia.org/wiki/I%C2%B2C#Reserved_addresses_in_7-bit_address_space
         InvalidSlaveAddress(slave_address: u16) { description("invalid slave address") }
+/// I2C/SMBus feature not supported.
+///
+/// The underlying drivers don't support the selected I2C feature or SMBus protocol.
+        FeatureNotSupported { description("I2C/SMBus feature not supported") }
 /// Unknown SoC.
 ///
 /// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi's SoC.
@@ -120,9 +123,10 @@ pub type Result<T> = result::Result<T, Error>;
 ///
 /// [here]: index.html
 /// [specification]: http://smbus.org/specs/SMBus_3_1_20180319.pdf
+#[derive(Debug)]
 pub struct I2c {
     bus: u8,
-    capabilities: Capabilities,
+    funcs: Capabilities,
     i2cdev: File,
     addr_10bit: bool,
     // The not_sync field is a workaround to force !Sync. I2c isn't safe for
@@ -184,7 +188,7 @@ impl I2c {
 
         Ok(I2c {
             bus,
-            capabilities,
+            funcs: capabilities,
             i2cdev,
             addr_10bit: false,
             not_sync: PhantomData,
@@ -198,7 +202,7 @@ impl I2c {
     ///
     /// [`Capabilities`]: struct.Capabilities.html
     pub fn capabilities(&self) -> Capabilities {
-        self.capabilities
+        self.funcs
     }
 
     /// Returns the I2C bus ID.
@@ -491,20 +495,31 @@ impl I2c {
     /// Sends an 8-bit 'command', and then receives an 8-bit byte count along with a
     /// multi-byte `buffer`.
     ///
+    /// `smbus_block_read` currently isn't supported on the Raspberry Pi, and returns
+    /// an [`Error::FeatureNotSupported`] error unless underlying driver support is
+    /// detected.
+    ///
     /// `smbus_block_read` can read a maximum of 32 bytes. Any data that doesn't fit
     /// in `buffer` is discarded.
     ///
     /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
     /// Address + Read Bit -> Incoming Byte Count -> Incoming Bytes -> STOP
     ///
-    /// Returns the length of the incoming data.
-    pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<u8> {
-        // TODO: Try to implement smbus_block_read using i2c_block_read. But
-        // what happens when too many bytes are read? Plus we can only read
-        // 32 bytes max with i2c_block_read...
-        // let mut max_buffer = [0u8; 256]; // 1 byte count + 255 data bytes max
+    /// Returns how many bytes were read.
+    ///
+    /// [`Error::FeatureNotSupported`]: enum.Error.html#variant.FeatureNotSupported
+    pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<usize> {
+        if !self.capabilities().smbus_block_read() {
+            return Err(Error::FeatureNotSupported);
+        }
 
-        unimplemented!()
+        unsafe {
+            Ok(ioctl::smbus_block_read(
+                self.i2cdev.as_raw_fd(),
+                command,
+                buffer,
+            )?)
+        }
     }
 
     /// Sends an 8-bit `command` and an 8-bit byte count along with a multi-byte `buffer`.
@@ -540,13 +555,3 @@ impl I2c {
 // Send is safe for I2c, but we're marked !Send because of the dummy pointer that's
 // needed to force !Sync.
 unsafe impl Send for I2c {}
-
-impl fmt::Debug for I2c {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("I2c")
-            .field("bus", &self.bus)
-            .field("capabilities", &self.capabilities)
-            .field("i2cdev", &self.i2cdev)
-            .finish()
-    }
-}
