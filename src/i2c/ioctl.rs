@@ -379,6 +379,27 @@ pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<
     )
 }
 
+pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<(i32)> {
+    let mut buffer = SmbusBuffer::new();
+    buffer.data[0] = if value.len() > SMBUS_BLOCK_MAX {
+        SMBUS_BLOCK_MAX as u8
+    } else {
+        value.len() as u8
+    };
+
+    smbus_request(
+        fd,
+        SmbusReadWrite::Read,
+        command,
+        SmbusSize::I2cBlockData,
+        Some(&mut buffer),
+    )?;
+
+    value[..buffer.data[0] as usize].copy_from_slice(&buffer.data[1..buffer.data[0] as usize + 1]);
+
+    Ok(0)
+}
+
 pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i32> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(

@@ -306,7 +306,11 @@ impl I2c {
     ///
     /// [`smbus_block_read`]: #method.smbus_block_read
     pub fn block_read(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            ioctl::i2c_block_read(self.i2cdev.as_raw_fd(), command, buffer)?;
+        }
+
+        Ok(())
     }
 
     /// Sends an 8-bit `command` followed by a multi-byte `buffer`.
