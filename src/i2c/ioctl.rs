@@ -257,7 +257,7 @@ unsafe fn smbus_request(
     command: u8,
     size: SmbusSize,
     data: Option<&mut SmbusBuffer>,
-) -> Result<i32> {
+) -> Result<()> {
     let mut request = SmbusRequest {
         read_write: read_write as u8,
         command,
@@ -269,10 +269,12 @@ unsafe fn smbus_request(
         },
     };
 
-    parse_retval(ioctl(fd, REQ_SMBUS, &mut request))
+    parse_retval(ioctl(fd, REQ_SMBUS, &mut request))?;
+
+    Ok(())
 }
 
-pub unsafe fn smbus_quick_command(fd: c_int, value: bool) -> Result<i32> {
+pub unsafe fn smbus_quick_command(fd: c_int, value: bool) -> Result<()> {
     // Quick Command uses the read_write field, instead of the data buffer
     smbus_request(
         fd,
@@ -300,7 +302,7 @@ pub unsafe fn smbus_receive_byte(fd: c_int) -> Result<u8> {
     Ok(buffer.data[0])
 }
 
-pub unsafe fn smbus_send_byte(fd: c_int, value: u8) -> Result<i32> {
+pub unsafe fn smbus_send_byte(fd: c_int, value: u8) -> Result<()> {
     // Send Byte uses the command field, instead of the data buffer
     smbus_request(fd, SmbusReadWrite::Write, value, SmbusSize::Byte, None)
 }
@@ -332,7 +334,7 @@ pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
-pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<i32> {
+pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<()> {
     let mut buffer = SmbusBuffer::with_byte(value);
     smbus_request(
         fd,
@@ -343,7 +345,7 @@ pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<i32>
     )
 }
 
-pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<i32> {
+pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<()> {
     let mut buffer = SmbusBuffer::with_word(value);
     smbus_request(
         fd,
@@ -368,7 +370,7 @@ pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
-pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i32> {
+pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(
         fd,
@@ -379,7 +381,7 @@ pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<
     )
 }
 
-pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<(i32)> {
+pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::new();
     buffer.data[0] = if value.len() > SMBUS_BLOCK_MAX {
         SMBUS_BLOCK_MAX as u8
@@ -397,10 +399,10 @@ pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result
 
     value[..buffer.data[0] as usize].copy_from_slice(&buffer.data[1..buffer.data[0] as usize + 1]);
 
-    Ok(0)
+    Ok(())
 }
 
-pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i32> {
+pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(
         fd,
@@ -413,16 +415,22 @@ pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<i3
 
 // TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
 
-pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_SLAVE, value))
+pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(ioctl(fd, REQ_SLAVE, value))?;
+
+    Ok(())
 }
 
-pub unsafe fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_TENBIT, value))
+pub unsafe fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(ioctl(fd, REQ_TENBIT, value))?;
+
+    Ok(())
 }
 
-pub unsafe fn set_pec(fd: c_int, value: c_ulong) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_PEC, value))
+pub unsafe fn set_pec(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(ioctl(fd, REQ_PEC, value))?;
+
+    Ok(())
 }
 
 pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
