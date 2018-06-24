@@ -211,10 +211,10 @@ const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
 const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer data
 
 // NOTE: REQ_RETRIES - Supported in i2cdev, but not used in the underlying drivers
-// NOTE: REQ_RDWR - Only a single read operation is supported as the final message
+// NOTE: REQ_RDWR - Only a single read operation is supported as the final message (see i2c-bcm2835.c)
 
+const RDWR_MSG_MAX: usize = 42; // Maximum messages per RDWR operation
 const SMBUS_BLOCK_MAX: usize = 32; // Maximum bytes per block transfer
-
 
 // SMBus read or write request
 #[derive(Debug, PartialEq, Copy, Clone)]
