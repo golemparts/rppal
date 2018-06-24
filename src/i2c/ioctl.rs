@@ -62,92 +62,115 @@ const FUNC_SMBUS_READ_I2C_BLOCK: c_ulong = 0x0400_0000;
 const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x0800_0000;
 const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x1000_0000;
 
+/// Lists the features supported by the underlying drivers.
 #[derive(PartialEq, Copy, Clone)]
 pub struct Capabilities {
     funcs: c_ulong,
 }
 
 impl Capabilities {
+    /// Constructs a new `Capabilities`.
+    ///
+    /// `Capabilities` indicates which I2C features and SMBus protocols
+    /// are supported by the underlying drivers.
     fn new(funcs: c_ulong) -> Capabilities {
         Capabilities { funcs }
     }
 
-    pub fn i2c(&self) -> bool {
+    pub(crate) fn i2c(&self) -> bool {
         (self.funcs & FUNC_I2C) > 0
     }
 
-    pub fn slave(&self) -> bool {
+    pub(crate) fn slave(&self) -> bool {
         (self.funcs & FUNC_SLAVE) > 0
     }
 
+    /// Indicates whether 10-bit addresses are supported.
     pub fn addr_10bit(&self) -> bool {
         (self.funcs & FUNC_10BIT_ADDR) > 0
     }
 
+    /// Indicates whether I2C Block Read is supported.
     pub fn i2c_block_read(&self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_I2C_BLOCK) > 0
     }
 
+    /// Indicates whether I2C Block Write is supported.
     pub fn i2c_block_write(&self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_I2C_BLOCK) > 0
     }
 
-    pub fn protocol_mangling(&self) -> bool {
+    /// Indicates whether protocol mangling is supported.
+    pub(crate) fn protocol_mangling(&self) -> bool {
         (self.funcs & FUNC_PROTOCOL_MANGLING) > 0
     }
 
-    pub fn nostart(&self) -> bool {
+    /// Indicates whether the NOSTART flag is supported.
+    pub(crate) fn nostart(&self) -> bool {
         (self.funcs & FUNC_NOSTART) > 0
     }
 
+    /// Indicates whether SMBus Quick Command is supported.
     pub fn smbus_quick_command(&self) -> bool {
         (self.funcs & FUNC_SMBUS_QUICK) > 0
     }
 
+    /// Indicates whether SMBus Receive Byte is supported.
     pub fn smbus_receive_byte(&self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BYTE) > 0
     }
 
+    /// Indicates whether SMBus Send Byte is supported.
     pub fn smbus_send_byte(&self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BYTE) > 0
     }
 
+    /// Indicates whether SMBus Read Byte is supported.
     pub fn smbus_read_byte(&self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BYTE_DATA) > 0
     }
 
+    /// Indicates whether SMBus Write Byte is supported.
     pub fn smbus_write_byte(&self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BYTE_DATA) > 0
     }
 
+    /// Indicates whether SMBus Read Word is supported.
     pub fn smbus_read_word(&self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_WORD_DATA) > 0
     }
 
+    /// Indicates whether SMBus Write Word is supported.
     pub fn smbus_write_word(&self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_WORD_DATA) > 0
     }
 
+    /// Indicates whether SMBus Process Call is supported.
     pub fn smbus_process_call(&self) -> bool {
         (self.funcs & FUNC_SMBUS_PROC_CALL) > 0
     }
 
+    /// Indicates whether SMBus Block Read is supported.
     pub fn smbus_block_read(&self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BLOCK_DATA) > 0
     }
 
+    /// Indicates whether SMBus Block Write is supported.
     pub fn smbus_block_write(&self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BLOCK_DATA) > 0
     }
 
+    /// Indicates whether SMBus Block Process Call is supported.
     pub fn smbus_block_process_call(&self) -> bool {
         (self.funcs & FUNC_SMBUS_BLOCK_PROC_CALL) > 0
     }
 
+    /// Indicates whether SMBus Packet Error Checking is supported.
     pub fn smbus_pec(&self) -> bool {
         (self.funcs & FUNC_SMBUS_PEC) > 0
     }
 
+    /// Indicates whether SMBus Host Notify is supported.
     pub fn smbus_host_notify(&self) -> bool {
         (self.funcs & FUNC_SMBUS_HOST_NOTIFY) > 0
     }
@@ -156,13 +179,9 @@ impl Capabilities {
 impl fmt::Debug for Capabilities {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Capabilities")
-            .field("i2c", &self.i2c())
-            .field("slave", &self.slave())
             .field("addr_10bit", &self.addr_10bit())
             .field("i2c_block_read", &self.i2c_block_read())
             .field("i2c_block_write", &self.i2c_block_write())
-            .field("protocol_mangling", &self.protocol_mangling())
-            .field("nostart", &self.nostart())
             .field("smbus_quick_command", &self.smbus_quick_command())
             .field("smbus_receive_byte", &self.smbus_receive_byte())
             .field("smbus_send_byte", &self.smbus_send_byte())
@@ -189,7 +208,7 @@ const REQ_TENBIT: c_ulong = 0x0704; // Use 10-bit slave addresses
 const REQ_FUNCS: c_ulong = 0x0705; // Read I2C bus capabilities
 const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single STOP
 const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
-const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer
+const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer data
 
 const SMBUS_BLOCK_MAX: usize = 32; // Maximum bytes per block transfer
 
@@ -469,8 +488,6 @@ pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()
         Some(&mut buffer),
     )
 }
-
-// TODO: Check if 10-bit addresses are supported by i2cdev and the underlying drivers
 
 pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
     parse_retval(ioctl(fd, REQ_SLAVE, value))?;

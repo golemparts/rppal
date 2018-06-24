@@ -553,10 +553,12 @@ impl I2c {
         Ok(())
     }
 
-    /// Enables or disables SMBus Packet Error Correction.
+    /// Enables or disables SMBus Packet Error Checking.
     ///
-    /// PEC inserts a CRC-8 error-checking byte before each STOP condition
-    /// for all SMBus protocols, except Quick Command and Host Notify.
+    /// Packet Error Checking inserts a CRC-8 Packet Error Code (PEC) byte before each STOP
+    /// condition for all SMBus protocols, except Quick Command and Host Notify.
+    ///
+    /// The PEC is calculated on all message bytes except the START, STOP, ACK and NACK bits.
     ///
     /// By default, `pec` is set to `false`.
     pub fn set_smbus_pec(&self, pec: bool) -> Result<()> {
