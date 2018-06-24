@@ -24,7 +24,7 @@
 //! Zero and Zero W.
 
 // Used by rustdoc to link other crates to rppal's docs
-#![doc(html_root_url = "https://docs.rs/rppal/0.6.0")]
+#![doc(html_root_url = "https://docs.rs/rppal/0.7.0")]
 // Needed for the quick_error! macro
 #![recursion_limit = "128"]
 
