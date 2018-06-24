@@ -259,11 +259,8 @@ impl I2c {
         Ok(())
     }
 
-    /// Sets the timeout in milliseconds (ms).
-    ///
-    /// `timeout` specifies the maximum amount of time the master will wait for a
-    /// slave device to respond. The smallest resolution allowed is 10ms.
-    pub fn set_timeout(&mut self, timeout: u32) -> Result<()> {
+    fn set_timeout(&mut self, timeout: u32) -> Result<()> {
+        // Set to private. Doesn't seem to work as expected.
         unsafe {
             ioctl::set_timeout(self.i2cdev.as_raw_fd(), timeout as c_ulong)?;
         }
@@ -271,11 +268,8 @@ impl I2c {
         Ok(())
     }
 
-    /// Sets the number of retries.
-    ///
-    /// `retries` specifies the maximum number of times a slave device will
-    /// be polled when it doesn't respond with an ACK.
-    pub fn set_retries(&mut self, retries: u32) -> Result<()> {
+    fn set_retries(&mut self, retries: u32) -> Result<()> {
+        // Set to private. While i2cdev implements retries, the underlying drivers don't.
         unsafe {
             ioctl::set_retries(self.i2cdev.as_raw_fd(), retries as c_ulong)?;
         }
