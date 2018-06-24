@@ -507,6 +507,25 @@ pub unsafe fn set_pec(fd: c_int, value: c_ulong) -> Result<()> {
     Ok(())
 }
 
+pub unsafe fn set_timeout(fd: c_int, value: c_ulong) -> Result<()> {
+    // Timeout is specified in units of 10ms
+    let timeout: c_ulong = if value > 0 && value < 10 {
+        1
+    } else {
+        value / 10
+    };
+
+    parse_retval(ioctl(fd, REQ_TIMEOUT, timeout))?;
+
+    Ok(())
+}
+
+pub unsafe fn set_retries(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(ioctl(fd, REQ_RETRIES, value))?;
+
+    Ok(())
+}
+
 pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
     let mut funcs: c_ulong = 0;
 
