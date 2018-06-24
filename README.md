@@ -32,7 +32,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 #### Features
 
 * Single master, 7-bit slave addresses, transfer rates up to 400kbit/s (Fast-mode)
-* I2C basic read/write, block read/write, and combined write+read
+* I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 
 #### Unsupported features
