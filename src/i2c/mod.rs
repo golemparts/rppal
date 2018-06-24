@@ -132,6 +132,7 @@ pub struct I2c {
     funcs: Capabilities,
     i2cdev: File,
     addr_10bit: bool,
+    address: u16,
     // The not_sync field is a workaround to force !Sync. I2c isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
     // #![feature(optin_builtin_traits)] to manually add impl !Sync for I2c.
@@ -194,6 +195,7 @@ impl I2c {
             funcs: capabilities,
             i2cdev,
             addr_10bit: false,
+            address: 0,
             not_sync: PhantomData,
         })
     }
@@ -259,6 +261,8 @@ impl I2c {
             ioctl::set_slave_address(self.i2cdev.as_raw_fd(), c_ulong::from(slave_address))?;
         }
 
+        self.address = slave_address;
+
         Ok(())
     }
 
@@ -321,6 +325,34 @@ impl I2c {
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         // TODO: Is there a maximum buffer length?
         Ok(self.i2cdev.write(buffer)?)
+    }
+
+    /// Sends the outgoing data contained in `write_buffer`, to the slave device, and
+    /// then fills `read_buffer` with incoming data.
+    ///
+    /// Compared to calling [`write`] and [`read`], `write_read` doesn't issue a STOP
+    /// condition in between the write and read operation. A repeated START is sent
+    /// instead.
+    ///
+    /// `write_read` reads as many bytes as can fit in `read_buffer`. The maximum
+    /// number of bytes in either `write_buffer` or `read_buffer` can't exceed 8192.
+    ///
+    /// Sequence: START → Address + Write Bit → Outgoing Bytes → Repeated START →
+    /// Address + Read Bit → Incoming Bytes → STOP
+    ///
+    /// [`write`]: #method.write
+    /// [`read`]: #method.read
+    pub fn write_read(&mut self, write_buffer: &[u8], read_buffer: &mut [u8]) -> Result<()> {
+        unsafe {
+            ioctl::i2c_write_read(
+                self.i2cdev.as_raw_fd(),
+                self.address,
+                write_buffer,
+                read_buffer,
+            )?;
+        }
+
+        Ok(())
     }
 
     /// Sends an 8-bit `command`, and then fills a multi-byte `buffer` with

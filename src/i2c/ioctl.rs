@@ -213,6 +213,8 @@ const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer data
 // NOTE: REQ_RETRIES - Supported in i2cdev, but not used in the underlying drivers
 // NOTE: REQ_RDWR - Only a single read operation is supported as the final message (see i2c-bcm2835.c)
 
+const RDWR_FLAG_RD: u16 = 0x0001; // Read operation
+
 const RDWR_MSG_MAX: usize = 42; // Maximum messages per RDWR operation
 const SMBUS_BLOCK_MAX: usize = 32; // Maximum bytes per block transfer
 
@@ -491,6 +493,66 @@ pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()
         SmbusSize::I2cBlockData,
         Some(&mut buffer),
     )
+}
+
+// Specifies RDWR segment parameters
+#[repr(C)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+struct RdwrSegment {
+    // Slave address
+    addr: u16,
+    // Segment flags
+    flags: u16,
+    // Buffer length
+    len: u16,
+    // Pointer to buffer
+    data: usize,
+}
+
+// Specifies RWDR request parameters
+#[repr(C)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+struct RdwrRequest {
+    // Pointer to an array of segments
+    segments: *mut [RdwrSegment],
+    // Number of segments
+    nmsgs: u32,
+}
+
+pub unsafe fn i2c_write_read(
+    fd: c_int,
+    address: u16,
+    write_buffer: &[u8],
+    read_buffer: &mut [u8],
+) -> Result<()> {
+    // 0 length buffers may cause issues
+    if write_buffer.len() == 0 || read_buffer.len() == 0 {
+        return Ok(());
+    }
+
+    let segment_write = RdwrSegment {
+        addr: address,
+        flags: 0,
+        len: write_buffer.len() as u16,
+        data: write_buffer.as_ptr() as usize,
+    };
+
+    let segment_read = RdwrSegment {
+        addr: address,
+        flags: RDWR_FLAG_RD,
+        len: read_buffer.len() as u16,
+        data: read_buffer.as_mut_ptr() as usize,
+    };
+
+    let mut segments: [RdwrSegment; 2] = [segment_write, segment_read];
+    let mut request = RdwrRequest {
+        segments: &mut segments,
+        nmsgs: 2,
+    };
+
+    parse_retval(ioctl(fd, REQ_RDWR, &mut request))?;
+
+    Ok(())
 }
 
 pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
