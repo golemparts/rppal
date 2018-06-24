@@ -550,6 +550,42 @@ impl I2c {
         Ok(())
     }
 
+    /// Sends an 8-bit `command` and a 32-bit `value`.
+    ///
+    /// Based on the SMBus protocol definition, the least-significant byte is sent first.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> 4 Outgoing Bytes -> STOP
+    pub fn smbus_write_32(&self, command: u8, value: u32) -> Result<()> {
+        let buffer = [
+            (value & 0x00FF) as u8,
+            ((value & 0xFF00) >> 8) as u8,
+            ((value & 0x00FF_0000) >> 16) as u8,
+            ((value & 0xFF00_0000) >> 24) as u8,
+        ];
+
+        self.block_write(command, &buffer)
+    }
+
+    /// Sends an 8-bit `command` and a 64-bit `value`.
+    ///
+    /// Based on the SMBus protocol definition, the least-significant byte is sent first.
+    ///
+    /// Sequence: START -> Address + Write Bit -> Command -> 8 Outgoing Bytes -> STOP
+    pub fn smbus_write_64(&self, command: u8, value: u64) -> Result<()> {
+        let buffer = [
+            (value & 0x00FF) as u8,
+            ((value & 0xFF00) >> 8) as u8,
+            ((value & 0x00FF_0000) >> 16) as u8,
+            ((value & 0xFF00_0000) >> 24) as u8,
+            ((value & 0x00FF_0000_0000) >> 32) as u8,
+            ((value & 0xFF00_0000_0000) >> 40) as u8,
+            ((value & 0x00FF_0000_0000_0000) >> 48) as u8,
+            ((value & 0xFF00_0000_0000_0000) >> 56) as u8,
+        ];
+
+        self.block_write(command, &buffer)
+    }
+
     /// Enables or disables SMBus Packet Error Correction.
     ///
     /// PEC inserts a CRC-8 error-checking byte before each STOP condition
