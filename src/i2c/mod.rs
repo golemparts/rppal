@@ -346,6 +346,9 @@ impl I2c {
         Ok(())
     }
 
+    // Note: smbus_read/write_32/64 could theoretically be emulated using block_read/write
+    // provided the PEC value is calculated in software
+
     /// Sends a 1-bit `command` in place of the R/W bit.
     ///
     /// Sequence: START -> Address + Command Bit -> STOP
@@ -550,49 +553,13 @@ impl I2c {
         Ok(())
     }
 
-    /// Sends an 8-bit `command` and a 32-bit `value`.
-    ///
-    /// Based on the SMBus protocol definition, the least-significant byte is sent first.
-    ///
-    /// Sequence: START -> Address + Write Bit -> Command -> 4 Outgoing Bytes -> STOP
-    pub fn smbus_write_32(&self, command: u8, value: u32) -> Result<()> {
-        let buffer = [
-            (value & 0x00FF) as u8,
-            ((value & 0xFF00) >> 8) as u8,
-            ((value & 0x00FF_0000) >> 16) as u8,
-            ((value & 0xFF00_0000) >> 24) as u8,
-        ];
-
-        self.block_write(command, &buffer)
-    }
-
-    /// Sends an 8-bit `command` and a 64-bit `value`.
-    ///
-    /// Based on the SMBus protocol definition, the least-significant byte is sent first.
-    ///
-    /// Sequence: START -> Address + Write Bit -> Command -> 8 Outgoing Bytes -> STOP
-    pub fn smbus_write_64(&self, command: u8, value: u64) -> Result<()> {
-        let buffer = [
-            (value & 0x00FF) as u8,
-            ((value & 0xFF00) >> 8) as u8,
-            ((value & 0x00FF_0000) >> 16) as u8,
-            ((value & 0xFF00_0000) >> 24) as u8,
-            ((value & 0x00FF_0000_0000) >> 32) as u8,
-            ((value & 0xFF00_0000_0000) >> 40) as u8,
-            ((value & 0x00FF_0000_0000_0000) >> 48) as u8,
-            ((value & 0xFF00_0000_0000_0000) >> 56) as u8,
-        ];
-
-        self.block_write(command, &buffer)
-    }
-
     /// Enables or disables SMBus Packet Error Correction.
     ///
     /// PEC inserts a CRC-8 error-checking byte before each STOP condition
     /// for all SMBus protocols, except Quick Command and Host Notify.
     ///
     /// By default, `pec` is set to `false`.
-    pub fn smbus_set_pec(&self, pec: bool) -> Result<()> {
+    pub fn set_smbus_pec(&self, pec: bool) -> Result<()> {
         unsafe {
             ioctl::set_pec(self.i2cdev.as_raw_fd(), pec as c_ulong)?;
         }
