@@ -130,7 +130,7 @@ pub struct TransferSegment<'a, 'b> {
 }
 
 impl<'a, 'b> TransferSegment<'a, 'b> {
-    /// Creates a new `TransferSegment` with the default settings.
+    /// Constructs a new `TransferSegment` with the default settings.
     ///
     /// If `read_buffer` is set to `None`, any incoming data is discarded.
     ///
@@ -152,7 +152,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
     }
 
-    /// Creates a new `TransferSegment` with the specified settings.
+    /// Constructs a new `TransferSegment` with the specified settings.
     ///
     /// These settings override the values set for [`Spi`], and are only used
     /// for this specific segment.

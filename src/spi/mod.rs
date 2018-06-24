@@ -285,7 +285,7 @@ pub struct Spi {
 }
 
 impl Spi {
-    /// Creates a new instance of `Spi`.
+    /// Constructs a new `Spi`.
     ///
     /// `bus` and `slave_select` specify the selected SPI bus and one of its
     /// associated Slave Select pins.

@@ -37,8 +37,9 @@
 //! the Raspberry Pi afterwards.
 //!
 //! In addition to the hardware I2C buses, it's possible to configure a
-//! bit-banged I2C bus in software on any available GPIO pins through `i2c-gpio`.
-//! More details on enabling and configuring `i2c-gpio` can be found in `/boot/overlays/README`.
+//! bit-banged I2C bus in software on any available GPIO pins through the `i2c-gpio`
+//! device tree overlay. More details on enabling and configuring `i2c-gpio`
+//! can be found in `/boot/overlays/README`.
 //!
 //! ## Transmission speed
 //!
@@ -47,8 +48,8 @@
 //!
 //! By default, the I2C bus clock speed is set to 100 kHz. Transferring
 //! 1 bit takes 1 clock cycle. You can change the
-//! transfer rate by adding `dtparam=i2c_arm_baudrate=XXX` to
-//! `/boot/config.txt`, where XXX should be replaced with the
+//! transfer rate by adding `dtparam=i2c_arm_baudrate=X` to
+//! `/boot/config.txt`, where `X` should be replaced with the
 //! clock frequency in herz (Hz). Remember to reboot
 //! the Raspberry Pi afterwards.
 //!
@@ -57,8 +58,10 @@
 //! ### Permission Denied
 //!
 //! If constructing a new `Spi` instance returns a Permission Denied
-//! error, either the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
-//! are incorrect, or the user isn't part of the `i2c` group.
+//! IO error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
+//! are correct, and the current user is a member of the `i2c` group.
+
+#![allow(dead_code)]
 
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -121,7 +124,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// through its various protocols. More details can be found in the latest SMBus
 /// [specification].
 ///
-/// [here]: index.html
+/// [here]: index.html#i2c-buses
 /// [specification]: http://smbus.org/specs/SMBus_3_1_20180319.pdf
 #[derive(Debug)]
 pub struct I2c {
@@ -136,7 +139,7 @@ pub struct I2c {
 }
 
 impl I2c {
-    /// Creates a new instance of `I2c`.
+    /// Constructs a new `I2c`.
     ///
     /// `new` tries to identify which I2C bus is bound to physical pins 3 (SDA)
     /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
@@ -144,7 +147,7 @@ impl I2c {
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
-    /// [here]: index.html
+    /// [here]: index.html#i2c-buses
     pub fn new() -> Result<I2c> {
         match DeviceInfo::new()?.model() {
             Model::RaspberryPiBRev1 => I2c::with_bus(0),
@@ -152,7 +155,7 @@ impl I2c {
         }
     }
 
-    /// Creates a new instance of `I2c` using the specified bus.
+    /// Constructs a new `I2c` using the specified bus.
     ///
     /// `bus` indicates the selected I2C bus. You'll typically want to select the
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
@@ -161,7 +164,7 @@ impl I2c {
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
-    /// [here]: index.html
+    /// [here]: index.html#i2c-buses
     pub fn with_bus(bus: u8) -> Result<I2c> {
         // bus is a u8, because any 8-bit bus ID could potentially
         // be configured for bit banging I2C using i2c-gpio.
@@ -195,7 +198,7 @@ impl I2c {
         })
     }
 
-    /// Returns information on the functionality supported by the I2C drivers.
+    /// Returns information on the functionality supported by the underlying drivers.
     ///
     /// The returned [`Capabilities`] instance lists the available
     /// I2C and SMBus features.
@@ -302,7 +305,7 @@ impl I2c {
     ///
     /// `read` reads as many bytes as can fit in `buffer`.
     ///
-    /// Sequence: START -> Address + Read Bit -> Incoming Bytes -> STOP
+    /// Sequence: START → Address + Read Bit → Incoming Bytes → STOP
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
@@ -312,7 +315,7 @@ impl I2c {
 
     /// Sends the outgoing data contained in `buffer` to the slave device.
     ///
-    /// Sequence: START -> Address + Write Bit -> Outgoing Bytes -> STOP
+    /// Sequence: START → Address + Write Bit → Outgoing Bytes → STOP
     ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
@@ -331,8 +334,8 @@ impl I2c {
     /// The difference between `block_read` and [`smbus_block_read`] is that the
     /// latter also expects a byte count from the slave device.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
-    /// -> Address + Read Bit -> Incoming Bytes -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Repeated START
+    /// → Address + Read Bit → Incoming Bytes → STOP
     ///
     /// [`smbus_block_read`]: #method.smbus_block_read
     pub fn block_read(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
@@ -353,7 +356,7 @@ impl I2c {
     /// difference between `block_write` and [`smbus_block_write`] is that the latter
     /// also sends a byte count to the slave device.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Bytes -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Bytes → STOP
     ///
     /// [`smbus_block_write`]: #method.smbus_block_write
     pub fn block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
@@ -369,7 +372,7 @@ impl I2c {
 
     /// Sends a 1-bit `command` in place of the R/W bit.
     ///
-    /// Sequence: START -> Address + Command Bit -> STOP
+    /// Sequence: START → Address + Command Bit → STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
         unsafe {
             ioctl::smbus_quick_command(self.i2cdev.as_raw_fd(), command)?;
@@ -380,14 +383,14 @@ impl I2c {
 
     /// Receives an 8-bit value.
     ///
-    /// Sequence: START -> Address + Read Bit -> Incoming Byte -> STOP
+    /// Sequence: START → Address + Read Bit → Incoming Byte → STOP
     pub fn smbus_receive_byte(&self) -> Result<u8> {
         unsafe { Ok(ioctl::smbus_receive_byte(self.i2cdev.as_raw_fd())?) }
     }
 
     /// Sends an 8-bit `value`.
     ///
-    /// Sequence: START -> Address + Write Bit -> Outgoing Byte -> STOP
+    /// Sequence: START → Address + Write Bit → Outgoing Byte → STOP
     pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
         unsafe {
             ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?;
@@ -398,15 +401,15 @@ impl I2c {
 
     /// Sends an 8-bit `command`, and receives an 8-bit value.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
-    /// -> Address + Read Bit -> Incoming Byte -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Repeated START
+    /// → Address + Read Bit → Incoming Byte → STOP
     pub fn smbus_read_byte(&self, command: u8) -> Result<u8> {
         unsafe { Ok(ioctl::smbus_read_byte(self.i2cdev.as_raw_fd(), command)?) }
     }
 
     /// Sends an 8-bit `command` and an 8-bit `value`.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte → STOP
     pub fn smbus_write_byte(&self, command: u8, value: u8) -> Result<()> {
         unsafe {
             ioctl::smbus_write_byte(self.i2cdev.as_raw_fd(), command, value)?;
@@ -422,8 +425,8 @@ impl I2c {
     /// the high byte. Some devices may require you to swap these bytes. In those
     /// cases you can use the convenience method [`smbus_read_word_swapped`] instead.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START
-    /// -> Address + Read Bit -> Incoming Byte Low -> Incoming Byte High -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Repeated START
+    /// → Address + Read Bit → Incoming Byte Low → Incoming Byte High → STOP
     ///
     /// [`smbus_read_word_swapped`]: #method.smbus_read_word_swapped
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
@@ -450,7 +453,7 @@ impl I2c {
     /// require you to swap these bytes. In those cases you can use the convenience method
     /// [`smbus_write_word_swapped`] instead.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low -> Outgoing Byte High -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte Low → Outgoing Byte High → STOP
     ///
     /// [`smbus_write_word_swapped`]: #method.smbus_write_word_swapped
     pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
@@ -486,9 +489,9 @@ impl I2c {
     /// high byte. Some devices may require you to swap these bytes. In those cases you can use the
     /// convenience method [`smbus_process_call_swapped`] instead.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Low ->
-    /// Outgoing Byte High -> Repeated START -> Address + Read Bit -> Incoming Byte Low ->
-    /// Incoming Byte High -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte Low →
+    /// Outgoing Byte High → Repeated START → Address + Read Bit → Incoming Byte Low →
+    /// Incoming Byte High → STOP
     ///
     /// [`smbus_process_call_swapped`]: #method.smbus_process_call_swapped
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
@@ -529,13 +532,13 @@ impl I2c {
     /// detected. You might be able to emulate the `smbus_block_read` functionality
     /// with either [`block_read`] or [`read`] if the length of the expected incoming
     /// data is known beforehand, or if the slave device allows the master to read
-    /// more data than it wants to send.
+    /// more data than it needs to send.
     ///
     /// `smbus_block_read` can read a maximum of 32 bytes. Any data that doesn't fit
     /// in `buffer` is discarded.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Repeated START ->
-    /// Address + Read Bit -> Incoming Byte Count -> Incoming Bytes -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Repeated START →
+    /// Address + Read Bit → Incoming Byte Count → Incoming Bytes → STOP
     ///
     /// Returns how many bytes were read.
     ///
@@ -561,8 +564,8 @@ impl I2c {
     /// `smbus_block_write` can write a maximum of 32 bytes. Any additional data contained
     /// in `buffer` is ignored.
     ///
-    /// Sequence: START -> Address + Write Bit -> Command -> Outgoing Byte Count
-    /// -> Outgoing Bytes -> STOP
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte Count
+    /// → Outgoing Bytes → STOP
     pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
         unsafe {
             ioctl::smbus_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
