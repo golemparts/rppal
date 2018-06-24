@@ -33,7 +33,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 #### Features
 
-* I2C single master, 7-bit slave addresses, clock stretching
+* I2C single master, 7-bit slave addresses
 * Transfer rates up to 400kbit/s (Fast-mode)
 * I2C basic read/write, block read/write
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
@@ -43,6 +43,11 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 Several I2C and SMBus features aren't fully supported by the i2cdev interface, the underlying driver or
 the BCM283x SoC: 10-bit slave addresses, SMBus Block Read, SMBus Block Process Call, SMBus Host Notify,
 SMBus Read/Write 32/64, and the SMBus Address Resolution Protocol.
+
+While clock stretching is supported, a bug exists in the implementation on the BCM283x SoC that will result
+in corrupted data when a slave device tries to use clock stretching at arbitrary points during the transfer.
+Clock stretching only works properly during read operations, directly after the ACK phase, when the additional
+delay is longer than half of a clock period. More information can be found [here](https://elinux.org/BCM2835_datasheet_errata#p35_I2C_clock_stretching).
 
 ### SPI
 
@@ -58,7 +63,7 @@ RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the
 
 #### Unsupported features
 
-Several features offered by the generic spidev interface aren't fully
+Several features exposed by the generic spidev interface aren't fully
 supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
 first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
 SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
