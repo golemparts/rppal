@@ -27,6 +27,7 @@
 //! [`DeviceInfo`]: struct.DeviceInfo.html
 
 use std::fmt;
+use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
@@ -41,14 +42,10 @@ quick_error! {
     pub enum Error {
 /// Unknown model.
 ///
-/// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi
-/// model.
+/// `DeviceInfo` was unable to identify the Raspberry Pi model based on the
+/// contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
+/// and `/sys/firmware/devicetree/base/model`.
         UnknownModel { description("unknown Raspberry Pi model") }
-/// Can't access `/proc/cpuinfo`.
-///
-/// Unable to read the contents of `/proc/cpuinfo`. This could be an issue with permissions, or
-/// a Linux distribution is used that doesn't provide access to this virtual file.
-        CantAccessProcCpuInfo { description("can't access /proc/cpuinfo") }
     }
 }
 
@@ -60,6 +57,7 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
+    RaspberryPiB,
     RaspberryPiBRev1,
     RaspberryPiBRev2,
     RaspberryPiBPlus,
@@ -77,6 +75,7 @@ impl fmt::Display for Model {
         match *self {
             Model::RaspberryPiA => write!(f, "Raspberry Pi A"),
             Model::RaspberryPiAPlus => write!(f, "Raspberry Pi A+"),
+            Model::RaspberryPiB => write!(f, "Raspberry Pi B"),
             Model::RaspberryPiBRev1 => write!(f, "Raspberry Pi B Rev 1"),
             Model::RaspberryPiBRev2 => write!(f, "Raspberry Pi B Rev 2"),
             Model::RaspberryPiBPlus => write!(f, "Raspberry Pi B+"),
@@ -111,6 +110,129 @@ impl fmt::Display for SoC {
     }
 }
 
+// Identify Pi model based on /proc/cpuinfo
+fn parse_proc_cpuinfo() -> Result<Model> {
+    let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
+        Err(_) => return Err(Error::UnknownModel),
+        Ok(file) => file,
+    });
+
+    let mut hardware: String = String::new();
+    let mut revision: String = String::new();
+    for line_result in proc_cpuinfo.lines() {
+        if let Ok(line) = line_result {
+            if line.starts_with("Hardware\t: ") {
+                hardware = String::from(&line[11..]);
+            } else if line.starts_with("Revision\t: ") {
+                revision = String::from(&line[11..]).to_lowercase();
+            }
+        }
+    }
+
+    // Return an error if we don't recognize the SoC. This check is
+    // done to prevent accidentally identifying a non-Pi SBC as a Pi
+    // solely based on the revision field.
+    match &hardware[..] {
+        "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
+        | "BCM2837B0" => {}
+        _ => return Err(Error::UnknownModel),
+    }
+
+    let model = if (revision.len() == 4) || (revision.len() == 8) {
+        // Older revisions are 4 characters long, or 8 if they've been over-volted
+        match &revision[revision.len() - 4..] {
+            "0007" | "0008" | "0009" | "0015" => Model::RaspberryPiA,
+            "Beta" | "0002" | "0003" => Model::RaspberryPiBRev1,
+            "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => Model::RaspberryPiBRev2,
+            "0012" => Model::RaspberryPiAPlus,
+            "0010" | "0013" => Model::RaspberryPiBPlus,
+            "0011" | "0014" => Model::RaspberryPiComputeModule,
+            _ => return Err(Error::UnknownModel),
+        }
+    } else if revision.len() >= 6 {
+        // Newer revisions consist of at least 6 characters
+        match &revision[revision.len() - 3..revision.len() - 1] {
+            "00" => Model::RaspberryPiA,
+            "01" => Model::RaspberryPiBRev2,
+            "02" => Model::RaspberryPiAPlus,
+            "03" => Model::RaspberryPiBPlus,
+            "04" => Model::RaspberryPi2B,
+            "06" => Model::RaspberryPiComputeModule,
+            "08" => Model::RaspberryPi3B,
+            "09" => Model::RaspberryPiZero,
+            "0a" => Model::RaspberryPiComputeModule3,
+            "0c" => Model::RaspberryPiZeroW,
+            "0d" => Model::RaspberryPi3BPlus,
+            _ => return Err(Error::UnknownModel),
+        }
+    } else {
+        return Err(Error::UnknownModel);
+    };
+
+    Ok(model)
+}
+
+// Identify Pi model based on /sys/firmware/devicetree/base/compatible
+fn parse_firmware_compatible() -> Result<Model> {
+    let compatible = match fs::read_to_string("/sys/firmware/devicetree/base/compatible") {
+        Err(_) => return Err(Error::UnknownModel),
+        Ok(s) => s,
+    };
+
+    // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
+    for compid in compatible.split("\0") {
+        match compid {
+            "raspberrypi,model-b-i2c0" => return Ok(Model::RaspberryPiBRev1),
+            "raspberrypi,model-b" => return Ok(Model::RaspberryPiB),
+            "raspberrypi,model-a" => return Ok(Model::RaspberryPiA),
+            "raspberrypi,model-b-rev2" => return Ok(Model::RaspberryPiBRev2),
+            "raspberrypi,model-a-plus" => return Ok(Model::RaspberryPiAPlus),
+            "raspberrypi,model-b-plus" => return Ok(Model::RaspberryPiBPlus),
+            "raspberrypi,2-model-b" => return Ok(Model::RaspberryPi2B),
+            "raspberrypi,compute-module" => return Ok(Model::RaspberryPiComputeModule),
+            "raspberrypi,3-model-b" => return Ok(Model::RaspberryPi3B),
+            "raspberrypi,model-zero" => return Ok(Model::RaspberryPiZero),
+            "raspberrypi,3-compute-module" => return Ok(Model::RaspberryPiComputeModule3),
+            "raspberrypi,model-zero-w" => return Ok(Model::RaspberryPiZeroW),
+            "raspberrypi,3-model-b-plus" => return Ok(Model::RaspberryPi3BPlus),
+            _ => (),
+        }
+    }
+
+    Err(Error::UnknownModel)
+}
+
+// Identify Pi model based on /sys/firmware/devicetree/base/model
+fn parse_firmware_model() -> Result<Model> {
+    let model = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
+        Err(_) => return Err(Error::UnknownModel),
+        Ok(buffer) => if let Some(rev_idx) = buffer.find(" Rev ") {
+            // We don't want to strip rev2 here
+            buffer[0..rev_idx].to_owned()
+        } else {
+            buffer
+        },
+    };
+
+    // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
+    match &model[..] {
+        "Raspberry Pi Model B (no P5)" => return Ok(Model::RaspberryPiBRev1),
+        "Raspberry Pi Model B" => return Ok(Model::RaspberryPiB),
+        "Raspberry Pi Model A" => return Ok(Model::RaspberryPiA),
+        "Raspberry Pi Model B rev2" => return Ok(Model::RaspberryPiBRev2),
+        "Raspberry Pi Model A+" => return Ok(Model::RaspberryPiAPlus),
+        "Raspberry Pi Model B+" => return Ok(Model::RaspberryPiBPlus),
+        "Raspberry Pi 2 Model B" => return Ok(Model::RaspberryPi2B),
+        "Raspberry Pi Compute Module" => return Ok(Model::RaspberryPiComputeModule),
+        "Raspberry Pi 3 Model B" => return Ok(Model::RaspberryPi3B),
+        "Raspberry Pi Zero" => return Ok(Model::RaspberryPiZero),
+        "Raspberry Pi Compute Module 3" => return Ok(Model::RaspberryPiComputeModule3),
+        "Raspberry Pi Zero W" => return Ok(Model::RaspberryPiZeroW),
+        "Raspberry Pi 3 Model B+" => return Ok(Model::RaspberryPi3BPlus),
+        _ => return Err(Error::UnknownModel),
+    }
+}
+
 /// Retrieves Raspberry Pi device information.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct DeviceInfo {
@@ -126,68 +248,14 @@ impl DeviceInfo {
     /// `new` parses the contents of `/proc/cpuinfo` to identify the Raspberry
     /// Pi's model and SoC.
     pub fn new() -> Result<DeviceInfo> {
-        // Parse /proc/cpuinfo to extract hardware/revision
-        let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
-            Err(_) => return Err(Error::CantAccessProcCpuInfo),
-            Ok(file) => file,
-        });
-
-        let mut hardware: String = String::new();
-        let mut revision: String = String::new();
-        for line_result in proc_cpuinfo.lines() {
-            if let Ok(line) = line_result {
-                if line.starts_with("Hardware\t: ") {
-                    hardware = String::from(&line[11..]);
-                } else if line.starts_with("Revision\t: ") {
-                    revision = String::from(&line[11..]).to_lowercase();
-                }
-            }
-        }
-
-        // Return an error if we don't recognize the SoC. This check is
-        // done to prevent accidentally identifying a non-Pi SBC as a Pi
-        // solely based on the revision field.
-        match &hardware[..] {
-            "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-            | "BCM2837B0" => {}
-            _ => return Err(Error::UnknownModel),
-        }
-
-        let model = if (revision.len() == 4) || (revision.len() == 8) {
-            // Older revisions are 4 characters long, or 8 if they've been over-volted
-            match &revision[revision.len() - 4..] {
-                "0007" | "0008" | "0009" | "0015" => Model::RaspberryPiA,
-                "Beta" | "0002" | "0003" => Model::RaspberryPiBRev1,
-                "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => Model::RaspberryPiBRev2,
-                "0012" => Model::RaspberryPiAPlus,
-                "0010" | "0013" => Model::RaspberryPiBPlus,
-                "0011" | "0014" => Model::RaspberryPiComputeModule,
-                _ => return Err(Error::UnknownModel),
-            }
-        } else if revision.len() >= 6 {
-            // Newer revisions consist of at least 6 characters
-            match &revision[revision.len() - 3..revision.len() - 1] {
-                "00" => Model::RaspberryPiA,
-                "01" => Model::RaspberryPiBRev2,
-                "02" => Model::RaspberryPiAPlus,
-                "03" => Model::RaspberryPiBPlus,
-                "04" => Model::RaspberryPi2B,
-                "06" => Model::RaspberryPiComputeModule,
-                "08" => Model::RaspberryPi3B,
-                "09" => Model::RaspberryPiZero,
-                "0a" => Model::RaspberryPiComputeModule3,
-                "0c" => Model::RaspberryPiZeroW,
-                "0d" => Model::RaspberryPi3BPlus,
-                _ => return Err(Error::UnknownModel),
-            }
-        } else {
-            return Err(Error::UnknownModel);
-        };
+        let model =
+            parse_proc_cpuinfo().or(parse_firmware_compatible().or(parse_firmware_model()))?;
 
         // Set SoC and memory offsets based on model
         match model {
             Model::RaspberryPiA
             | Model::RaspberryPiAPlus
+            | Model::RaspberryPiB
             | Model::RaspberryPiBRev1
             | Model::RaspberryPiBRev2
             | Model::RaspberryPiBPlus
