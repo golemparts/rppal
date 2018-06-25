@@ -57,9 +57,16 @@
 //!
 //! ### Permission Denied
 //!
-//! If constructing a new `I2c` instance returns a Permission Denied
-//! IO error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
+//! If constructing a new `I2c` instance returns an `io::ErrorKind::PermissionDenied`
+//! error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are correct, and the current user is a member of the `i2c` group.
+//!
+//! ### Timed Out
+//!
+//! Transactions return an `io::ErrorKind::TimedOut` error when their duration
+//! exceeds the timeout value. You can change the timeout using [`set_timeout`].
+//!
+//! [`set_timeout`]: struct.I2c.html#method.set_timeout
 
 #![allow(dead_code)]
 
@@ -266,8 +273,15 @@ impl I2c {
         Ok(())
     }
 
-    fn set_timeout(&mut self, timeout: u32) -> Result<()> {
-        // Set to private. Doesn't seem to work as expected.
+    /// Sets the maximum duration of a transaction in milliseconds (ms).
+    ///
+    /// Transactions that take longer than `timeout` return an
+    /// `io::ErrorKind::TimedOut` error.
+    ///
+    /// `timeout` has a resolution of 10ms.
+    pub fn set_timeout(&mut self, timeout: u32) -> Result<()> {
+        // Contrary to the i2cdev documentation, this seems to
+        // be used as a timeout for (part of?) the I2C transaction.
         unsafe {
             ioctl::set_timeout(self.i2cdev.as_raw_fd(), timeout as c_ulong)?;
         }
