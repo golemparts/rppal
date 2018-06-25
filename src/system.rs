@@ -178,7 +178,7 @@ fn parse_firmware_compatible() -> Result<Model> {
     };
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
-    for compid in compatible.split("\0") {
+    for compid in compatible.split('\0') {
         match compid {
             "raspberrypi,model-b-i2c0" => return Ok(Model::RaspberryPiBRev1),
             "raspberrypi,model-b" => return Ok(Model::RaspberryPiBRev1),
@@ -214,20 +214,20 @@ fn parse_firmware_model() -> Result<Model> {
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
     match &model[..] {
-        "Raspberry Pi Model B (no P5)" => return Ok(Model::RaspberryPiBRev1),
-        "Raspberry Pi Model B" => return Ok(Model::RaspberryPiBRev1),
-        "Raspberry Pi Model A" => return Ok(Model::RaspberryPiA),
-        "Raspberry Pi Model B rev2" => return Ok(Model::RaspberryPiBRev2),
-        "Raspberry Pi Model A+" => return Ok(Model::RaspberryPiAPlus),
-        "Raspberry Pi Model B+" => return Ok(Model::RaspberryPiBPlus),
-        "Raspberry Pi 2 Model B" => return Ok(Model::RaspberryPi2B),
-        "Raspberry Pi Compute Module" => return Ok(Model::RaspberryPiComputeModule),
-        "Raspberry Pi 3 Model B" => return Ok(Model::RaspberryPi3B),
-        "Raspberry Pi Zero" => return Ok(Model::RaspberryPiZero),
-        "Raspberry Pi Compute Module 3" => return Ok(Model::RaspberryPiComputeModule3),
-        "Raspberry Pi Zero W" => return Ok(Model::RaspberryPiZeroW),
-        "Raspberry Pi 3 Model B+" => return Ok(Model::RaspberryPi3BPlus),
-        _ => return Err(Error::UnknownModel),
+        "Raspberry Pi Model B (no P5)" => Ok(Model::RaspberryPiBRev1),
+        "Raspberry Pi Model B" => Ok(Model::RaspberryPiBRev1),
+        "Raspberry Pi Model A" => Ok(Model::RaspberryPiA),
+        "Raspberry Pi Model B rev2" => Ok(Model::RaspberryPiBRev2),
+        "Raspberry Pi Model A+" => Ok(Model::RaspberryPiAPlus),
+        "Raspberry Pi Model B+" => Ok(Model::RaspberryPiBPlus),
+        "Raspberry Pi 2 Model B" => Ok(Model::RaspberryPi2B),
+        "Raspberry Pi Compute Module" => Ok(Model::RaspberryPiComputeModule),
+        "Raspberry Pi 3 Model B" => Ok(Model::RaspberryPi3B),
+        "Raspberry Pi Zero" => Ok(Model::RaspberryPiZero),
+        "Raspberry Pi Compute Module 3" => Ok(Model::RaspberryPiComputeModule3),
+        "Raspberry Pi Zero W" => Ok(Model::RaspberryPiZeroW),
+        "Raspberry Pi 3 Model B+" => Ok(Model::RaspberryPi3BPlus),
+        _ => Err(Error::UnknownModel),
     }
 }
 
@@ -246,8 +246,8 @@ impl DeviceInfo {
     /// `new` parses the contents of `/proc/cpuinfo` to identify the Raspberry
     /// Pi's model and SoC.
     pub fn new() -> Result<DeviceInfo> {
-        let model =
-            parse_proc_cpuinfo().or(parse_firmware_compatible().or(parse_firmware_model()))?;
+        let model = parse_proc_cpuinfo()
+            .or_else(|_| parse_firmware_compatible().or_else(|_| parse_firmware_model()))?;
 
         // Set SoC and memory offsets based on model
         match model {
