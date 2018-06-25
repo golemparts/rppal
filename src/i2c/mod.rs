@@ -57,7 +57,7 @@
 //!
 //! ### Permission Denied
 //!
-//! If constructing a new `Spi` instance returns a Permission Denied
+//! If constructing a new `I2c` instance returns a Permission Denied
 //! IO error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are correct, and the current user is a member of the `i2c` group.
 

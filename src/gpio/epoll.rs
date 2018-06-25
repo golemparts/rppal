@@ -148,7 +148,7 @@ impl Epoll {
         }
 
         let timeout: i32 = if let Some(duration) = timeout {
-            (duration.as_secs() * 1_000) as i32 + (duration.subsec_nanos() / 1_000_000) as i32
+            (duration.as_secs() * 1_000) as i32 + duration.subsec_millis() as i32
         } else {
             -1
         };

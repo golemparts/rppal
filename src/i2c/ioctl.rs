@@ -19,6 +19,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 #![allow(dead_code)]
+#![cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
 
 use std::fmt;
 use std::io;
@@ -526,7 +527,7 @@ pub unsafe fn i2c_write_read(
     read_buffer: &mut [u8],
 ) -> Result<()> {
     // 0 length buffers may cause issues
-    if write_buffer.len() == 0 || read_buffer.len() == 0 {
+    if write_buffer.is_empty() || read_buffer.is_empty() {
         return Ok(());
     }
 
