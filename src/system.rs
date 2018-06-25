@@ -178,22 +178,24 @@ fn parse_firmware_compatible() -> Result<Model> {
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
     for compid in compatible.split('\0') {
-        match compid {
-            "raspberrypi,model-b-i2c0" => return Ok(Model::RaspberryPiBRev1),
-            "raspberrypi,model-b" => return Ok(Model::RaspberryPiBRev1),
-            "raspberrypi,model-a" => return Ok(Model::RaspberryPiA),
-            "raspberrypi,model-b-rev2" => return Ok(Model::RaspberryPiBRev2),
-            "raspberrypi,model-a-plus" => return Ok(Model::RaspberryPiAPlus),
-            "raspberrypi,model-b-plus" => return Ok(Model::RaspberryPiBPlus),
-            "raspberrypi,2-model-b" => return Ok(Model::RaspberryPi2B),
-            "raspberrypi,compute-module" => return Ok(Model::RaspberryPiComputeModule),
-            "raspberrypi,3-model-b" => return Ok(Model::RaspberryPi3B),
-            "raspberrypi,model-zero" => return Ok(Model::RaspberryPiZero),
-            "raspberrypi,3-compute-module" => return Ok(Model::RaspberryPiComputeModule3),
-            "raspberrypi,model-zero-w" => return Ok(Model::RaspberryPiZeroW),
-            "raspberrypi,3-model-b-plus" => return Ok(Model::RaspberryPi3BPlus),
-            _ => (),
-        }
+        let model = match compid {
+            "raspberrypi,model-b-i2c0" => Model::RaspberryPiBRev1,
+            "raspberrypi,model-b" => Model::RaspberryPiBRev1,
+            "raspberrypi,model-a" => Model::RaspberryPiA,
+            "raspberrypi,model-b-rev2" => Model::RaspberryPiBRev2,
+            "raspberrypi,model-a-plus" => Model::RaspberryPiAPlus,
+            "raspberrypi,model-b-plus" => Model::RaspberryPiBPlus,
+            "raspberrypi,2-model-b" => Model::RaspberryPi2B,
+            "raspberrypi,compute-module" => Model::RaspberryPiComputeModule,
+            "raspberrypi,3-model-b" => Model::RaspberryPi3B,
+            "raspberrypi,model-zero" => Model::RaspberryPiZero,
+            "raspberrypi,3-compute-module" => Model::RaspberryPiComputeModule3,
+            "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
+            "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
+            _ => continue,
+        };
+
+        return Ok(model);
     }
 
     Err(Error::UnknownModel)
@@ -201,7 +203,7 @@ fn parse_firmware_compatible() -> Result<Model> {
 
 // Identify Pi model based on /sys/firmware/devicetree/base/model
 fn parse_firmware_model() -> Result<Model> {
-    let model = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
+    let model_id = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
         Err(_) => return Err(Error::UnknownModel),
         Ok(buffer) => if let Some(rev_idx) = buffer.find(" Rev ") {
             // We don't want to strip rev2 here
@@ -212,25 +214,27 @@ fn parse_firmware_model() -> Result<Model> {
     };
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
-    match &model[..] {
-        "Raspberry Pi Model B (no P5)" => Ok(Model::RaspberryPiBRev1),
-        "Raspberry Pi Model B" => Ok(Model::RaspberryPiBRev1),
-        "Raspberry Pi Model A" => Ok(Model::RaspberryPiA),
-        "Raspberry Pi Model B rev2" => Ok(Model::RaspberryPiBRev2),
-        "Raspberry Pi Model A+" => Ok(Model::RaspberryPiAPlus),
-        "Raspberry Pi Model A Plus" => Ok(Model::RaspberryPiAPlus),
-        "Raspberry Pi Model B+" => Ok(Model::RaspberryPiBPlus),
-        "Raspberry Pi Model B Plus" => Ok(Model::RaspberryPiBPlus),
-        "Raspberry Pi 2 Model B" => Ok(Model::RaspberryPi2B),
-        "Raspberry Pi Compute Module" => Ok(Model::RaspberryPiComputeModule),
-        "Raspberry Pi 3 Model B" => Ok(Model::RaspberryPi3B),
-        "Raspberry Pi Zero" => Ok(Model::RaspberryPiZero),
-        "Raspberry Pi Compute Module 3" => Ok(Model::RaspberryPiComputeModule3),
-        "Raspberry Pi Zero W" => Ok(Model::RaspberryPiZeroW),
-        "Raspberry Pi 3 Model B+" => Ok(Model::RaspberryPi3BPlus),
-        "Raspberry Pi 3 Model B Plus" => Ok(Model::RaspberryPi3BPlus),
-        _ => Err(Error::UnknownModel),
-    }
+    let model = match &model_id[..] {
+        "Raspberry Pi Model B (no P5)" => Model::RaspberryPiBRev1,
+        "Raspberry Pi Model B" => Model::RaspberryPiBRev1,
+        "Raspberry Pi Model A" => Model::RaspberryPiA,
+        "Raspberry Pi Model B rev2" => Model::RaspberryPiBRev2,
+        "Raspberry Pi Model A+" => Model::RaspberryPiAPlus,
+        "Raspberry Pi Model A Plus" => Model::RaspberryPiAPlus,
+        "Raspberry Pi Model B+" => Model::RaspberryPiBPlus,
+        "Raspberry Pi Model B Plus" => Model::RaspberryPiBPlus,
+        "Raspberry Pi 2 Model B" => Model::RaspberryPi2B,
+        "Raspberry Pi Compute Module" => Model::RaspberryPiComputeModule,
+        "Raspberry Pi 3 Model B" => Model::RaspberryPi3B,
+        "Raspberry Pi Zero" => Model::RaspberryPiZero,
+        "Raspberry Pi Compute Module 3" => Model::RaspberryPiComputeModule3,
+        "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
+        "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
+        "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
+        _ => return Err(Error::UnknownModel),
+    };
+
+    Ok(model)
 }
 
 /// Retrieves Raspberry Pi device information.
