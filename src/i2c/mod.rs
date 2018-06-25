@@ -26,10 +26,10 @@
 //!
 //! ## I2C buses
 //!
-//! The Raspberry Pi's BCM283x SoC offers three I2C buses, however only one
-//! of those should be used for slave devices you want to communicate with.
-//! The other two buses are used internally as an HDMI interface, and for
-//! HAT identification.
+//! The Raspberry Pi's BCM283x SoC supports three hardware I2C buses, however
+//! only the I2C bus on physical pins 3 and 5 should be used to communicate
+//! with slave devices. The other two buses are used internally as an HDMI
+//! interface, and for HAT identification.
 //!
 //! The I2C bus connected to physical pins 3 (SDA) and 5 (SCL) is disabled by
 //! default. You can enable it by running `sudo raspi-config`, or by manually
@@ -37,14 +37,13 @@
 //! the Raspberry Pi afterwards.
 //!
 //! In addition to the hardware I2C buses, it's possible to configure a
-//! bit-banged I2C bus in software on any available GPIO pins through the `i2c-gpio`
+//! bit-banged software I2C bus on any available GPIO pins through the `i2c-gpio`
 //! device tree overlay. More details on enabling and configuring `i2c-gpio`
 //! can be found in `/boot/overlays/README`.
 //!
 //! ## Transmission speed
 //!
-//! The Raspberry Pi's BCM283x SoC supports I2C data transfer rates up to
-//! 400 kbit/s (Fast-mode).
+//! The BSC supports I2C data transfer rates up to 400 kbit/s (Fast-mode).
 //!
 //! By default, the I2C bus clock speed is set to 100 kHz. Transferring
 //! 1 bit takes 1 clock cycle. You can change the
@@ -57,7 +56,7 @@
 //!
 //! ### Permission Denied
 //!
-//! If constructing a new `I2c` instance returns an `io::ErrorKind::PermissionDenied`
+//! If [`new`] returns an `io::ErrorKind::PermissionDenied`
 //! error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are correct, and the current user is a member of the `i2c` group.
 //!
@@ -66,6 +65,7 @@
 //! Transactions return an `io::ErrorKind::TimedOut` error when their duration
 //! exceeds the timeout value. You can change the timeout using [`set_timeout`].
 //!
+//! [`new`]: struct.I2c.html#method.new
 //! [`set_timeout`]: struct.I2c.html#method.set_timeout
 
 #![allow(dead_code)]
@@ -126,8 +126,8 @@ pub type Result<T> = result::Result<T, Error>;
 /// enabled. More information can be found [here].
 ///
 /// Besides basic I2C communication through buffer reads and writes, `I2c` can
-/// also be used with devices that require SMBus (System Management Bus). SMBus
-/// is based on I2C, and defines more structured message transactions
+/// also be used with devices that require SMBus (System Management Bus) support.
+/// SMBus is based on I2C, and defines more structured message transactions
 /// through its various protocols. More details can be found in the latest SMBus
 /// [specification].
 ///
@@ -300,11 +300,13 @@ impl I2c {
 
     /// Enables or disables 10-bit addressing.
     ///
-    /// 10-bit addressing currently isn't supported on the Raspberry Pi, and returns
-    /// an [`Error::FeatureNotSupported`] error unless underlying driver support is
+    /// 10-bit addressing currently isn't supported on the Raspberry Pi. `set_addr_10bit` returns
+    /// [`Err(Error::FeatureNotSupported)`] unless underlying driver support is
     /// detected.
     ///
     /// By default, `addr_10bit` is set to `false`.
+    ///
+    /// [`Err(Error::FeatureNotSupported)`]: enum.Error.html#variant.FeatureNotSupported
     pub fn set_addr_10bit(&mut self, addr_10bit: bool) -> Result<()> {
         if !self.capabilities().addr_10bit() {
             return Err(Error::FeatureNotSupported);
@@ -341,12 +343,12 @@ impl I2c {
         Ok(self.i2cdev.write(buffer)?)
     }
 
-    /// Sends the outgoing data contained in `write_buffer`, to the slave device, and
+    /// Sends the outgoing data contained in `write_buffer` to the slave device, and
     /// then fills `read_buffer` with incoming data.
     ///
-    /// Compared to calling [`write`] and [`read`], `write_read` doesn't issue a STOP
-    /// condition in between the write and read operation. A repeated START is sent
-    /// instead.
+    /// Compared to calling [`write`] and [`read`] separately, `write_read` doesn't
+    /// issue a STOP condition in between the write and read operation. A repeated
+    /// START is sent instead.
     ///
     /// `write_read` reads as many bytes as can fit in `read_buffer`. The maximum
     /// number of bytes in either `write_buffer` or `read_buffer` can't exceed 8192.
@@ -372,8 +374,7 @@ impl I2c {
     /// Sends an 8-bit `command`, and then fills a multi-byte `buffer` with
     /// incoming data.
     ///
-    /// `block_read` can read a maximum of 32 bytes. Any data that doesn't fit
-    /// in `buffer` is discarded.
+    /// `block_read` can read a maximum of 32 bytes.
     ///
     /// Although `block_read` isn't part of the SMBus protocol, it uses the
     /// SMBus functionality to offer this commonly used I2C transaction format.
@@ -485,6 +486,9 @@ impl I2c {
     /// but reverses the byte order of the incoming 16-bit value. The high byte is received first,
     /// and the low byte second.
     ///
+    /// Sequence: START → Address + Write Bit → Command → Repeated START
+    /// → Address + Read Bit → Incoming Byte High → Incoming Byte Low → STOP
+    ///
     /// [`smbus_read_word`]: #method.smbus_read_word
     pub fn smbus_read_word_swapped(&self, command: u8) -> Result<u16> {
         let value = unsafe { ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)? };
@@ -514,6 +518,8 @@ impl I2c {
     ///
     /// `smbus_write_word_swapped` is a convenience method that works similarly to [`smbus_write_word`], but reverses the byte
     /// order of the outgoing 16-bit value. The high byte is sent first, and the low byte second.
+    ///
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte High → Outgoing Byte Low → STOP
     ///
     /// [`smbus_write_word`]: #method.smbus_write_word
     pub fn smbus_write_word_swapped(&self, command: u8, value: u16) -> Result<()> {
@@ -557,6 +563,10 @@ impl I2c {
     /// but reverses the byte order of the outgoing and incoming 16-bit value. The high byte is transferred
     /// first, and the low byte second.
     ///
+    /// Sequence: START → Address + Write Bit → Command → Outgoing Byte High →
+    /// Outgoing Byte Low → Repeated START → Address + Read Bit → Incoming Byte High →
+    /// Incoming Byte Low → STOP
+    ///
     /// [`smbus_process_call`]: #method.smbus_process_call
     pub fn smbus_process_call_swapped(&self, command: u8, value: u16) -> Result<u16> {
         let response = unsafe {
@@ -574,21 +584,21 @@ impl I2c {
     /// multi-byte `buffer`.
     ///
     /// `smbus_block_read` currently isn't supported on the Raspberry Pi, and returns
-    /// an [`Error::FeatureNotSupported`] error unless underlying driver support is
+    /// [`Err(Error::FeatureNotSupported)`] unless underlying driver support is
     /// detected. You might be able to emulate the `smbus_block_read` functionality
-    /// with either [`block_read`] or [`read`] if the length of the expected incoming
-    /// data is known beforehand, or if the slave device allows the master to read
-    /// more data than it needs to send.
+    /// with [`write_read`], [`block_read`] or [`read`] provided the length of the
+    /// expected incoming data is known beforehand, or the slave device allows the
+    /// master to read more data than it needs to send.
     ///
-    /// `smbus_block_read` can read a maximum of 32 bytes. Any data that doesn't fit
-    /// in `buffer` is discarded.
+    /// `smbus_block_read` can read a maximum of 32 bytes.
     ///
     /// Sequence: START → Address + Write Bit → Command → Repeated START →
     /// Address + Read Bit → Incoming Byte Count → Incoming Bytes → STOP
     ///
     /// Returns how many bytes were read.
     ///
-    /// [`Error::FeatureNotSupported`]: enum.Error.html#variant.FeatureNotSupported
+    /// [`Err(Error::FeatureNotSupported)`]: enum.Error.html#variant.FeatureNotSupported
+    /// [`write_read`]: #method.write_read
     /// [`block_read`]: #method.block_read
     /// [`read`]: #method.read
     pub fn smbus_block_read(&self, command: u8, buffer: &mut [u8]) -> Result<usize> {

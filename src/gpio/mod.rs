@@ -24,7 +24,7 @@
 //! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
 //! GPIO interrupts are controlled using the sysfs interface.
 //!
-//! On a typical up-to-date Raspbian installation, any user that's part of the
+//! On a typical up-to-date Raspbian installation, any user that's a member of the
 //! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
 //! superuser privileges.
 //!
@@ -99,7 +99,7 @@ quick_error! {
 ///
 /// Make sure the user has read and write access to `/dev/gpiomem`.
 /// Common causes are either incorrect file permissions on `/dev/gpiomem`, or
-/// the user isn't part of the `gpio` group. If `/dev/gpiomem` is missing, upgrade to a more
+/// the user isn't a member of the `gpio` group. If `/dev/gpiomem` is missing, upgrade to a more
 /// recent version of Raspbian.
 ///
 /// `/dev/mem` is a fallback when `/dev/gpiomem` can't be accessed. Getting read and write
@@ -117,6 +117,8 @@ quick_error! {
 /// You can share a [`Gpio`] instance with other threads using channels, or cloning an
 /// `Arc<Mutex<Gpio>>`. Although discouraged, you could also share it globally
 /// wrapped in a `Mutex` using the `lazy_static` crate.
+///
+/// [`Gpio`]: struct.Gpio.html
         InstanceExists { description("an instance of Gpio already exists") }
 /// [`Gpio`] isn't initialized.
 ///
@@ -124,6 +126,7 @@ quick_error! {
 /// running [`cleanup`].
 ///
 /// [`cleanup`]: struct.Gpio.html#method.cleanup
+/// [`Gpio`]: struct.Gpio.html
         NotInitialized { description("not initialized") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }

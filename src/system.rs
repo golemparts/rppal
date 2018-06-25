@@ -21,8 +21,7 @@
 //! Raspberry Pi system-related tools.
 //!
 //! Use [`DeviceInfo`] to identify what Raspberry Pi model and SoC the software is
-//! running on. This information is used internally to calculate the correct memory
-//! locations for the various BCM283x peripherals.
+//! running on.
 //!
 //! [`DeviceInfo`]: struct.DeviceInfo.html
 
