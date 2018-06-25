@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 (June 25, 2018)
+## 0.7.0 (June 26, 2018)
 
 * DeviceInfo: (Breaking change) Remove Error::CantAccessProcCpuInfo.
 * DeviceInfo: Add additional options to automatically identify the Pi model when /proc/cpuinfo contains inaccurate data.
