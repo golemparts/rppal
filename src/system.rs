@@ -243,9 +243,11 @@ pub struct DeviceInfo {
 impl DeviceInfo {
     /// Constructs a new `DeviceInfo`.
     ///
-    /// `new` parses the contents of `/proc/cpuinfo` to identify the Raspberry
-    /// Pi's model and SoC.
+    /// `new` automatically identifies the Raspberry Pi model and SoC based on
+    /// the contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
+    /// and `/sys/firmware/devicetree/base/model`.
     pub fn new() -> Result<DeviceInfo> {
+        // Parse order from most-detailed to least-detailed info
         let model = parse_proc_cpuinfo()
             .or_else(|_| parse_firmware_compatible().or_else(|_| parse_firmware_model()))?;
 

@@ -93,7 +93,7 @@ quick_error! {
         UnknownMode(mode: u8) { description("unknown mode") }
 /// Unknown SoC.
 ///
-/// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi's SoC.
+/// It wasn't possible to automatically identify the Raspberry Pi's SoC.
         UnknownSoC { description("unknown SoC") }
 /// Permission denied when opening `/dev/gpiomem` and/or `/dev/mem` for read/write access.
 ///

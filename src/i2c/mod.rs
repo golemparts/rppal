@@ -106,7 +106,7 @@ quick_error! {
         FeatureNotSupported { description("I2C/SMBus feature not supported") }
 /// Unknown SoC.
 ///
-/// Based on the output of `/proc/cpuinfo`, it wasn't possible to identify the Raspberry Pi's SoC.
+/// It wasn't possible to automatically identify the Raspberry Pi's SoC.
         UnknownSoC { description("unknown SoC") }
     }
 }
