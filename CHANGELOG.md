@@ -2,6 +2,8 @@
 
 ## 0.7.0 (June 25, 2018)
 
+* DeviceInfo: (Breaking change) Remove Error::CantAccessProcCpuInfo.
+* DeviceInfo: Add additional options to automatically identify the Pi model when /proc/cpuinfo contains inaccurate data.
 * Gpio: (Breaking change) Remove Error::ChannelDisconnected.
 * I2c: Add support for I2C with basic read/write, block read/write, and write_read.
 * I2c: Add support for SMBus with Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, and PEC.
