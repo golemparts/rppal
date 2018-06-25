@@ -57,7 +57,6 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
-    RaspberryPiB,
     RaspberryPiBRev1,
     RaspberryPiBRev2,
     RaspberryPiBPlus,
@@ -75,7 +74,6 @@ impl fmt::Display for Model {
         match *self {
             Model::RaspberryPiA => write!(f, "Raspberry Pi A"),
             Model::RaspberryPiAPlus => write!(f, "Raspberry Pi A+"),
-            Model::RaspberryPiB => write!(f, "Raspberry Pi B"),
             Model::RaspberryPiBRev1 => write!(f, "Raspberry Pi B Rev 1"),
             Model::RaspberryPiBRev2 => write!(f, "Raspberry Pi B Rev 2"),
             Model::RaspberryPiBPlus => write!(f, "Raspberry Pi B+"),
@@ -183,7 +181,7 @@ fn parse_firmware_compatible() -> Result<Model> {
     for compid in compatible.split("\0") {
         match compid {
             "raspberrypi,model-b-i2c0" => return Ok(Model::RaspberryPiBRev1),
-            "raspberrypi,model-b" => return Ok(Model::RaspberryPiB),
+            "raspberrypi,model-b" => return Ok(Model::RaspberryPiBRev1),
             "raspberrypi,model-a" => return Ok(Model::RaspberryPiA),
             "raspberrypi,model-b-rev2" => return Ok(Model::RaspberryPiBRev2),
             "raspberrypi,model-a-plus" => return Ok(Model::RaspberryPiAPlus),
@@ -217,7 +215,7 @@ fn parse_firmware_model() -> Result<Model> {
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
     match &model[..] {
         "Raspberry Pi Model B (no P5)" => return Ok(Model::RaspberryPiBRev1),
-        "Raspberry Pi Model B" => return Ok(Model::RaspberryPiB),
+        "Raspberry Pi Model B" => return Ok(Model::RaspberryPiBRev1),
         "Raspberry Pi Model A" => return Ok(Model::RaspberryPiA),
         "Raspberry Pi Model B rev2" => return Ok(Model::RaspberryPiBRev2),
         "Raspberry Pi Model A+" => return Ok(Model::RaspberryPiAPlus),
@@ -255,7 +253,6 @@ impl DeviceInfo {
         match model {
             Model::RaspberryPiA
             | Model::RaspberryPiAPlus
-            | Model::RaspberryPiB
             | Model::RaspberryPiBRev1
             | Model::RaspberryPiBRev2
             | Model::RaspberryPiBPlus
