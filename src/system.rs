@@ -218,7 +218,9 @@ fn parse_firmware_model() -> Result<Model> {
         "Raspberry Pi Model A" => Ok(Model::RaspberryPiA),
         "Raspberry Pi Model B rev2" => Ok(Model::RaspberryPiBRev2),
         "Raspberry Pi Model A+" => Ok(Model::RaspberryPiAPlus),
+        "Raspberry Pi Model A Plus" => Ok(Model::RaspberryPiAPlus),
         "Raspberry Pi Model B+" => Ok(Model::RaspberryPiBPlus),
+        "Raspberry Pi Model B Plus" => Ok(Model::RaspberryPiBPlus),
         "Raspberry Pi 2 Model B" => Ok(Model::RaspberryPi2B),
         "Raspberry Pi Compute Module" => Ok(Model::RaspberryPiComputeModule),
         "Raspberry Pi 3 Model B" => Ok(Model::RaspberryPi3B),
@@ -226,6 +228,7 @@ fn parse_firmware_model() -> Result<Model> {
         "Raspberry Pi Compute Module 3" => Ok(Model::RaspberryPiComputeModule3),
         "Raspberry Pi Zero W" => Ok(Model::RaspberryPiZeroW),
         "Raspberry Pi 3 Model B+" => Ok(Model::RaspberryPi3BPlus),
+        "Raspberry Pi 3 Model B Plus" => Ok(Model::RaspberryPi3BPlus),
         _ => Err(Error::UnknownModel),
     }
 }
