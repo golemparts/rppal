@@ -279,7 +279,7 @@ impl I2c {
     /// `io::ErrorKind::TimedOut` error.
     ///
     /// `timeout` has a resolution of 10ms.
-    pub fn set_timeout(&mut self, timeout: u32) -> Result<()> {
+    pub fn set_timeout(&self, timeout: u32) -> Result<()> {
         // Contrary to the i2cdev documentation, this seems to
         // be used as a timeout for (part of?) the I2C transaction.
         unsafe {
@@ -289,7 +289,7 @@ impl I2c {
         Ok(())
     }
 
-    fn set_retries(&mut self, retries: u32) -> Result<()> {
+    fn set_retries(&self, retries: u32) -> Result<()> {
         // Set to private. While i2cdev implements retries, the underlying drivers don't.
         unsafe {
             ioctl::set_retries(self.i2cdev.as_raw_fd(), retries as c_ulong)?;
@@ -329,7 +329,6 @@ impl I2c {
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        // TODO: Is there a maximum buffer length?
         Ok(self.i2cdev.read(buffer)?)
     }
 
@@ -339,7 +338,6 @@ impl I2c {
     ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
-        // TODO: Is there a maximum buffer length?
         Ok(self.i2cdev.write(buffer)?)
     }
 
@@ -358,7 +356,7 @@ impl I2c {
     ///
     /// [`write`]: #method.write
     /// [`read`]: #method.read
-    pub fn write_read(&mut self, write_buffer: &[u8], read_buffer: &mut [u8]) -> Result<()> {
+    pub fn write_read(&self, write_buffer: &[u8], read_buffer: &mut [u8]) -> Result<()> {
         unsafe {
             ioctl::i2c_write_read(
                 self.i2cdev.as_raw_fd(),
