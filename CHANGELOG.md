@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 (June 26, 2018)
+
+* Reverted the use of the recently stabilized Duration::subsec_millis() back to Duration::subsec_nanos() to allow older stable versions of the compiler to work.
+
 ## 0.7.0 (June 26, 2018)
 
 * DeviceInfo: (Breaking change) Remove Error::CantAccessProcCpuInfo.
