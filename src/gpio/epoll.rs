@@ -18,6 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![cfg_attr(feature = "cargo-clippy", allow(duration_subsec))]
+
 use std::io;
 use std::result;
 use std::time::Duration;
@@ -148,7 +150,8 @@ impl Epoll {
         }
 
         let timeout: i32 = if let Some(duration) = timeout {
-            (duration.as_secs() * 1_000) as i32 + duration.subsec_millis() as i32
+            (duration.as_secs() * 1_000) as i32 + (duration.subsec_nanos() / 1_000_000) as i32
+            // (duration.as_secs() * 1_000) as i32 + duration.subsec_millis() as i32
         } else {
             -1
         };
