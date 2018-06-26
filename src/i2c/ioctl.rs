@@ -215,6 +215,7 @@ const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer data
 // NOTE: REQ_RDWR - Only a single read operation is supported as the final message (see i2c-bcm2835.c)
 
 const RDWR_FLAG_RD: u16 = 0x0001; // Read operation
+const RDWR_FLAG_TEN: u16 = 0x0010; // 10-bit slave address
 
 const RDWR_MSG_MAX: usize = 42; // Maximum messages per RDWR operation
 const SMBUS_BLOCK_MAX: usize = 32; // Maximum bytes per block transfer
@@ -523,6 +524,7 @@ struct RdwrRequest {
 pub unsafe fn i2c_write_read(
     fd: c_int,
     address: u16,
+    addr_10bit: bool,
     write_buffer: &[u8],
     read_buffer: &mut [u8],
 ) -> Result<()> {
@@ -533,14 +535,18 @@ pub unsafe fn i2c_write_read(
 
     let segment_write = RdwrSegment {
         addr: address,
-        flags: 0,
+        flags: if addr_10bit { RDWR_FLAG_TEN } else { 0 },
         len: write_buffer.len() as u16,
         data: write_buffer.as_ptr() as usize,
     };
 
     let segment_read = RdwrSegment {
         addr: address,
-        flags: RDWR_FLAG_RD,
+        flags: if addr_10bit {
+            RDWR_FLAG_RD | RDWR_FLAG_TEN
+        } else {
+            RDWR_FLAG_RD
+        },
         len: read_buffer.len() as u16,
         data: read_buffer.as_mut_ptr() as usize,
     };

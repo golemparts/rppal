@@ -361,6 +361,7 @@ impl I2c {
             ioctl::i2c_write_read(
                 self.i2cdev.as_raw_fd(),
                 self.address,
+                self.addr_10bit,
                 write_buffer,
                 read_buffer,
             )?;
