@@ -110,8 +110,8 @@ impl fmt::Display for SoC {
 // Identify Pi model based on /proc/cpuinfo
 fn parse_proc_cpuinfo() -> Result<Model> {
     let proc_cpuinfo = BufReader::new(match File::open("/proc/cpuinfo") {
-        Err(_) => return Err(Error::UnknownModel),
         Ok(file) => file,
+        Err(_) => return Err(Error::UnknownModel),
     });
 
     let mut hardware: String = String::new();
@@ -170,14 +170,14 @@ fn parse_proc_cpuinfo() -> Result<Model> {
 }
 
 // Identify Pi model based on /sys/firmware/devicetree/base/compatible
-fn parse_firmware_compatible() -> Result<Model> {
-    let compatible = match fs::read_to_string("/sys/firmware/devicetree/base/compatible") {
+fn parse_base_compatible() -> Result<Model> {
+    let base_compatible = match fs::read_to_string("/sys/firmware/devicetree/base/compatible") {
+        Ok(buffer) => buffer,
         Err(_) => return Err(Error::UnknownModel),
-        Ok(s) => s,
     };
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
-    for comp_id in compatible.split('\0') {
+    for comp_id in base_compatible.split('\0') {
         let model = match comp_id {
             "raspberrypi,model-b-i2c0" => Model::RaspberryPiBRev1,
             "raspberrypi,model-b" => Model::RaspberryPiBRev1,
@@ -202,19 +202,32 @@ fn parse_firmware_compatible() -> Result<Model> {
 }
 
 // Identify Pi model based on /sys/firmware/devicetree/base/model
-fn parse_firmware_model() -> Result<Model> {
-    let model_id = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
-        Err(_) => return Err(Error::UnknownModel),
-        Ok(buffer) => if let Some(rev_idx) = buffer.find(" Rev ") {
-            // We don't want to strip rev2 here
-            buffer[0..rev_idx].to_owned()
+fn parse_base_model() -> Result<Model> {
+    let mut base_model = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
+        Ok(mut buffer) => if let Some(idx) = buffer.find('\0') {
+            buffer.truncate(idx);
+            buffer
         } else {
             buffer
         },
+        Err(_) => return Err(Error::UnknownModel),
     };
 
+    // Check if this is a Pi B rev 2 before we remove the revision part, assuming the
+    // PCB Revision numbers on https://elinux.org/RPi_HardwareHistory are correct, and
+    // the installed distro appends the revision to the model name.
+    match &base_model[..] {
+        "Raspberry Pi Model B Rev 2.0" => return Ok(Model::RaspberryPiBRev2),
+        "Raspberry Pi Model B rev2 Rev 2.0" => return Ok(Model::RaspberryPiBRev2),
+        _ => (),
+    }
+
+    if let Some(idx) = base_model.find(" Rev ") {
+        base_model.truncate(idx);
+    }
+
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
-    let model = match &model_id[..] {
+    let model = match &base_model[..] {
         "Raspberry Pi Model B (no P5)" => Model::RaspberryPiBRev1,
         "Raspberry Pi Model B" => Model::RaspberryPiBRev1,
         "Raspberry Pi Model A" => Model::RaspberryPiA,
@@ -255,7 +268,7 @@ impl DeviceInfo {
     pub fn new() -> Result<DeviceInfo> {
         // Parse order from most-detailed to least-detailed info
         let model = parse_proc_cpuinfo()
-            .or_else(|_| parse_firmware_compatible().or_else(|_| parse_firmware_model()))?;
+            .or_else(|_| parse_base_compatible().or_else(|_| parse_base_model()))?;
 
         // Set SoC and memory offsets based on model
         match model {
