@@ -177,8 +177,8 @@ fn parse_firmware_compatible() -> Result<Model> {
     };
 
     // Based on /arch/arm/boot/dts/ and /Documentation/devicetree/bindings/arm/bcm/
-    for compid in compatible.split('\0') {
-        let model = match compid {
+    for comp_id in compatible.split('\0') {
+        let model = match comp_id {
             "raspberrypi,model-b-i2c0" => Model::RaspberryPiBRev1,
             "raspberrypi,model-b" => Model::RaspberryPiBRev1,
             "raspberrypi,model-a" => Model::RaspberryPiA,
