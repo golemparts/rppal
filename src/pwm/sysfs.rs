@@ -91,36 +91,34 @@ pub fn unexport(channel: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn period(channel: u8) -> Result<()> {
-    Ok(())
+pub fn period(channel: u8) -> Result<u64> {
+    unimplemented!()
 }
 
-pub fn set_period(channel: u8, period: u32) -> Result<()> {
-    Ok(())
+pub fn set_period(channel: u8, period: u64) -> Result<()> {
+    unimplemented!()
 }
 
-pub fn duty_cycle(channel: u8) -> Result<()> {
-    Ok(())
+pub fn duty_cycle(channel: u8) -> Result<u64> {
+    unimplemented!()
 }
 
-pub fn set_duty_cycle(channel: u8, duty_cycle: u32) -> Result<()> {
-    Ok(())
+pub fn set_duty_cycle(channel: u8, duty_cycle: u64) -> Result<()> {
+    unimplemented!()
 }
 
-pub fn polarity(channel: u8) -> Result<()> {
-    Ok(())
+pub fn polarity(channel: u8) -> Result<String> {
+    unimplemented!()
 }
 
-pub fn set_polarity(channel: u8, polarity: u32) -> Result<()> {
-    Ok(())
+pub fn set_polarity(channel: u8, polarity: &str) -> Result<()> {
+    unimplemented!()
 }
 
-pub fn enabled(channel: u8) -> Result<()> {
-    Ok(())
+pub fn enabled(channel: u8) -> Result<bool> {
+    unimplemented!()
 }
 
-pub fn set_enabled(channel: u8, bool: enabled) -> Result<()> {
+pub fn set_enabled(channel: u8, enabled: bool) -> Result<()> {
     Ok(())
 }
-
-
