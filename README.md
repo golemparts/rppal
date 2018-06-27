@@ -49,6 +49,10 @@ delay is longer than half of a clock period. More information can be found [here
 A possible workaround for slave devices that require clock stretching at other points during the transfer is
 to use a bit-banged software I2C bus by configuring the `i2c-gpio` device tree overlay as described in `/boot/overlays/README`.
 
+### PWM
+
+_Coming in Release 0.8.0._
+
 ### SPI
 
 RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the spidev device interface.
