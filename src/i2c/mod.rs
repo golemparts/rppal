@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the I2C peripherals.
+//! Interface for the I2C peripheral.
 //!
 //! The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus
 //! compliant with the I2C bus/interface. RPPAL communicates with the BSC

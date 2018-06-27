@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the SPI peripherals.
+//! Interface for the SPI peripheral.
 //!
 //! RPPAL provides access to the available SPI peripherals by using the spidev interface
 //! through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to a Slave Select

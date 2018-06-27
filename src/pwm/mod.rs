@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the PWM peripherals.
+//! Interface for the PWM peripheral.
 //!
 //! ## PWM channels
 //!
@@ -37,7 +37,7 @@
 //! 4.14.34 or later, and append the following snippet to
 //! `/etc/udev/rules.d/99-com.rules`. Reboot the Raspberry Pi afterwards.
 //!
-//! ```
+//! ```text
 //! SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
 //!     chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
 //!     chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* &&\
