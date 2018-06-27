@@ -67,7 +67,8 @@ pub fn export(pin: u8) -> Result<()> {
 
     // The symlink created by exporting a pin starts off owned by root:root. There's
     // a short delay before the group is changed to gpio. Since rppal should work for
-    // non-root users, we'll wait for max. 1s for the group to change to gpio.
+    // non-root users, we'll wait for max. 1s for the group to change to gpio. If
+    // this isn't working, check the udev rules (/etc/udev/rules.d/99-com.rules).
     let gid_gpio = if let Some(gid) = group_name_to_gid("gpio") {
         gid
     } else {
