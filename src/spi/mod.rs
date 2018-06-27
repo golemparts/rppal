@@ -116,7 +116,7 @@ mod ioctl;
 pub use self::ioctl::TransferSegment;
 
 quick_error! {
-/// Errors that can occur when accessing the SPI peripherals.
+/// Errors that can occur when accessing the SPI peripheral.
     #[derive(Debug)]
     pub enum Error {
 /// IO error.

@@ -87,7 +87,7 @@ mod ioctl;
 pub use self::ioctl::Capabilities;
 
 quick_error! {
-/// Errors that can occur when accessing the I2C peripherals.
+/// Errors that can occur when accessing the I2C peripheral.
     #[derive(Debug)]
     pub enum Error {
 /// IO error.
