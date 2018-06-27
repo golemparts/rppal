@@ -23,6 +23,7 @@
 //! ## PWM channels
 //!
 //!
+//! Note: Overlapping pins with SPI/I2C
 //!
 //! ## Using PWM without superuser privileges (`sudo`)
 //!
@@ -88,10 +89,37 @@ pub struct Pwm {
 impl Pwm {
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
-        sysfs::set_enabled(channel as u8, false)?;
-        sysfs::set_polarity(channel as u8, "normal")?;
+
+        // Always reset "enable" to 0. The sysfs interface has a bug where a previous
+        // export may have left "enable" as 1 after unexporting. On the next export,
+        // "enable" is still set to 1, even though the channel isn't enabled.
+        sysfs::set_enabled(channel as u8, false).ok();
 
         Ok(Pwm { channel })
+    }
+
+    pub fn with_settings(
+        channel: Channel,
+        period: Duration,
+        duty_cycle: Duration,
+        polarity: Polarity,
+        enabled: bool,
+    ) -> Result<Pwm> {
+        sysfs::export(channel as u8)?;
+
+        let pwm = Pwm { channel };
+
+        // Always reset "enable" to 0. The sysfs pwm driver has a bug where a previous
+        // export may have left "enable" as 1 after unexporting. On the next export,
+        // "enable" is still set to 1, even though the channel isn't enabled.
+        pwm.set_enabled(false).ok();
+
+        pwm.set_period(period)?;
+        pwm.set_duty_cycle(duty_cycle)?;
+        pwm.set_polarity(polarity)?;
+        pwm.set_enabled(enabled)?;
+
+        Ok(pwm)
     }
 
     pub fn period(&self) -> Result<Duration> {
@@ -123,21 +151,11 @@ impl Pwm {
     }
 
     pub fn polarity(&self) -> Result<Polarity> {
-        match &(sysfs::polarity(self.channel as u8)?)[..] {
-            "normal" => Ok(Polarity::Normal),
-            _ => Ok(Polarity::Inverse),
-        }
+        Ok(sysfs::polarity(self.channel as u8)?)
     }
 
-    /// By default, `polarity` is set to `Polarity::Normal`.
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
-        sysfs::set_polarity(
-            self.channel as u8,
-            match polarity {
-                Polarity::Normal => "normal",
-                Polarity::Inverse => "inversed",
-            },
-        )?;
+        sysfs::set_polarity(self.channel as u8, polarity)?;
 
         Ok(())
     }
@@ -146,7 +164,6 @@ impl Pwm {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
-    /// By default, `enabled` is set to `false`.
     pub fn set_enabled(&self, enabled: bool) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, enabled)?;
 
@@ -156,6 +173,7 @@ impl Pwm {
 
 impl Drop for Pwm {
     fn drop(&mut self) {
+        sysfs::set_enabled(self.channel as u8, false).ok();
         sysfs::unexport(self.channel as u8).ok();
     }
 }
