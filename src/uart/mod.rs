@@ -18,24 +18,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C and SPI peripherals.
-//! Support for additional peripherals will be added in future updates. The library is
-//! compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3,
-//! Zero and Zero W.
+/// Uart0 = Primary (PL011) UART
+/// Uart1 = Mini UART
+pub enum Device {
+    Uart0,
+    Uart1,
+}
 
-// Used by rustdoc to link other crates to rppal's docs
-#![doc(html_root_url = "https://docs.rs/rppal/0.7.1")]
-// Needed for the quick_error! macro
-#![recursion_limit = "128"]
+pub struct Uart {}
 
-extern crate libc;
-#[macro_use]
-extern crate quick_error;
-
-pub mod gpio;
-pub mod i2c;
-mod linux;
-pub mod pwm;
-pub mod spi;
-pub mod system;
-pub mod uart;
+impl Uart {
+    pub fn new(device: Device) -> Uart {
+        Uart {}
+    }
+}
