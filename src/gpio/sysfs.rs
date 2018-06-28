@@ -18,12 +18,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use std::ffi::CString;
 use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::os::linux::fs::MetadataExt;
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::result;
 use std::thread;
@@ -32,6 +31,7 @@ use std::time::Duration;
 use libc;
 
 use gpio::Trigger;
+use linux;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;
@@ -44,32 +44,26 @@ pub enum Direction {
     High,
 }
 
-// Find group ID for specified group name
-fn group_name_to_gid(name: &str) -> Option<u32> {
-    if let Ok(name_cstr) = CString::new(name) {
-        unsafe {
-            let group_ptr = libc::getgrnam(name_cstr.as_ptr());
-
-            if !group_ptr.is_null() {
-                return Some((*group_ptr).gr_gid);
-            }
-        }
-    }
-
-    None
-}
-
 pub fn export(pin: u8) -> Result<()> {
     // Only export if the pin isn't already exported
     if !Path::new(&format!("/sys/class/gpio/gpio{}", pin)).exists() {
         File::create("/sys/class/gpio/export")?.write_fmt(format_args!("{}", pin))?;
     }
 
+    // If we're logged in as root or effective root, skip the permission checks
+    if let Some(root_uid) = linux::user_to_uid("root") {
+        unsafe {
+            if libc::getuid() == root_uid || libc::geteuid() == root_uid {
+                return Ok(());
+            }
+        }
+    }
+
     // The symlink created by exporting a pin starts off owned by root:root. There's
     // a short delay before the group is changed to gpio. Since rppal should work for
     // non-root users, we'll wait for max. 1s for the group to change to gpio. If
     // this isn't working, check the udev rules (/etc/udev/rules.d/99-com.rules).
-    let gid_gpio = if let Some(gid) = group_name_to_gid("gpio") {
+    let gid_gpio = if let Some(gid) = linux::group_to_gid("gpio") {
         gid
     } else {
         0
@@ -78,7 +72,7 @@ pub fn export(pin: u8) -> Result<()> {
     let mut counter = 0;
     while counter < 20 {
         let meta = fs::metadata(format!("/sys/class/gpio/gpio{}", pin))?;
-        if meta.st_gid() == gid_gpio {
+        if meta.gid() == gid_gpio {
             break;
         }
 
