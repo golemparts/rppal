@@ -87,6 +87,7 @@ pub struct Pwm {
 }
 
 impl Pwm {
+    /// Constructs a new `Pwm`.
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
@@ -98,6 +99,7 @@ impl Pwm {
         Ok(Pwm { channel })
     }
 
+    /// Constructs a new `Pwm` using the specified settings.
     pub fn with_settings(
         channel: Channel,
         period: Duration,
@@ -109,7 +111,7 @@ impl Pwm {
 
         let pwm = Pwm { channel };
 
-        // Always reset "enable" to 0. The sysfs pwm driver has a bug where a previous
+        // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
         // "enable" is still set to 1, even though the channel isn't enabled.
         pwm.set_enabled(false).ok();
