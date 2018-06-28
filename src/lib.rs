@@ -34,6 +34,7 @@ extern crate quick_error;
 
 pub mod gpio;
 pub mod i2c;
+mod linux;
 pub mod pwm;
 pub mod spi;
 pub mod system;

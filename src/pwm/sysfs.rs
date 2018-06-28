@@ -18,13 +18,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use std::ffi::CString;
 use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::os::linux::fs::MetadataExt;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::result;
 use std::thread;
@@ -32,35 +30,21 @@ use std::time::Duration;
 
 use libc;
 
+use linux;
 use pwm::Polarity;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;
 
-// Find group ID for specified group name
-fn group_name_to_gid(name: &str) -> Option<u32> {
-    if let Ok(name_cstr) = CString::new(name) {
-        unsafe {
-            let group_ptr = libc::getgrnam(name_cstr.as_ptr());
-
-            if !group_ptr.is_null() {
-                return Some((*group_ptr).gr_gid);
-            }
-        }
-    }
-
-    None
-}
-
 // Check file permissions and group ID
 fn check_permissions(path: &str, gid: u32) -> bool {
     if let Ok(metadata) = fs::metadata(path) {
-        if metadata.permissions().mode() != 0o040_770 &&
-        metadata.permissions().mode() != 0o100_770 {
+        if metadata.permissions().mode() != 0o040_770 && metadata.permissions().mode() != 0o100_770
+        {
             return false;
         }
 
-        if metadata.st_gid() == gid {
+        if metadata.gid() == gid {
             return true;
         }
     }
@@ -74,13 +58,22 @@ pub fn export(channel: u8) -> Result<()> {
         File::create("/sys/class/pwm/pwmchip0/export")?.write_fmt(format_args!("{}", channel))?;
     }
 
+    // If we're logged in as root or effective root, skip the permission checks
+    if let Some(root_uid) = linux::user_to_uid("root") {
+        unsafe {
+            if libc::getuid() == root_uid || libc::geteuid() == root_uid {
+                return Ok(());
+            }
+        }
+    }
+
     // Wait 1s max for the group to change to gpio, and group permissions to be set,
     // provided the proper udev rules have been set up and a recent kernel is installed, which
     // avoids running into permission issues where root access is required. This might require
     // manually adding rules, since they don't seem to be part of the latest release yet. The
     // patched drivers/pwm/sysfs.c was included in raspberrypi-kernel_1.20180417-1 (4.14.34).
     // See: https://github.com/raspberrypi/linux/issues/1983
-    let gid_gpio = if let Some(gid) = group_name_to_gid("gpio") {
+    let gid_gpio = if let Some(gid) = linux::group_to_gid("gpio") {
         gid
     } else {
         0
@@ -94,7 +87,6 @@ pub fn export(channel: u8) -> Result<()> {
         format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel),
     ];
 
-    // TODO: If we have superuser privileges, don't bother waiting here.
     let mut counter = 0;
     'counter: while counter < 25 {
         for path in check_paths {
