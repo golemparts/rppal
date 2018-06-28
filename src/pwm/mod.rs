@@ -116,6 +116,9 @@ impl Pwm {
         // "enable" is still set to 1, even though the channel isn't enabled.
         pwm.set_enabled(false).ok();
 
+        // Set duty cycle to 0 first in case the new period is smaller than the current duty cycle
+        pwm.set_duty_cycle(Duration::from_secs(0)).ok();
+
         pwm.set_period(period)?;
         pwm.set_duty_cycle(duty_cycle)?;
         pwm.set_polarity(polarity)?;
@@ -124,10 +127,12 @@ impl Pwm {
         Ok(pwm)
     }
 
+    // Returns the period.
     pub fn period(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::period(self.channel as u8)?))
     }
 
+    /// Sets the period.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
             self.channel as u8,
@@ -138,10 +143,12 @@ impl Pwm {
         Ok(())
     }
 
+    /// Returns the duty cycle.
     pub fn duty_cycle(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::duty_cycle(self.channel as u8)?))
     }
 
+    /// Sets the duty cycle.
     pub fn set_duty_cycle(&self, duty_cycle: Duration) -> Result<()> {
         sysfs::set_duty_cycle(
             self.channel as u8,
@@ -152,20 +159,24 @@ impl Pwm {
         Ok(())
     }
 
+    // Returns the polarity.
     pub fn polarity(&self) -> Result<Polarity> {
         Ok(sysfs::polarity(self.channel as u8)?)
     }
 
+    // Sets the polarity.
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
         sysfs::set_polarity(self.channel as u8, polarity)?;
 
         Ok(())
     }
 
+    // Returns the active status.
     pub fn enabled(&self) -> Result<bool> {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
+    // Enables/disables the PWM channel.
     pub fn set_enabled(&self, enabled: bool) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, enabled)?;
 

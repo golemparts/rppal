@@ -18,14 +18,13 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use std::ffi::CString;
-use std::ptr;
-
-use libc;
-
 // Find user ID for specified user
 #[cfg(linux)]
 pub fn user_to_uid(name: &str) -> Option<u32> {
+    use std::ffi::CString;
+    use std::ptr;
+    use libc;
+
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
             let mut buf = &mut [0u8; 4096];
@@ -57,13 +56,17 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 }
 
 #[cfg(not(linux))]
-pub fn user_to_uid(name: &str) -> Option<u32> {
+pub fn user_to_uid(_name: &str) -> Option<u32> {
     None
 }
 
 // Find group ID for specified group
 #[cfg(linux)]
 pub fn group_to_gid(name: &str) -> Option<u32> {
+    use std::ffi::CString;
+    use std::ptr;
+    use libc;
+
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
             let mut buf = &mut [0u8; 4096];
@@ -92,6 +95,6 @@ pub fn group_to_gid(name: &str) -> Option<u32> {
 }
 
 #[cfg(not(linux))]
-pub fn group_to_gid(name: &str) -> Option<u32> {
+pub fn group_to_gid(_name: &str) -> Option<u32> {
     None
 }
