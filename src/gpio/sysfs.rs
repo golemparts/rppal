@@ -22,7 +22,7 @@ use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 use std::result;
 use std::thread;
@@ -42,6 +42,22 @@ pub enum Direction {
     Out,
     Low,
     High,
+}
+
+// Check file permissions and group ID
+fn check_permissions(path: &str, gid: u32) -> bool {
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.permissions().mode() != 0o040_770 && metadata.permissions().mode() != 0o100_770
+        {
+            return false;
+        }
+
+        if metadata.gid() == gid {
+            return true;
+        }
+    }
+
+    false
 }
 
 pub fn export(pin: u8) -> Result<()> {
@@ -68,6 +84,28 @@ pub fn export(pin: u8) -> Result<()> {
     } else {
         0
     };
+
+    let check_paths = &[
+        format!("/sys/class/gpio/gpio{}", pin),
+        format!("/sys/class/gpio/gpio{}/direction", pin),
+        format!("/sys/class/gpio/gpio{}/edge", pin),
+        format!("/sys/class/gpio/gpio{}/value", pin),
+    ];
+
+    let mut counter = 0;
+    'counter: while counter < 25 {
+        for path in check_paths {
+            if !check_permissions(path, gid_gpio) {
+                // This should normally be set within the first ~30ms.
+                thread::sleep(Duration::from_millis(40));
+                counter += 1;
+
+                continue 'counter;
+            }
+        }
+
+        break;
+    }
 
     let mut counter = 0;
     while counter < 20 {
