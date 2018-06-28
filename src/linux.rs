@@ -59,10 +59,24 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
-            let group_ptr = libc::getgrnam(name_cstr.as_ptr());
+            let mut buf = &mut [0u8; 4096];
+            let mut res: *mut libc::group = ptr::null_mut();
+            let mut grp = libc::group {
+                gr_name: ptr::null_mut(),
+                gr_passwd: ptr::null_mut(),
+                gr_gid: 0,
+                gr_mem: ptr::null_mut(),
+            };
 
-            if !group_ptr.is_null() {
-                return Some((*group_ptr).gr_gid);
+            if libc::getgrnam_r(
+                name_cstr.as_ptr(),
+                &mut grp,
+                buf.as_mut_ptr(),
+                buf.len(),
+                &mut res,
+            ) == 0 && res as usize > 0
+            {
+                return Some((*res).gr_gid);
             }
         }
     }
