@@ -21,9 +21,9 @@
 // Find user ID for specified user
 #[cfg(linux)]
 pub fn user_to_uid(name: &str) -> Option<u32> {
+    use libc;
     use std::ffi::CString;
     use std::ptr;
-    use libc;
 
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
@@ -63,9 +63,9 @@ pub fn user_to_uid(_name: &str) -> Option<u32> {
 // Find group ID for specified group
 #[cfg(linux)]
 pub fn group_to_gid(name: &str) -> Option<u32> {
+    use libc;
     use std::ffi::CString;
     use std::ptr;
-    use libc;
 
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
