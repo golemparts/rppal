@@ -24,6 +24,7 @@ use std::ptr;
 use libc;
 
 // Find user ID for specified user
+#[cfg(linux)]
 pub fn user_to_uid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
@@ -55,7 +56,13 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
     None
 }
 
+#[cfg(not(linux))]
+pub fn user_to_uid(name: &str) -> Option<u32> {
+    None
+}
+
 // Find group ID for specified group
+#[cfg(linux)]
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
         unsafe {
@@ -81,5 +88,10 @@ pub fn group_to_gid(name: &str) -> Option<u32> {
         }
     }
 
+    None
+}
+
+#[cfg(not(linux))]
+pub fn group_to_gid(name: &str) -> Option<u32> {
     None
 }
