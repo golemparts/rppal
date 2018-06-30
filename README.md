@@ -53,11 +53,11 @@ to use a bit-banged software I2C bus by configuring the `i2c-gpio` device tree o
 
 _Coming in Release 0.8.0._
 
-RPPAL controls the Raspberry Pi's PWM peripheral through the sysfs interface.
+RPPAL configures the Raspberry Pi's PWM peripheral through the sysfs interface.
 
 #### Features
 
-* Two hardware PWM channels
+* Up to two hardware PWM channels
 * Configurable period, duty cycle and polarity
 
 ### SPI
@@ -90,6 +90,12 @@ together.
 SPI_NO_CS can be implemented by connecting the Slave Select pin on your
 slave device to any other available GPIO pin on the Pi, and manually
 changing it to high and low as needed.
+
+### UART
+
+_Coming in Release 0.8.0._
+
+RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals through the tty device interface.
 
 ## Usage
 
