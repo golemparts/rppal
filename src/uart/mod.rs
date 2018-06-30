@@ -52,7 +52,10 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
+use std::os::unix::io::AsRawFd;
 use std::result;
+
+mod termios;
 
 quick_error! {
 /// Errors that can occur when accessing the UART peripheral.
@@ -124,17 +127,21 @@ impl Uart {
                 Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
             })?;
 
-        unimplemented!()
+        Ok(Uart { device })
     }
 
     /// Gets the speed in baud (Bd).
     pub fn speed(&self) -> Result<u32> {
-        unimplemented!()
+        unsafe { Ok(termios::speed(self.device.as_raw_fd())?) }
     }
 
     /// Sets the speed in baud (Bd).
     pub fn set_speed(&self, speed: u32) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            termios::set_speed(self.device.as_raw_fd(), speed)?;
+        }
+
+        Ok(())
     }
 
     pub fn parity(&self) -> Result<Parity> {
