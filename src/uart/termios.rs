@@ -21,7 +21,6 @@
 #![allow(dead_code)]
 
 use std::io;
-use std::result;
 
 use libc::{c_int, termios};
 use libc::{cfgetospeed, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
@@ -152,6 +151,7 @@ pub unsafe fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
     match parity {
         Parity::None => {
             attr.c_cflag &= !PARENB;
+            attr.c_cflag &= !PARODD;
         }
         Parity::Even => {
             attr.c_cflag |= PARENB;
@@ -167,6 +167,35 @@ pub unsafe fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
             attr.c_cflag |= PARENB | CMSPAR;
             attr.c_cflag &= !PARODD;
         }
+    }
+
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+pub unsafe fn data_bits(fd: c_int) -> Result<u8> {
+    let attr = attributes(fd)?;
+
+    Ok(match attr.c_cflag & CSIZE {
+        CS5 => 5,
+        CS6 => 6,
+        CS7 => 7,
+        CS8 => 8,
+        _ => return Err(Error::InvalidValue),
+    })
+}
+
+pub unsafe fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    attr.c_cflag &= !CSIZE;
+    match data_bits {
+        5 => attr.c_cflag |= CS5,
+        6 => attr.c_cflag |= CS6,
+        7 => attr.c_cflag |= CS7,
+        8 => attr.c_cflag |= CS8,
+        _ => return Err(Error::InvalidValue),
     }
 
     set_attributes(fd, &attr)?;
