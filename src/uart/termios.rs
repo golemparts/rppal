@@ -27,9 +27,8 @@ use libc::{cfgetospeed, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
 use libc::{B115200, B19200, B230400, B38400, B57600};
 use libc::{B1200, B1800, B2400, B4800, B600, B9600};
-use libc::{CS5, CS6, CS7, CS8, CSIZE};
+use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{CMSPAR, CRTSCTS, TCSANOW};
-use libc::{PARENB, PARODD};
 
 use uart::{Error, Parity, Result};
 
@@ -195,6 +194,30 @@ pub unsafe fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
         6 => attr.c_cflag |= CS6,
         7 => attr.c_cflag |= CS7,
         8 => attr.c_cflag |= CS8,
+        _ => return Err(Error::InvalidValue),
+    }
+
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+pub unsafe fn stop_bits(fd: c_int) -> Result<u8> {
+    let attr = attributes(fd)?;
+
+    if (attr.c_cflag & CSTOPB) > 0 {
+        Ok(2)
+    } else {
+        Ok(1)
+    }
+}
+
+pub unsafe fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    match stop_bits {
+        1 => attr.c_cflag &= !CSTOPB,
+        2 => attr.c_cflag |= CSTOPB,
         _ => return Err(Error::InvalidValue),
     }
 

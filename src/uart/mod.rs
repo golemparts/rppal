@@ -129,6 +129,8 @@ impl Uart {
                 Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
             })?;
 
+        // TODO: Configure UART for raw mode?
+
         Ok(Uart { device })
     }
 
@@ -160,10 +162,14 @@ impl Uart {
         Ok(())
     }
 
+    /// Gets the data bits.
     pub fn data_bits(&self) -> Result<u8> {
         unsafe { Ok(termios::data_bits(self.device.as_raw_fd())?) }
     }
 
+    /// Sets the data bits.
+    ///
+    /// Valid values: 5, 6, 7, 8
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
         unsafe {
             termios::set_data_bits(self.device.as_raw_fd(), data_bits)?;
@@ -172,12 +178,20 @@ impl Uart {
         Ok(())
     }
 
+    /// Gets the stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
-        unimplemented!()
+        unsafe { Ok(termios::stop_bits(self.device.as_raw_fd())?) }
     }
 
+    /// Sets the stop bits.
+    ///
+    /// Valid values: 1, 2
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)?;
+        }
+
+        Ok(())
     }
 
     pub fn read(&self, buffer: &mut [u8]) -> Result<()> {
