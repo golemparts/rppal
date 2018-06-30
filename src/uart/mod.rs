@@ -63,6 +63,8 @@ quick_error! {
     pub enum Error {
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
+/// Invalid value.
+        InvalidValue { description("invalid value") }
     }
 }
 
@@ -144,12 +146,18 @@ impl Uart {
         Ok(())
     }
 
+    /// Gets the parity.
     pub fn parity(&self) -> Result<Parity> {
-        unimplemented!()
+        unsafe { Ok(termios::parity(self.device.as_raw_fd())?) }
     }
 
+    /// Sets the parity.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
-        unimplemented!()
+        unsafe {
+            termios::set_parity(self.device.as_raw_fd(), parity)?;
+        }
+
+        Ok(())
     }
 
     pub fn data_bits(&self) -> Result<u8> {

@@ -28,13 +28,15 @@ use libc::{cfgetospeed, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
 use libc::{B115200, B19200, B230400, B38400, B57600};
 use libc::{B1200, B1800, B2400, B4800, B600, B9600};
-use libc::{CMSPAR, CRTSCTS, PARENB, PARODD, TCSANOW};
+use libc::{CS5, CS6, CS7, CS8, CSIZE};
+use libc::{CMSPAR, CRTSCTS, TCSANOW};
+use libc::{PARENB, PARODD};
 
-pub type Result<T> = result::Result<T, io::Error>;
+use uart::{Error, Parity, Result};
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
-        Err(io::Error::last_os_error())
+        Err(Error::Io(io::Error::last_os_error()))
     } else {
         Ok(retval)
     }
@@ -84,7 +86,7 @@ pub unsafe fn speed(fd: c_int) -> Result<u32> {
         B57600 => 57_600,
         B115200 => 115_200,
         B230400 => 230_400,
-        _ => 0,
+        _ => return Err(Error::InvalidValue),
     })
 }
 
@@ -109,12 +111,64 @@ pub unsafe fn set_speed(fd: c_int, speed: u32) -> Result<()> {
         57_600 => B57600,
         115_200 => B115200,
         230_400 => B230400,
-        _ => unimplemented!(),
+        _ => return Err(Error::InvalidValue),
     };
 
     let mut attr = attributes(fd)?;
     parse_retval(cfsetispeed(&mut attr, baud))?;
     parse_retval(cfsetospeed(&mut attr, baud))?;
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+pub unsafe fn parity(fd: c_int) -> Result<Parity> {
+    let attr = attributes(fd)?;
+
+    if (attr.c_cflag & PARENB) == 0 {
+        return Ok(Parity::None);
+    } else if (attr.c_cflag & PARENB) > 0 && (attr.c_cflag & PARODD) == 0 {
+        return Ok(Parity::Even);
+    } else if (attr.c_cflag & PARENB) > 0 && (attr.c_cflag & PARODD) > 0 {
+        return Ok(Parity::Odd);
+    } else if (attr.c_cflag & PARENB) > 0
+        && (attr.c_cflag & CMSPAR) > 0
+        && (attr.c_cflag & PARODD) > 0
+    {
+        return Ok(Parity::Mark);
+    } else if (attr.c_cflag & PARENB) > 0
+        && (attr.c_cflag & CMSPAR) > 0
+        && (attr.c_cflag & PARODD) == 0
+    {
+        return Ok(Parity::Space);
+    }
+
+    Err(Error::InvalidValue)
+}
+
+pub unsafe fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    match parity {
+        Parity::None => {
+            attr.c_cflag &= !PARENB;
+        }
+        Parity::Even => {
+            attr.c_cflag |= PARENB;
+            attr.c_cflag &= !PARODD;
+        }
+        Parity::Odd => {
+            attr.c_cflag |= PARENB | PARODD;
+        }
+        Parity::Mark => {
+            attr.c_cflag |= PARENB | PARODD | CMSPAR;
+        }
+        Parity::Space => {
+            attr.c_cflag |= PARENB | CMSPAR;
+            attr.c_cflag &= !PARODD;
+        }
+    }
+
     set_attributes(fd, &attr)?;
 
     Ok(())
