@@ -95,7 +95,12 @@ changing it to high and low as needed.
 
 _Coming in Release 0.8.0._
 
-RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals through the tty device interface.
+RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals through the ttyAMA0 and ttyS0 device interfaces.
+Communicating with USB serial devices is also supported through ttyUSBx and ttyACMx.
+
+#### Features
+
+
 
 ## Usage
 
