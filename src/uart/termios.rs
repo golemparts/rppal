@@ -25,10 +25,14 @@ use std::io;
 use libc::{c_int, termios};
 use libc::{cfgetospeed, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
+use libc::{B1000000, B1152000, B460800, B500000, B576000, B921600};
 use libc::{B115200, B19200, B230400, B38400, B57600};
 use libc::{B1200, B1800, B2400, B4800, B600, B9600};
+use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
+
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{CMSPAR, CRTSCTS, TCSANOW};
+use libc::{VMIN, VTIME};
 
 use uart::{Error, Parity, Result};
 
@@ -84,6 +88,18 @@ pub unsafe fn speed(fd: c_int) -> Result<u32> {
         B57600 => 57_600,
         B115200 => 115_200,
         B230400 => 230_400,
+        B460800 => 460_800,
+        B500000 => 500_000,
+        B576000 => 576_000,
+        B921600 => 921_600,
+        B1000000 => 1_000_000,
+        B1152000 => 1_152_000,
+        B1500000 => 1_500_000,
+        B2000000 => 2_000_000,
+        B2500000 => 2_500_000,
+        B3000000 => 3_000_000,
+        B3500000 => 3_500_000,
+        B4000000 => 4_000_000,
         _ => return Err(Error::InvalidValue),
     })
 }
@@ -109,6 +125,18 @@ pub unsafe fn set_speed(fd: c_int, speed: u32) -> Result<()> {
         57_600 => B57600,
         115_200 => B115200,
         230_400 => B230400,
+        460_800 => B460800,
+        500_000 => B500000,
+        576_000 => B576000,
+        921_600 => B921600,
+        1_000_000 => B1000000,
+        1_152_000 => B1152000,
+        1_500_000 => B1500000,
+        2_000_000 => B2000000,
+        2_500_000 => B2500000,
+        3_000_000 => B3000000,
+        3_500_000 => B3500000,
+        4_000_000 => B4000000,
         _ => return Err(Error::InvalidValue),
     };
 

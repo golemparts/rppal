@@ -134,13 +134,13 @@ impl Uart {
         Ok(Uart { device })
     }
 
-    /// Gets the speed in baud (Bd).
-    pub fn speed(&self) -> Result<u32> {
+    /// Gets the line speed in baud (Bd).
+    pub fn line_speed(&self) -> Result<u32> {
         unsafe { Ok(termios::speed(self.device.as_raw_fd())?) }
     }
 
-    /// Sets the speed in baud (Bd).
-    pub fn set_speed(&self, speed: u32) -> Result<()> {
+    /// Sets the line speed in baud (Bd).
+    pub fn set_line_speed(&self, speed: u32) -> Result<()> {
         unsafe {
             termios::set_speed(self.device.as_raw_fd(), speed)?;
         }
@@ -194,11 +194,29 @@ impl Uart {
         Ok(())
     }
 
+    /// Returns the status of the RTS/CTS hardware flow control setting.
+    pub fn hardware_flow_control(&self) {
+        unimplemented!()
+    }
+
+    /// Enables or disabled RTS/CTS hardware flow control.
+    pub fn set_hardware_flow_control(&self) {
+        unimplemented!()
+    }
+
     pub fn read(&self, buffer: &mut [u8]) -> Result<()> {
         unimplemented!()
     }
 
     pub fn write(&self, buffer: &[u8]) -> Result<()> {
+        unimplemented!()
+    }
+
+    pub fn flush(&self) {
+        unimplemented!()
+    }
+
+    pub fn drain(&self) {
         unimplemented!()
     }
 }
