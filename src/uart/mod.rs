@@ -52,8 +52,11 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
+use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::result;
+
+use libc::{O_NDELAY, O_NOCTTY};
 
 mod termios;
 
@@ -122,6 +125,7 @@ impl Uart {
         let device = OpenOptions::new()
             .read(true)
             .write(true)
+            .custom_flags(O_NOCTTY | O_NDELAY)
             .open(match device {
                 Device::Uart0 => "/dev/ttyAMA0".to_owned(),
                 Device::Uart1 => "/dev/ttyS0".to_owned(),
@@ -129,7 +133,9 @@ impl Uart {
                 Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
             })?;
 
-        // TODO: Configure UART for raw mode?
+        unsafe {
+            termios::set_raw_mode(device.as_raw_fd())?;
+        }
 
         Ok(Uart { device })
     }

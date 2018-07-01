@@ -23,7 +23,7 @@
 use std::io;
 
 use libc::{c_int, termios};
-use libc::{cfgetospeed, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
+use libc::{cfgetospeed, cfmakeraw, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
 use libc::{B1000000, B1152000, B460800, B500000, B576000, B921600};
 use libc::{B115200, B19200, B230400, B38400, B57600};
@@ -249,6 +249,16 @@ pub unsafe fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
         _ => return Err(Error::InvalidValue),
     }
 
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+pub unsafe fn set_raw_mode(fd: c_int) -> Result<()> {
+    let mut attr = attributes(fd)?;
+    cfmakeraw(&mut attr); // Changes flags to enable non-canonical mode
+    attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
+    attr.c_cc[VTIME] = 0; // No timeout needed
     set_attributes(fd, &attr)?;
 
     Ok(())
