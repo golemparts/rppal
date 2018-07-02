@@ -85,7 +85,7 @@ pub fn export(pin: u8) -> Result<()> {
         0
     };
 
-    let check_paths = &[
+    let paths = &[
         format!("/sys/class/gpio/gpio{}", pin),
         format!("/sys/class/gpio/gpio{}/direction", pin),
         format!("/sys/class/gpio/gpio{}/edge", pin),
@@ -94,7 +94,7 @@ pub fn export(pin: u8) -> Result<()> {
 
     let mut counter = 0;
     'counter: while counter < 25 {
-        for path in check_paths {
+        for path in paths {
             if !check_permissions(path, gid_gpio) {
                 // This should normally be set within the first ~30ms.
                 thread::sleep(Duration::from_millis(40));
@@ -105,17 +105,6 @@ pub fn export(pin: u8) -> Result<()> {
         }
 
         break;
-    }
-
-    let mut counter = 0;
-    while counter < 20 {
-        let meta = fs::metadata(format!("/sys/class/gpio/gpio{}", pin))?;
-        if meta.gid() == gid_gpio {
-            break;
-        }
-
-        thread::sleep(Duration::from_millis(50));
-        counter += 1;
     }
 
     Ok(())

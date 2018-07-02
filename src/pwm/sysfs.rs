@@ -79,7 +79,7 @@ pub fn export(channel: u8) -> Result<()> {
         0
     };
 
-    let check_paths = &[
+    let paths = &[
         format!("/sys/class/pwm/pwmchip0/pwm{}", channel),
         format!("/sys/class/pwm/pwmchip0/pwm{}/period", channel),
         format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel),
@@ -89,7 +89,7 @@ pub fn export(channel: u8) -> Result<()> {
 
     let mut counter = 0;
     'counter: while counter < 25 {
-        for path in check_paths {
+        for path in paths {
             if !check_permissions(path, gid_gpio) {
                 // This should normally be set within the first ~30ms.
                 thread::sleep(Duration::from_millis(40));
