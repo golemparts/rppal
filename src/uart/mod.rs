@@ -52,11 +52,12 @@
 
 use std::fs::{File, OpenOptions};
 use std::io;
+use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use libc::{O_NDELAY, O_NOCTTY};
+use libc::{O_NDELAY, O_NOCTTY, O_NONBLOCK};
 
 mod termios;
 
@@ -109,6 +110,7 @@ pub enum Parity {
     Space,
 }
 
+#[derive(Debug)]
 pub struct Uart {
     device: File,
 }
@@ -117,7 +119,7 @@ impl Uart {
     /// Constructs a new `Uart`.
     pub fn new(
         device: Device,
-        speed: u32,
+        line_speed: u32,
         parity: Parity,
         data_bits: u8,
         stop_bits: u8,
@@ -125,7 +127,7 @@ impl Uart {
         let device = OpenOptions::new()
             .read(true)
             .write(true)
-            .custom_flags(O_NOCTTY | O_NDELAY)
+            .custom_flags(O_NOCTTY | O_NDELAY | O_NONBLOCK)
             .open(match device {
                 Device::Uart0 => "/dev/ttyAMA0".to_owned(),
                 Device::Uart1 => "/dev/ttyS0".to_owned(),
@@ -135,6 +137,12 @@ impl Uart {
 
         unsafe {
             termios::set_raw_mode(device.as_raw_fd())?;
+            termios::ignore_carrier_detect(device.as_raw_fd())?;
+            termios::enable_read(device.as_raw_fd())?;
+            termios::set_line_speed(device.as_raw_fd(), line_speed)?;
+            termios::set_parity(device.as_raw_fd(), parity)?;
+            termios::set_data_bits(device.as_raw_fd(), data_bits)?;
+            termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
         }
 
         Ok(Uart { device })
@@ -142,24 +150,26 @@ impl Uart {
 
     /// Gets the line speed in baud (Bd).
     pub fn line_speed(&self) -> Result<u32> {
-        unsafe { Ok(termios::speed(self.device.as_raw_fd())?) }
+        unsafe { Ok(termios::line_speed(self.device.as_raw_fd())?) }
     }
 
     /// Sets the line speed in baud (Bd).
-    pub fn set_line_speed(&self, speed: u32) -> Result<()> {
+    pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
         unsafe {
-            termios::set_speed(self.device.as_raw_fd(), speed)?;
+            termios::set_line_speed(self.device.as_raw_fd(), line_speed)?;
         }
 
         Ok(())
     }
 
-    /// Gets the parity.
+    /// Gets the parity bit.
     pub fn parity(&self) -> Result<Parity> {
         unsafe { Ok(termios::parity(self.device.as_raw_fd())?) }
     }
 
-    /// Sets the parity.
+    /// Sets the parity bit.
+    ///
+    /// Support for parity is device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
         unsafe {
             termios::set_parity(self.device.as_raw_fd(), parity)?;
@@ -168,14 +178,14 @@ impl Uart {
         Ok(())
     }
 
-    /// Gets the data bits.
+    /// Gets the number of data bits.
     pub fn data_bits(&self) -> Result<u8> {
         unsafe { Ok(termios::data_bits(self.device.as_raw_fd())?) }
     }
 
-    /// Sets the data bits.
+    /// Sets the number of data bits.
     ///
-    /// Valid values: 5, 6, 7, 8
+    /// Valid values are 5, 6, 7 or 8, but support is device-dependent.
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
         unsafe {
             termios::set_data_bits(self.device.as_raw_fd(), data_bits)?;
@@ -184,14 +194,14 @@ impl Uart {
         Ok(())
     }
 
-    /// Gets the stop bits.
+    /// Gets the number of stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
         unsafe { Ok(termios::stop_bits(self.device.as_raw_fd())?) }
     }
 
-    /// Sets the stop bits.
+    /// Sets the number of stop bits.
     ///
-    /// Valid values: 1, 2
+    /// Valid values are 1 or 2, but support is device-dependent.
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
         unsafe {
             termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)?;
@@ -205,17 +215,27 @@ impl Uart {
         unimplemented!()
     }
 
-    /// Enables or disabled RTS/CTS hardware flow control.
+    /// Enables or disables RTS/CTS hardware flow control.
+    ///
+    /// Support for RTS/CTS is device-dependent.
     pub fn set_hardware_flow_control(&self) {
         unimplemented!()
     }
 
-    pub fn read(&self, buffer: &mut [u8]) -> Result<()> {
-        unimplemented!()
+    pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
+        match self.device.read(buffer) {
+            Ok(bytes_read) => Ok(bytes_read),
+            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
+            Err(e) => Err(Error::Io(e)),
+        }
     }
 
-    pub fn write(&self, buffer: &[u8]) -> Result<()> {
-        unimplemented!()
+    pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
+        match self.device.write(buffer) {
+            Ok(bytes_written) => Ok(bytes_written),
+            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
+            Err(e) => Err(Error::Io(e)),
+        }
     }
 
     pub fn flush(&self) {

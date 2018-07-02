@@ -31,7 +31,7 @@ use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
-use libc::{CMSPAR, CRTSCTS, TCSANOW};
+use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{VMIN, VTIME};
 
 use uart::{Error, Parity, Result};
@@ -67,7 +67,7 @@ pub unsafe fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
     Ok(())
 }
 
-pub unsafe fn speed(fd: c_int) -> Result<u32> {
+pub unsafe fn line_speed(fd: c_int) -> Result<u32> {
     Ok(match cfgetospeed(&attributes(fd)?) {
         B0 => 0,
         B50 => 50,
@@ -104,8 +104,8 @@ pub unsafe fn speed(fd: c_int) -> Result<u32> {
     })
 }
 
-pub unsafe fn set_speed(fd: c_int, speed: u32) -> Result<()> {
-    let baud = match speed {
+pub unsafe fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
+    let baud = match line_speed {
         0 => B0,
         50 => B50,
         75 => B75,
@@ -259,6 +259,24 @@ pub unsafe fn set_raw_mode(fd: c_int) -> Result<()> {
     cfmakeraw(&mut attr); // Changes flags to enable non-canonical mode
     attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
     attr.c_cc[VTIME] = 0; // No timeout needed
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+// If CREAD isn't set, all input is discarded
+pub unsafe fn enable_read(fd: c_int) -> Result<()> {
+    let mut attr = attributes(fd)?;
+    attr.c_cflag |= CREAD;
+    set_attributes(fd, &attr)?;
+
+    Ok(())
+}
+
+// Ignore carrier detect signal
+pub unsafe fn ignore_carrier_detect(fd: c_int) -> Result<()> {
+    let mut attr = attributes(fd)?;
+    attr.c_cflag |= CLOCAL;
     set_attributes(fd, &attr)?;
 
     Ok(())
