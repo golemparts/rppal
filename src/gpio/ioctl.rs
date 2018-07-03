@@ -23,9 +23,12 @@
 #![allow(dead_code)]
 
 use libc::{c_int, c_ulong, ioctl};
+use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
+use std::os::unix::io::AsRawFd;
 use std::result;
+use std::ffi::CStr;
 
 pub type Result<T> = result::Result<T, io::Error>;
 
@@ -142,3 +145,29 @@ const REQ_GET_LINE_VALUES: c_ulong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLEDATA;
 const REQ_SET_LINE_VALUES: c_ulong =
     DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLEDATA;
+
+// I'm not sure the GPIO header is always available through /dev/gpiochip0, so searching for
+// the corresponding driver name in the label field seems like a more reliable option.
+pub unsafe fn find_driver() -> Result<Option<File>> {
+    let driver_name = b"pinctrl-bcm2835\0";
+
+    let mut chip_info = ChipInfo {
+        name: [0u8; 32],
+        label: [0u8; 32],
+        lines: 0,
+    };
+
+    for idx in 0..=255 {
+        let gpiochip = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(format!("/dev/gpiochip{}", idx))?;
+
+        parse_retval(ioctl(gpiochip.as_raw_fd(), REQ_GET_CHIPINFO, &mut chip_info))?;
+        if &chip_info.label[0..driver_name.len()] == &driver_name[..] {
+            return Ok(Some(gpiochip));
+        }
+    }
+
+    Ok(None)
+}
