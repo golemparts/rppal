@@ -62,6 +62,7 @@ use std::time::Duration;
 
 mod epoll;
 mod interrupt;
+mod ioctl;
 mod mem;
 mod sysfs;
 
