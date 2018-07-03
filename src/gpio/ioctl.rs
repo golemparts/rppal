@@ -27,14 +27,14 @@ use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
-use std::result;
 use std::ffi::CStr;
 
-pub type Result<T> = result::Result<T, io::Error>;
+use gpio::{Error, Level, Result, Trigger};
+use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLIN, EPOLLOUT, EPOLLERR, EPOLLET, EPOLLPRI};
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
-        Err(io::Error::last_os_error())
+        Err(Error::Io(io::Error::last_os_error()))
     } else {
         Ok(retval)
     }
@@ -70,7 +70,7 @@ const HANDLE_FLAG_OPEN_SOURCE: u32 = 1 << 4;
 
 #[repr(C)]
 struct HandleRequest {
-    line_offets: [u32; HANDLES_MAX],
+    line_offsets: [u32; HANDLES_MAX],
     flags: u32,
     default_values: [u8; HANDLES_MAX],
     consumer_label: [u8; 32],
@@ -170,4 +170,51 @@ pub unsafe fn find_driver() -> Result<Option<File>> {
     }
 
     Ok(None)
+}
+
+pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> Result<()> {
+    let fd = gpiochip.as_raw_fd();
+
+    let mut chip_info = ChipInfo {
+        name: [0u8; 32],
+        label: [0u8; 32],
+        lines: 0,
+    };
+
+    parse_retval(ioctl(fd, REQ_GET_CHIPINFO, &mut chip_info))?;
+
+    if pin as u32 > chip_info.lines || pin as usize >= HANDLES_MAX {
+        return Err(Error::InvalidPin(pin));
+    }
+
+    let mut event_request = EventRequest {
+        line_offset: pin as u32,
+        handle_flags: HANDLE_FLAG_INPUT,
+        event_flags: match trigger {
+            Trigger::Disabled => 0,
+            Trigger::FallingEdge => EVENT_FLAG_FALLING_EDGE,
+            Trigger::RisingEdge => EVENT_FLAG_RISING_EDGE,
+            Trigger::Both => EVENT_FLAG_BOTH_EDGES,
+        },
+        consumer_label: [0u8; 32],
+        fd: 0,
+    };
+
+    parse_retval(ioctl(fd, REQ_GET_LINEEVENT, &mut event_request))?;
+
+    let poll = Epoll::new()?;
+    poll.add(event_request.fd, event_request.fd as u64, EPOLLIN | EPOLLPRI)?;
+
+    let mut events = [epoll_event { events: 0, u64: 0 }; 1];
+    loop {
+        let num_events = poll.wait(&mut events, None)?;
+        if num_events > 0 {
+            for event in &events[0..num_events] {
+                let fd = event.u64 as c_int;
+                if fd == event_request.fd {
+                    return Ok(());
+                }
+            }
+        }
+    }
 }

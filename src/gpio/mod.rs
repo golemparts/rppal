@@ -628,6 +628,27 @@ impl Gpio {
 
         Ok(())
     }
+
+    pub fn cdev_gpio_poll_interrupt(&self, pin: u8, trigger: Trigger) -> Result<Level> {
+        if !self.initialized {
+            return Err(Error::NotInitialized);
+        }
+
+        if pin >= GPIO_MAX_PINS {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        {
+            let mut gpiochip = match unsafe { ioctl::find_driver()? } {
+                Some(chip) => chip,
+                None => return Err(Error::UnknownSoC)
+            };
+
+            unsafe { ioctl::poll_interrupt(&mut gpiochip, pin, trigger)?; }
+        }
+
+        Ok(self.read(pin)?)
+    }
 }
 
 impl Drop for Gpio {
