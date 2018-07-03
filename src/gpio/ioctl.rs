@@ -27,10 +27,9 @@ use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
-use std::ffi::CStr;
 
-use gpio::{Error, Level, Result, Trigger};
-use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLIN, EPOLLOUT, EPOLLERR, EPOLLET, EPOLLPRI};
+use gpio::{Error, Result, Trigger};
+use gpio::epoll::{epoll_event, Epoll, EPOLLIN, EPOLLPRI};
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
