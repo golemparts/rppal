@@ -638,16 +638,12 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        {
-            let mut gpiochip = match unsafe { ioctl::find_driver()? } {
-                Some(chip) => chip,
-                None => return Err(Error::UnknownSoC)
-            };
+        let mut gpiochip = match unsafe { ioctl::find_driver()? } {
+            Some(chip) => chip,
+            None => return Err(Error::UnknownSoC),
+        };
 
-            unsafe { ioctl::poll_interrupt(&mut gpiochip, pin, trigger)?; }
-        }
-
-        Ok(self.read(pin)?)
+        unsafe { Ok(ioctl::poll_interrupt(&mut gpiochip, pin, trigger)?) }
     }
 }
 

@@ -28,8 +28,8 @@ use std::io;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
 
-use gpio::{Error, Result, Trigger};
 use gpio::epoll::{epoll_event, Epoll, EPOLLIN, EPOLLPRI};
+use gpio::{Error, Level, Result, Trigger};
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
@@ -114,36 +114,36 @@ const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
 const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
 const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
 
-const NR_GET_CHIPINFO: c_ulong = 0x01 << NRSHIFT;
-const NR_GET_LINEINFO: c_ulong = 0x02 << NRSHIFT;
-const NR_GET_LINEHANDLE: c_ulong = 0x03 << NRSHIFT;
-const NR_GET_LINEEVENT: c_ulong = 0x04 << NRSHIFT;
+const NR_GET_CHIP_INFO: c_ulong = 0x01 << NRSHIFT;
+const NR_GET_LINE_INFO: c_ulong = 0x02 << NRSHIFT;
+const NR_GET_LINE_HANDLE: c_ulong = 0x03 << NRSHIFT;
+const NR_GET_LINE_EVENT: c_ulong = 0x04 << NRSHIFT;
 const NR_GET_LINE_VALUES: c_ulong = 0x08 << NRSHIFT;
 const NR_SET_LINE_VALUES: c_ulong = 0x09 << NRSHIFT;
 
 const TYPE_GPIO: c_ulong = (0xB4 as c_ulong) << TYPESHIFT;
 
-const SIZE_CHIPINFO: c_ulong = (size_of::<ChipInfo>() as c_ulong) << SIZESHIFT;
-const SIZE_LINEINFO: c_ulong = (size_of::<LineInfo>() as c_ulong) << SIZESHIFT;
-const SIZE_HANDLEREQUEST: c_ulong = (size_of::<HandleRequest>() as c_ulong) << SIZESHIFT;
-const SIZE_EVENTREQUEST: c_ulong = (size_of::<EventRequest>() as c_ulong) << SIZESHIFT;
-const SIZE_HANDLEDATA: c_ulong = (size_of::<HandleData>() as c_ulong) << SIZESHIFT;
+const SIZE_CHIP_INFO: c_ulong = (size_of::<ChipInfo>() as c_ulong) << SIZESHIFT;
+const SIZE_LINE_INFO: c_ulong = (size_of::<LineInfo>() as c_ulong) << SIZESHIFT;
+const SIZE_HANDLE_REQUEST: c_ulong = (size_of::<HandleRequest>() as c_ulong) << SIZESHIFT;
+const SIZE_EVENT_REQUEST: c_ulong = (size_of::<EventRequest>() as c_ulong) << SIZESHIFT;
+const SIZE_HANDLE_DATA: c_ulong = (size_of::<HandleData>() as c_ulong) << SIZESHIFT;
 
 const DIR_NONE: c_ulong = 0;
 const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
 const DIR_READ: c_ulong = 2 << DIRSHIFT;
 const DIR_READ_WRITE: c_ulong = DIR_READ | DIR_WRITE;
 
-const REQ_GET_CHIPINFO: c_ulong = DIR_READ | TYPE_GPIO | NR_GET_CHIPINFO | SIZE_CHIPINFO;
-const REQ_GET_LINEINFO: c_ulong = DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINEINFO | SIZE_LINEINFO;
-const REQ_GET_LINEHANDLE: c_ulong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINEHANDLE | SIZE_HANDLEREQUEST;
-const REQ_GET_LINEEVENT: c_ulong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINEEVENT | SIZE_EVENTREQUEST;
+const REQ_GET_CHIP_INFO: c_ulong = DIR_READ | TYPE_GPIO | NR_GET_CHIP_INFO | SIZE_CHIP_INFO;
+const REQ_GET_LINE_INFO: c_ulong = DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_INFO | SIZE_LINE_INFO;
+const REQ_GET_LINE_HANDLE: c_ulong =
+    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_HANDLE | SIZE_HANDLE_REQUEST;
+const REQ_GET_LINE_EVENT: c_ulong =
+    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_EVENT | SIZE_EVENT_REQUEST;
 const REQ_GET_LINE_VALUES: c_ulong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLEDATA;
+    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLE_DATA;
 const REQ_SET_LINE_VALUES: c_ulong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLEDATA;
+    DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLE_DATA;
 
 // I'm not sure the GPIO header is always available through /dev/gpiochip0, so searching for
 // the corresponding driver name in the label field seems like a more reliable option.
@@ -162,8 +162,12 @@ pub unsafe fn find_driver() -> Result<Option<File>> {
             .write(true)
             .open(format!("/dev/gpiochip{}", idx))?;
 
-        parse_retval(ioctl(gpiochip.as_raw_fd(), REQ_GET_CHIPINFO, &mut chip_info))?;
-        if &chip_info.label[0..driver_name.len()] == &driver_name[..] {
+        parse_retval(ioctl(
+            gpiochip.as_raw_fd(),
+            REQ_GET_CHIP_INFO,
+            &mut chip_info,
+        ))?;
+        if chip_info.label[0..driver_name.len()] == driver_name[..] {
             return Ok(Some(gpiochip));
         }
     }
@@ -171,7 +175,7 @@ pub unsafe fn find_driver() -> Result<Option<File>> {
     Ok(None)
 }
 
-pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> Result<()> {
+pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> Result<Level> {
     let fd = gpiochip.as_raw_fd();
 
     let mut chip_info = ChipInfo {
@@ -180,14 +184,14 @@ pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> 
         lines: 0,
     };
 
-    parse_retval(ioctl(fd, REQ_GET_CHIPINFO, &mut chip_info))?;
+    parse_retval(ioctl(fd, REQ_GET_CHIP_INFO, &mut chip_info))?;
 
-    if pin as u32 > chip_info.lines || pin as usize >= HANDLES_MAX {
+    if u32::from(pin) > chip_info.lines || pin as usize >= HANDLES_MAX {
         return Err(Error::InvalidPin(pin));
     }
 
     let mut event_request = EventRequest {
-        line_offset: pin as u32,
+        line_offset: u32::from(pin),
         handle_flags: HANDLE_FLAG_INPUT,
         event_flags: match trigger {
             Trigger::Disabled => 0,
@@ -199,19 +203,34 @@ pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> 
         fd: 0,
     };
 
-    parse_retval(ioctl(fd, REQ_GET_LINEEVENT, &mut event_request))?;
+    parse_retval(ioctl(fd, REQ_GET_LINE_EVENT, &mut event_request))?;
 
     let poll = Epoll::new()?;
-    poll.add(event_request.fd, event_request.fd as u64, EPOLLIN | EPOLLPRI)?;
+    poll.add(
+        event_request.fd,
+        event_request.fd as u64,
+        EPOLLIN | EPOLLPRI,
+    )?;
 
     let mut events = [epoll_event { events: 0, u64: 0 }; 1];
     loop {
         let num_events = poll.wait(&mut events, None)?;
         if num_events > 0 {
             for event in &events[0..num_events] {
-                let fd = event.u64 as c_int;
-                if fd == event_request.fd {
-                    return Ok(());
+                if event.u64 as c_int == event_request.fd {
+                    let mut handle_data = HandleData {
+                        values: [0u8; HANDLES_MAX],
+                    };
+
+                    parse_retval(ioctl(
+                        event_request.fd,
+                        REQ_GET_LINE_VALUES,
+                        &mut handle_data,
+                    ))?;
+                    match handle_data.values[0] {
+                        0 => return Ok(Level::Low),
+                        _ => return Ok(Level::High),
+                    }
                 }
             }
         }
