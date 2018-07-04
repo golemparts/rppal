@@ -22,7 +22,7 @@
 
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong, ioctl};
+use libc::{c_int, c_ulong, c_void, ioctl, read};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -46,6 +46,16 @@ struct ChipInfo {
     lines: u32,
 }
 
+impl ChipInfo {
+    pub fn new() -> ChipInfo {
+        ChipInfo {
+            name: [0u8; 32],
+            label: [0u8; 32],
+            lines: 0,
+        }
+    }
+}
+
 const LINE_FLAG_KERNEL: u32 = 1;
 const LINE_FLAG_IS_OUT: u32 = 1 << 1;
 const LINE_FLAG_ACTIVE_LOW: u32 = 1 << 2;
@@ -58,6 +68,17 @@ struct LineInfo {
     flags: u32,
     name: [u8; 32],
     consumer: [u8; 32],
+}
+
+impl LineInfo {
+    pub fn new() -> LineInfo {
+        LineInfo {
+            line_offset: 0,
+            flags: 0,
+            name: [0u8; 32],
+            consumer: [0u8; 32],
+        }
+    }
 }
 
 const HANDLES_MAX: usize = 64;
@@ -77,9 +98,30 @@ struct HandleRequest {
     fd: c_int,
 }
 
+impl HandleRequest {
+    pub fn new() -> HandleRequest {
+        HandleRequest {
+            line_offsets: [0u32; HANDLES_MAX],
+            flags: 0,
+            default_values: [0u8; HANDLES_MAX],
+            consumer_label: [0u8; 32],
+            lines: 0,
+            fd: 0,
+        }
+    }
+}
+
 #[repr(C)]
 struct HandleData {
     values: [u8; HANDLES_MAX],
+}
+
+impl HandleData {
+    pub fn new() -> HandleData {
+        HandleData {
+            values: [0u8; HANDLES_MAX],
+        }
+    }
 }
 
 const EVENT_FLAG_RISING_EDGE: u32 = 1;
@@ -95,13 +137,49 @@ struct EventRequest {
     fd: c_int,
 }
 
+impl EventRequest {
+    pub fn new(pin: u8, handle_flags: u32, trigger: Trigger) -> EventRequest {
+        EventRequest {
+            line_offset: u32::from(pin),
+            handle_flags,
+            event_flags: trigger as u32,
+            consumer_label: [0u8; 32],
+            fd: 0,
+        }
+    }
+}
+
 const EVENT_TYPE_RISING_EDGE: u32 = 0x01;
 const EVENT_TYPE_FALLING_EDGE: u32 = 0x02;
 
 #[repr(C)]
+#[derive(Copy, Clone)]
 struct EventData {
     timestamp: u64,
     id: u32,
+}
+
+impl EventData {
+    pub fn new() -> EventData {
+        EventData {
+            timestamp: 0,
+            id: 0,
+        }
+    }
+
+    pub fn from_fd(fd: i32) -> Result<EventData> {
+        let mut event_data = EventData::new();
+
+        unsafe {
+            parse_retval(read(
+                fd,
+                &mut event_data as *mut EventData as *mut c_void,
+                size_of::<EventData>(),
+            ) as i32)?;
+        }
+
+        Ok(event_data)
+    }
 }
 
 const NRBITS: u8 = 8;
@@ -150,11 +228,7 @@ const REQ_SET_LINE_VALUES: c_ulong =
 pub unsafe fn find_driver() -> Result<Option<File>> {
     let driver_name = b"pinctrl-bcm2835\0";
 
-    let mut chip_info = ChipInfo {
-        name: [0u8; 32],
-        label: [0u8; 32],
-        lines: 0,
-    };
+    let mut chip_info = ChipInfo::new();
 
     for idx in 0..=255 {
         let gpiochip = OpenOptions::new()
@@ -178,11 +252,7 @@ pub unsafe fn find_driver() -> Result<Option<File>> {
 pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> Result<Level> {
     let fd = gpiochip.as_raw_fd();
 
-    let mut chip_info = ChipInfo {
-        name: [0u8; 32],
-        label: [0u8; 32],
-        lines: 0,
-    };
+    let mut chip_info = ChipInfo::new();
 
     parse_retval(ioctl(fd, REQ_GET_CHIP_INFO, &mut chip_info))?;
 
@@ -190,18 +260,7 @@ pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> 
         return Err(Error::InvalidPin(pin));
     }
 
-    let mut event_request = EventRequest {
-        line_offset: u32::from(pin),
-        handle_flags: HANDLE_FLAG_INPUT,
-        event_flags: match trigger {
-            Trigger::Disabled => 0,
-            Trigger::FallingEdge => EVENT_FLAG_FALLING_EDGE,
-            Trigger::RisingEdge => EVENT_FLAG_RISING_EDGE,
-            Trigger::Both => EVENT_FLAG_BOTH_EDGES,
-        },
-        consumer_label: [0u8; 32],
-        fd: 0,
-    };
+    let mut event_request = EventRequest::new(pin, HANDLE_FLAG_INPUT, trigger);
 
     parse_retval(ioctl(fd, REQ_GET_LINE_EVENT, &mut event_request))?;
 
@@ -218,18 +277,10 @@ pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> 
         if num_events > 0 {
             for event in &events[0..num_events] {
                 if event.u64 as c_int == event_request.fd {
-                    let mut handle_data = HandleData {
-                        values: [0u8; HANDLES_MAX],
-                    };
-
-                    parse_retval(ioctl(
-                        event_request.fd,
-                        REQ_GET_LINE_VALUES,
-                        &mut handle_data,
-                    ))?;
-                    match handle_data.values[0] {
-                        0 => return Ok(Level::Low),
-                        _ => return Ok(Level::High),
+                    let event_data = EventData::from_fd(event_request.fd)?;
+                    match event_data.id {
+                        EVENT_TYPE_RISING_EDGE => return Ok(Level::High),
+                        _ => return Ok(Level::Low),
                     }
                 }
             }

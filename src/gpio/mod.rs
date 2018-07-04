@@ -204,10 +204,10 @@ impl fmt::Display for PullUpDown {
 /// Interrupt trigger conditions.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Trigger {
-    Disabled,
-    RisingEdge,
-    FallingEdge,
-    Both,
+    Disabled = 0,
+    RisingEdge = 1,
+    FallingEdge = 2,
+    Both = 3,
 }
 
 impl fmt::Display for Trigger {
