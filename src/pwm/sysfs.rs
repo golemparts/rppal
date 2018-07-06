@@ -30,8 +30,8 @@ use std::time::Duration;
 
 use libc;
 
-use user;
 use pwm::Polarity;
+use user;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;

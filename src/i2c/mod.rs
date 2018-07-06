@@ -68,8 +68,6 @@
 //! [`new`]: struct.I2c.html#method.new
 //! [`set_timeout`]: struct.I2c.html#method.set_timeout
 
-#![allow(dead_code)]
-
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};

@@ -19,7 +19,6 @@
 // DEALINGS IN THE SOFTWARE.
 
 #![allow(unused_imports)]
-#![allow(dead_code)]
 
 use std::io;
 

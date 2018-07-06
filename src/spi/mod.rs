@@ -101,8 +101,6 @@
 //! [`Mode3`]: enum.Mode.html
 //! [`reverse_bits`]: fn.reverse_bits.html
 
-#![allow(dead_code)]
-
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;

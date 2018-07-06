@@ -70,18 +70,21 @@ quick_error! {
 /// Result type returned from methods that can have `pwm::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
+/// Channel
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
 }
 
+/// Polarity
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Polarity {
     Normal,
     Inverse,
 }
 
+/// Pwn
 pub struct Pwm {
     channel: Channel,
 }
@@ -94,7 +97,7 @@ impl Pwm {
         // Always reset "enable" to 0. The sysfs interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
         // "enable" is still set to 1, even though the channel isn't enabled.
-        sysfs::set_enabled(channel as u8, false).ok();
+        let _ = sysfs::set_enabled(channel as u8, false);
 
         Ok(Pwm { channel })
     }
@@ -114,10 +117,10 @@ impl Pwm {
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
         // "enable" is still set to 1, even though the channel isn't enabled.
-        pwm.set_enabled(false).ok();
+        let _ = pwm.set_enabled(false);
 
-        // Set duty cycle to 0 first in case the new period is smaller than the current duty cycle
-        pwm.set_duty_cycle(Duration::from_secs(0)).ok();
+        // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
+        let _ = pwm.set_duty_cycle(Duration::from_secs(0));
 
         pwm.set_period(period)?;
         pwm.set_duty_cycle(duty_cycle)?;
@@ -186,7 +189,7 @@ impl Pwm {
 
 impl Drop for Pwm {
     fn drop(&mut self) {
-        sysfs::set_enabled(self.channel as u8, false).ok();
-        sysfs::unexport(self.channel as u8).ok();
+        let _ = sysfs::set_enabled(self.channel as u8, false);
+        let _ = sysfs::unexport(self.channel as u8);
     }
 }
