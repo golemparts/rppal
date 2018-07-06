@@ -30,7 +30,7 @@ use std::time::Duration;
 
 use libc;
 
-use linux;
+use user;
 use pwm::Polarity;
 
 /// Result type returned from methods that can have `io::Error`s.
@@ -59,7 +59,7 @@ pub fn export(channel: u8) -> Result<()> {
     }
 
     // If we're logged in as root or effective root, skip the permission checks
-    if let Some(root_uid) = linux::user_to_uid("root") {
+    if let Some(root_uid) = user::user_to_uid("root") {
         unsafe {
             if libc::getuid() == root_uid || libc::geteuid() == root_uid {
                 return Ok(());
@@ -73,7 +73,7 @@ pub fn export(channel: u8) -> Result<()> {
     // manually adding rules, since they don't seem to be part of the latest release yet. The
     // patched drivers/pwm/sysfs.c was included in raspberrypi-kernel_1.20180417-1 (4.14.34).
     // See: https://github.com/raspberrypi/linux/issues/1983
-    let gid_gpio = if let Some(gid) = linux::group_to_gid("gpio") {
+    let gid_gpio = if let Some(gid) = user::group_to_gid("gpio") {
         gid
     } else {
         0

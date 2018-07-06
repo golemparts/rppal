@@ -27,14 +27,17 @@
 #![doc(html_root_url = "https://docs.rs/rppal/0.7.1")]
 // Needed for the quick_error! macro
 #![recursion_limit = "128"]
+// Suppress warnings/errors in IDEs on other platforms
+#![cfg(linux)]
 
 extern crate libc;
 #[macro_use]
 extern crate quick_error;
 
+mod user;
+
 pub mod gpio;
 pub mod i2c;
-mod linux;
 pub mod pwm;
 pub mod spi;
 pub mod system;

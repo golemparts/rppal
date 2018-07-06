@@ -31,7 +31,7 @@ use std::time::Duration;
 use libc;
 
 use gpio::Trigger;
-use linux;
+use user;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;
@@ -67,7 +67,7 @@ pub fn export(pin: u8) -> Result<()> {
     }
 
     // If we're logged in as root or effective root, skip the permission checks
-    if let Some(root_uid) = linux::user_to_uid("root") {
+    if let Some(root_uid) = user::user_to_uid("root") {
         unsafe {
             if libc::getuid() == root_uid || libc::geteuid() == root_uid {
                 return Ok(());
@@ -79,7 +79,7 @@ pub fn export(pin: u8) -> Result<()> {
     // a short delay before the group is changed to gpio. Since rppal should work for
     // non-root users, we'll wait for max. 1s for the group to change to gpio. If
     // this isn't working, check the udev rules (/etc/udev/rules.d/99-com.rules).
-    let gid_gpio = if let Some(gid) = linux::group_to_gid("gpio") {
+    let gid_gpio = if let Some(gid) = user::group_to_gid("gpio") {
         gid
     } else {
         0
