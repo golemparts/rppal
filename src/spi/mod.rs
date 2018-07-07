@@ -309,7 +309,7 @@ impl Spi {
             .open(format!("/dev/spidev{}.{}", bus as u8, slave_select as u8))?;
 
         // Reset all mode flags
-        if let Err(e) = unsafe { ioctl::set_mode32(spidev.as_raw_fd(), mode as u32) } {
+        if let Err(e) = ioctl::set_mode32(spidev.as_raw_fd(), mode as u32) {
             if e.kind() == io::ErrorKind::InvalidInput {
                 return Err(Error::ModeNotSupported(mode));
             } else {
@@ -332,9 +332,7 @@ impl Spi {
     /// Gets the bit order.
     pub fn bit_order(&self) -> Result<BitOrder> {
         let mut bit_order: u8 = 0;
-        unsafe {
-            ioctl::lsb_first(self.spidev.as_raw_fd(), &mut bit_order)?;
-        }
+        ioctl::lsb_first(self.spidev.as_raw_fd(), &mut bit_order)?;
 
         Ok(match bit_order {
             0 => BitOrder::MsbFirst,
@@ -356,7 +354,7 @@ impl Spi {
     /// [`LsbFirst`]: enum.BitOrder.html
     /// [`reverse_bits`]: fn.reverse_bits.html
     pub fn set_bit_order(&self, bit_order: BitOrder) -> Result<()> {
-        match unsafe { ioctl::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) } {
+        match ioctl::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::BitOrderNotSupported(bit_order))
@@ -368,9 +366,7 @@ impl Spi {
     /// Gets the number of bits per word.
     pub fn bits_per_word(&self) -> Result<u8> {
         let mut bits_per_word: u8 = 0;
-        unsafe {
-            ioctl::bits_per_word(self.spidev.as_raw_fd(), &mut bits_per_word)?;
-        }
+        ioctl::bits_per_word(self.spidev.as_raw_fd(), &mut bits_per_word)?;
 
         Ok(bits_per_word)
     }
@@ -381,7 +377,7 @@ impl Spi {
     ///
     /// By default, `bits_per_word` is set to 8.
     pub fn set_bits_per_word(&self, bits_per_word: u8) -> Result<()> {
-        match unsafe { ioctl::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) } {
+        match ioctl::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::BitsPerWordNotSupported(bits_per_word))
@@ -393,9 +389,7 @@ impl Spi {
     /// Gets the clock frequency in herz (Hz).
     pub fn clock_speed(&self) -> Result<u32> {
         let mut clock_speed: u32 = 0;
-        unsafe {
-            ioctl::clock_speed(self.spidev.as_raw_fd(), &mut clock_speed)?;
-        }
+        ioctl::clock_speed(self.spidev.as_raw_fd(), &mut clock_speed)?;
 
         Ok(clock_speed)
     }
@@ -404,7 +398,7 @@ impl Spi {
     ///
     /// The SPI driver will automatically round down to the closest valid frequency.
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
-        match unsafe { ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) } {
+        match ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::ClockSpeedNotSupported(clock_speed))
@@ -416,9 +410,7 @@ impl Spi {
     /// Gets the SPI mode.
     pub fn mode(&self) -> Result<Mode> {
         let mut mode: u8 = 0;
-        unsafe {
-            ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
-        }
+        ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
 
         Ok(match mode & 0x03 {
             0x01 => Mode::Mode1,
@@ -434,14 +426,12 @@ impl Spi {
     /// may not be available depending on the SPI bus that's used.
     pub fn set_mode(&self, mode: Mode) -> Result<()> {
         let mut new_mode: u8 = 0;
-        unsafe {
-            ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
-        }
+        ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
 
         // Make sure we only replace the CPOL/CPHA bits
         new_mode = (new_mode & !0x03) | (mode as u8);
 
-        match unsafe { ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+        match ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::ModeNotSupported(mode))
@@ -453,9 +443,7 @@ impl Spi {
     /// Gets the Slave Select polarity.
     pub fn ss_polarity(&self) -> Result<Polarity> {
         let mut mode: u8 = 0;
-        unsafe {
-            ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
-        }
+        ioctl::mode(self.spidev.as_raw_fd(), &mut mode)?;
 
         if (mode & ioctl::MODE_CS_HIGH) == 0 {
             Ok(Polarity::ActiveLow)
@@ -469,9 +457,7 @@ impl Spi {
     /// By default, the Slave Select polarity is set to `ActiveLow`.
     pub fn set_ss_polarity(&self, polarity: Polarity) -> Result<()> {
         let mut new_mode: u8 = 0;
-        unsafe {
-            ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
-        }
+        ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
 
         if polarity == Polarity::ActiveHigh {
             new_mode |= ioctl::MODE_CS_HIGH;
@@ -479,7 +465,7 @@ impl Spi {
             new_mode &= !ioctl::MODE_CS_HIGH;
         }
 
-        match unsafe { ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) } {
+        match ioctl::set_mode(self.spidev.as_raw_fd(), new_mode) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
                 Err(Error::PolarityNotSupported(polarity))
@@ -534,9 +520,7 @@ impl Spi {
     pub fn transfer(&self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
         let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
 
-        unsafe {
-            ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
-        }
+        ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
 
         Ok(segment.len())
     }
@@ -551,9 +535,7 @@ impl Spi {
     ///
     /// [`TransferSegment`]: struct.TransferSegment.html
     pub fn transfer_segments(&self, segments: &[TransferSegment]) -> Result<()> {
-        unsafe {
-            ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
-        }
+        ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
 
         Ok(())
     }

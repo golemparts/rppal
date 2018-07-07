@@ -318,51 +318,53 @@ impl<'a, 'b> fmt::Debug for TransferSegment<'a, 'b> {
     }
 }
 
-pub unsafe fn mode(fd: c_int, value: &mut u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_RD_MODE, value))
+pub fn mode(fd: c_int, value: &mut u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_RD_MODE, value) })
 }
 
-pub unsafe fn set_mode(fd: c_int, value: u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_WR_MODE, &value))
+pub fn set_mode(fd: c_int, value: u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_WR_MODE, &value) })
 }
 
-pub unsafe fn lsb_first(fd: c_int, value: &mut u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_RD_LSB_FIRST, value))
+pub fn lsb_first(fd: c_int, value: &mut u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_RD_LSB_FIRST, value) })
 }
 
-pub unsafe fn set_lsb_first(fd: c_int, value: u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_WR_LSB_FIRST, &value))
+pub fn set_lsb_first(fd: c_int, value: u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_WR_LSB_FIRST, &value) })
 }
 
-pub unsafe fn bits_per_word(fd: c_int, value: &mut u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_RD_BITS_PER_WORD, value))
+pub fn bits_per_word(fd: c_int, value: &mut u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_RD_BITS_PER_WORD, value) })
 }
 
-pub unsafe fn set_bits_per_word(fd: c_int, value: u8) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_WR_BITS_PER_WORD, &value))
+pub fn set_bits_per_word(fd: c_int, value: u8) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_WR_BITS_PER_WORD, &value) })
 }
 
-pub unsafe fn clock_speed(fd: c_int, value: &mut u32) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_RD_MAX_SPEED_HZ, value))
+pub fn clock_speed(fd: c_int, value: &mut u32) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_RD_MAX_SPEED_HZ, value) })
 }
 
-pub unsafe fn set_clock_speed(fd: c_int, value: u32) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_WR_MAX_SPEED_HZ, &value))
+pub fn set_clock_speed(fd: c_int, value: u32) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_WR_MAX_SPEED_HZ, &value) })
 }
 
-pub unsafe fn mode32(fd: c_int, value: &mut u32) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_RD_MODE_32, value))
+pub fn mode32(fd: c_int, value: &mut u32) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_RD_MODE_32, value) })
 }
 
-pub unsafe fn set_mode32(fd: c_int, value: u32) -> Result<i32> {
-    parse_retval(ioctl(fd, REQ_WR_MODE_32, &value))
+pub fn set_mode32(fd: c_int, value: u32) -> Result<i32> {
+    parse_retval(unsafe { ioctl(fd, REQ_WR_MODE_32, &value) })
 }
 
-pub unsafe fn transfer(fd: c_int, segments: &[TransferSegment]) -> Result<i32> {
-    parse_retval(ioctl(
-        fd,
-        REQ_WR_MESSAGE
-            | (((segments.len() * size_of::<TransferSegment>()) as c_ulong) << SIZESHIFT),
-        segments,
-    ))
+pub fn transfer(fd: c_int, segments: &[TransferSegment]) -> Result<i32> {
+    parse_retval(unsafe {
+        ioctl(
+            fd,
+            REQ_WR_MESSAGE
+                | (((segments.len() * size_of::<TransferSegment>()) as c_ulong) << SIZESHIFT),
+            segments,
+        )
+    })
 }
