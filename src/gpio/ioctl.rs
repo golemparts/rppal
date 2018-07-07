@@ -20,6 +20,7 @@
 
 #![allow(dead_code)]
 
+use libc;
 use libc::{c_int, c_ulong, c_void, ioctl, read};
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -308,7 +309,7 @@ pub fn get_event(event_fd: c_int) -> Result<Option<Event>> {
 }
 
 // Find the correct gpiochip device based on its label
-pub unsafe fn find_driver() -> Result<File> {
+pub fn find_driver() -> Result<File> {
     let driver_name = b"pinctrl-bcm2835\0";
 
     for idx in 0..=255 {
@@ -336,6 +337,12 @@ pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
     match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
         1 => Ok(Level::High),
         _ => Ok(Level::Low),
+    }
+}
+
+pub fn close(fd: c_int) {
+    unsafe {
+        libc::close(fd);
     }
 }
 

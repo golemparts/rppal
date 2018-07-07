@@ -24,7 +24,7 @@ use std::fmt;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use libc::{c_int, close};
+use libc::c_int;
 
 use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use gpio::ioctl;
@@ -74,15 +74,14 @@ impl Interrupt {
         self.reset()
     }
 
+    // This might block if there are no events waiting
     fn event(&mut self) -> Result<Option<ioctl::Event>> {
         ioctl::get_event(self.event_fd)
     }
 
     fn reset(&mut self) -> Result<()> {
         if self.event_fd > -1 {
-            unsafe {
-                close(self.event_fd);
-            }
+            ioctl::close(self.event_fd);
             self.event_fd = -1;
         }
 
@@ -100,9 +99,7 @@ impl Interrupt {
 impl Drop for Interrupt {
     fn drop(&mut self) {
         if self.event_fd > -1 {
-            unsafe {
-                close(self.event_fd);
-            }
+            ioctl::close(self.event_fd);
         }
     }
 }
@@ -127,6 +124,7 @@ impl fmt::Debug for EventLoop {
             .field("poll", &self.poll)
             .field("events", &format_args!("{{ .. }}"))
             .field("trigger_status", &format_args!("{{ .. }}"))
+            .field("cdev_fd", &self.cdev_fd)
             .finish()
     }
 }

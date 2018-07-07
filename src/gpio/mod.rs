@@ -264,7 +264,7 @@ impl Gpio {
             }
         }
 
-        let cdev = unsafe { ioctl::find_driver()? };
+        let cdev = ioctl::find_driver()?;
         let cdev_fd = cdev.as_raw_fd();
 
         let mut gpio = Gpio {
