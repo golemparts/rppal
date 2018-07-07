@@ -20,7 +20,7 @@
 
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong, c_void, ioctl, lseek, read, SEEK_END};
+use libc::{c_int, c_ulong, c_void, ioctl, read};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -304,13 +304,6 @@ pub fn get_event(event_fd: c_int) -> Result<Option<Event>> {
         Ok(Some(Event::from_event_data(event_data)))
     } else {
         Ok(None)
-    }
-}
-
-// Flush any pending interrupt events
-pub fn flush_events(event_fd: c_int) {
-    unsafe {
-        lseek(event_fd, 0, SEEK_END);
     }
 }
 
