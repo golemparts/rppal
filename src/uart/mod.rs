@@ -135,77 +135,67 @@ impl Uart {
                 Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
             })?;
 
-        unsafe {
-            termios::set_raw_mode(device.as_raw_fd())?;
-            termios::ignore_carrier_detect(device.as_raw_fd())?;
-            termios::enable_read(device.as_raw_fd())?;
-            termios::set_line_speed(device.as_raw_fd(), line_speed)?;
-            termios::set_parity(device.as_raw_fd(), parity)?;
-            termios::set_data_bits(device.as_raw_fd(), data_bits)?;
-            termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
-        }
+        termios::set_raw_mode(device.as_raw_fd())?;
+        termios::ignore_carrier_detect(device.as_raw_fd())?;
+        termios::enable_read(device.as_raw_fd())?;
+        termios::set_line_speed(device.as_raw_fd(), line_speed)?;
+        termios::set_parity(device.as_raw_fd(), parity)?;
+        termios::set_data_bits(device.as_raw_fd(), data_bits)?;
+        termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
 
         Ok(Uart { device })
     }
 
     /// Gets the line speed in baud (Bd).
     pub fn line_speed(&self) -> Result<u32> {
-        unsafe { Ok(termios::line_speed(self.device.as_raw_fd())?) }
+        Ok(termios::line_speed(self.device.as_raw_fd())?)
     }
 
     /// Sets the line speed in baud (Bd).
     pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
-        unsafe {
-            termios::set_line_speed(self.device.as_raw_fd(), line_speed)?;
-        }
+        termios::set_line_speed(self.device.as_raw_fd(), line_speed)?;
 
         Ok(())
     }
 
     /// Gets the parity bit.
     pub fn parity(&self) -> Result<Parity> {
-        unsafe { Ok(termios::parity(self.device.as_raw_fd())?) }
+        Ok(termios::parity(self.device.as_raw_fd())?)
     }
 
     /// Sets the parity bit.
     ///
     /// Support for parity is device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
-        unsafe {
-            termios::set_parity(self.device.as_raw_fd(), parity)?;
-        }
+        termios::set_parity(self.device.as_raw_fd(), parity)?;
 
         Ok(())
     }
 
     /// Gets the number of data bits.
     pub fn data_bits(&self) -> Result<u8> {
-        unsafe { Ok(termios::data_bits(self.device.as_raw_fd())?) }
+        Ok(termios::data_bits(self.device.as_raw_fd())?)
     }
 
     /// Sets the number of data bits.
     ///
     /// Valid values are 5, 6, 7 or 8, but support is device-dependent.
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
-        unsafe {
-            termios::set_data_bits(self.device.as_raw_fd(), data_bits)?;
-        }
+        termios::set_data_bits(self.device.as_raw_fd(), data_bits)?;
 
         Ok(())
     }
 
     /// Gets the number of stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
-        unsafe { Ok(termios::stop_bits(self.device.as_raw_fd())?) }
+        Ok(termios::stop_bits(self.device.as_raw_fd())?)
     }
 
     /// Sets the number of stop bits.
     ///
     /// Valid values are 1 or 2, but support is device-dependent.
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
-        unsafe {
-            termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)?;
-        }
+        termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)?;
 
         Ok(())
     }

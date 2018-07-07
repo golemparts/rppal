@@ -44,7 +44,7 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
-pub unsafe fn attributes(fd: c_int) -> Result<termios> {
+pub fn attributes(fd: c_int) -> Result<termios> {
     let mut attr = termios {
         c_iflag: 0,
         c_oflag: 0,
@@ -56,19 +56,19 @@ pub unsafe fn attributes(fd: c_int) -> Result<termios> {
         c_ospeed: 0,
     };
 
-    parse_retval(tcgetattr(fd, &mut attr))?;
+    parse_retval(unsafe { tcgetattr(fd, &mut attr) })?;
 
     Ok(attr)
 }
 
-pub unsafe fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
-    parse_retval(tcsetattr(fd, TCSANOW, attr))?;
+pub fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
+    parse_retval(unsafe { tcsetattr(fd, TCSANOW, attr) })?;
 
     Ok(())
 }
 
-pub unsafe fn line_speed(fd: c_int) -> Result<u32> {
-    Ok(match cfgetospeed(&attributes(fd)?) {
+pub fn line_speed(fd: c_int) -> Result<u32> {
+    Ok(match unsafe { cfgetospeed(&attributes(fd)?) } {
         B0 => 0,
         B50 => 50,
         B75 => 75,
@@ -104,7 +104,7 @@ pub unsafe fn line_speed(fd: c_int) -> Result<u32> {
     })
 }
 
-pub unsafe fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
+pub fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
     let baud = match line_speed {
         0 => B0,
         50 => B50,
@@ -141,14 +141,14 @@ pub unsafe fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
     };
 
     let mut attr = attributes(fd)?;
-    parse_retval(cfsetispeed(&mut attr, baud))?;
-    parse_retval(cfsetospeed(&mut attr, baud))?;
+    parse_retval(unsafe { cfsetispeed(&mut attr, baud) })?;
+    parse_retval(unsafe { cfsetospeed(&mut attr, baud) })?;
     set_attributes(fd, &attr)?;
 
     Ok(())
 }
 
-pub unsafe fn parity(fd: c_int) -> Result<Parity> {
+pub fn parity(fd: c_int) -> Result<Parity> {
     let attr = attributes(fd)?;
 
     if (attr.c_cflag & PARENB) == 0 {
@@ -172,7 +172,7 @@ pub unsafe fn parity(fd: c_int) -> Result<Parity> {
     Err(Error::InvalidValue)
 }
 
-pub unsafe fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
+pub fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
     let mut attr = attributes(fd)?;
 
     match parity {
@@ -201,7 +201,7 @@ pub unsafe fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
     Ok(())
 }
 
-pub unsafe fn data_bits(fd: c_int) -> Result<u8> {
+pub fn data_bits(fd: c_int) -> Result<u8> {
     let attr = attributes(fd)?;
 
     Ok(match attr.c_cflag & CSIZE {
@@ -213,7 +213,7 @@ pub unsafe fn data_bits(fd: c_int) -> Result<u8> {
     })
 }
 
-pub unsafe fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
+pub fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
     let mut attr = attributes(fd)?;
 
     attr.c_cflag &= !CSIZE;
@@ -230,7 +230,7 @@ pub unsafe fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
     Ok(())
 }
 
-pub unsafe fn stop_bits(fd: c_int) -> Result<u8> {
+pub fn stop_bits(fd: c_int) -> Result<u8> {
     let attr = attributes(fd)?;
 
     if (attr.c_cflag & CSTOPB) > 0 {
@@ -240,7 +240,7 @@ pub unsafe fn stop_bits(fd: c_int) -> Result<u8> {
     }
 }
 
-pub unsafe fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
+pub fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
     let mut attr = attributes(fd)?;
 
     match stop_bits {
@@ -254,9 +254,11 @@ pub unsafe fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
     Ok(())
 }
 
-pub unsafe fn set_raw_mode(fd: c_int) -> Result<()> {
+pub fn set_raw_mode(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
-    cfmakeraw(&mut attr); // Changes flags to enable non-canonical mode
+    unsafe {
+        cfmakeraw(&mut attr);
+    } // Changes flags to enable non-canonical mode
     attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
     attr.c_cc[VTIME] = 0; // No timeout needed
     set_attributes(fd, &attr)?;
@@ -265,7 +267,7 @@ pub unsafe fn set_raw_mode(fd: c_int) -> Result<()> {
 }
 
 // If CREAD isn't set, all input is discarded
-pub unsafe fn enable_read(fd: c_int) -> Result<()> {
+pub fn enable_read(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
     attr.c_cflag |= CREAD;
     set_attributes(fd, &attr)?;
@@ -274,7 +276,7 @@ pub unsafe fn enable_read(fd: c_int) -> Result<()> {
 }
 
 // Ignore carrier detect signal
-pub unsafe fn ignore_carrier_detect(fd: c_int) -> Result<()> {
+pub fn ignore_carrier_detect(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
     attr.c_cflag |= CLOCAL;
     set_attributes(fd, &attr)?;
