@@ -19,6 +19,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 // Find user ID for specified user
+#[cfg(linux)]
 pub fn user_to_uid(name: &str) -> Option<u32> {
     use libc;
     use std::ffi::CString;
@@ -54,7 +55,13 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
     None
 }
 
+#[cfg(not(linux))]
+pub fn user_to_uid(_name: &str) -> Option<u32> {
+    None
+}
+
 // Find group ID for specified group
+#[cfg(linux)]
 pub fn group_to_gid(name: &str) -> Option<u32> {
     use libc;
     use std::ffi::CString;
@@ -84,5 +91,10 @@ pub fn group_to_gid(name: &str) -> Option<u32> {
         }
     }
 
+    None
+}
+
+#[cfg(not(linux))]
+pub fn group_to_gid(_name: &str) -> Option<u32> {
     None
 }
