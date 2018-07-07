@@ -18,15 +18,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// NOTE: This is currently experimental, and may be removed at any point.
-
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong, c_void, ioctl, read};
+use libc::{c_int, c_ulong, c_void, ioctl, lseek, read, SEEK_END};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
+use std::time::Duration;
 
 use gpio::epoll::{epoll_event, Epoll, EPOLLIN, EPOLLPRI};
 use gpio::{Error, Level, Result, Trigger};
@@ -36,149 +35,6 @@ fn parse_retval(retval: c_int) -> Result<i32> {
         Err(Error::Io(io::Error::last_os_error()))
     } else {
         Ok(retval)
-    }
-}
-
-#[repr(C)]
-struct ChipInfo {
-    name: [u8; 32],
-    label: [u8; 32],
-    lines: u32,
-}
-
-impl ChipInfo {
-    pub fn new() -> ChipInfo {
-        ChipInfo {
-            name: [0u8; 32],
-            label: [0u8; 32],
-            lines: 0,
-        }
-    }
-}
-
-const LINE_FLAG_KERNEL: u32 = 1;
-const LINE_FLAG_IS_OUT: u32 = 1 << 1;
-const LINE_FLAG_ACTIVE_LOW: u32 = 1 << 2;
-const LINE_FLAG_OPEN_DRAIN: u32 = 1 << 3;
-const LINE_FLAG_OPEN_SOURCE: u32 = 1 << 4;
-
-#[repr(C)]
-struct LineInfo {
-    line_offset: u32,
-    flags: u32,
-    name: [u8; 32],
-    consumer: [u8; 32],
-}
-
-impl LineInfo {
-    pub fn new() -> LineInfo {
-        LineInfo {
-            line_offset: 0,
-            flags: 0,
-            name: [0u8; 32],
-            consumer: [0u8; 32],
-        }
-    }
-}
-
-const HANDLES_MAX: usize = 64;
-const HANDLE_FLAG_INPUT: u32 = 1;
-const HANDLE_FLAG_OUTPUT: u32 = 1 << 1;
-const HANDLE_FLAG_ACTIVE_LOW: u32 = 1 << 2;
-const HANDLE_FLAG_OPEN_DRAIN: u32 = 1 << 3;
-const HANDLE_FLAG_OPEN_SOURCE: u32 = 1 << 4;
-
-#[repr(C)]
-struct HandleRequest {
-    line_offsets: [u32; HANDLES_MAX],
-    flags: u32,
-    default_values: [u8; HANDLES_MAX],
-    consumer_label: [u8; 32],
-    lines: u32,
-    fd: c_int,
-}
-
-impl HandleRequest {
-    pub fn new() -> HandleRequest {
-        HandleRequest {
-            line_offsets: [0u32; HANDLES_MAX],
-            flags: 0,
-            default_values: [0u8; HANDLES_MAX],
-            consumer_label: [0u8; 32],
-            lines: 0,
-            fd: 0,
-        }
-    }
-}
-
-#[repr(C)]
-struct HandleData {
-    values: [u8; HANDLES_MAX],
-}
-
-impl HandleData {
-    pub fn new() -> HandleData {
-        HandleData {
-            values: [0u8; HANDLES_MAX],
-        }
-    }
-}
-
-const EVENT_FLAG_RISING_EDGE: u32 = 1;
-const EVENT_FLAG_FALLING_EDGE: u32 = 1 << 1;
-const EVENT_FLAG_BOTH_EDGES: u32 = EVENT_FLAG_RISING_EDGE | EVENT_FLAG_FALLING_EDGE;
-
-#[repr(C)]
-struct EventRequest {
-    line_offset: u32,
-    handle_flags: u32,
-    event_flags: u32,
-    consumer_label: [u8; 32],
-    fd: c_int,
-}
-
-impl EventRequest {
-    pub fn new(pin: u8, handle_flags: u32, trigger: Trigger) -> EventRequest {
-        EventRequest {
-            line_offset: u32::from(pin),
-            handle_flags,
-            event_flags: trigger as u32,
-            consumer_label: [0u8; 32],
-            fd: 0,
-        }
-    }
-}
-
-const EVENT_TYPE_RISING_EDGE: u32 = 0x01;
-const EVENT_TYPE_FALLING_EDGE: u32 = 0x02;
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-struct EventData {
-    timestamp: u64,
-    id: u32,
-}
-
-impl EventData {
-    pub fn new() -> EventData {
-        EventData {
-            timestamp: 0,
-            id: 0,
-        }
-    }
-
-    pub fn from_fd(fd: i32) -> Result<EventData> {
-        let mut event_data = EventData::new();
-
-        unsafe {
-            parse_retval(read(
-                fd,
-                &mut event_data as *mut EventData as *mut c_void,
-                size_of::<EventData>(),
-            ) as i32)?;
-        }
-
-        Ok(event_data)
     }
 }
 
@@ -223,12 +79,244 @@ const REQ_GET_LINE_VALUES: c_ulong =
 const REQ_SET_LINE_VALUES: c_ulong =
     DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLE_DATA;
 
-// I'm not sure the GPIO header is always available through /dev/gpiochip0, so searching for
-// the corresponding driver name in the label field seems like a more reliable option.
-pub unsafe fn find_driver() -> Result<Option<File>> {
-    let driver_name = b"pinctrl-bcm2835\0";
+const NAME_BUFSIZE: usize = 32;
+const LABEL_BUFSIZE: usize = 32;
 
-    let mut chip_info = ChipInfo::new();
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ChipInfo {
+    pub name: [u8; NAME_BUFSIZE],
+    pub label: [u8; LABEL_BUFSIZE],
+    pub lines: u32,
+}
+
+impl ChipInfo {
+    pub fn new(cdev_fd: c_int) -> Result<ChipInfo> {
+        let mut chip_info = ChipInfo {
+            name: [0u8; NAME_BUFSIZE],
+            label: [0u8; LABEL_BUFSIZE],
+            lines: 0,
+        };
+
+        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_CHIP_INFO, &mut chip_info) })?;
+
+        Ok(chip_info)
+    }
+}
+
+const LINE_FLAG_KERNEL: u32 = 0x01;
+const LINE_FLAG_IS_OUT: u32 = 0x02;
+const LINE_FLAG_ACTIVE_LOW: u32 = 0x04;
+const LINE_FLAG_OPEN_DRAIN: u32 = 0x08;
+const LINE_FLAG_OPEN_SOURCE: u32 = 0x10;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineInfo {
+    pub line_offset: u32,
+    pub flags: u32,
+    pub name: [u8; NAME_BUFSIZE],
+    pub consumer: [u8; LABEL_BUFSIZE],
+}
+
+impl LineInfo {
+    pub fn new() -> LineInfo {
+        LineInfo {
+            line_offset: 0,
+            flags: 0,
+            name: [0u8; NAME_BUFSIZE],
+            consumer: [0u8; LABEL_BUFSIZE],
+        }
+    }
+}
+
+const HANDLES_MAX: usize = 64;
+const HANDLE_FLAG_INPUT: u32 = 0x01;
+const HANDLE_FLAG_OUTPUT: u32 = 0x02;
+const HANDLE_FLAG_ACTIVE_LOW: u32 = 0x04;
+const HANDLE_FLAG_OPEN_DRAIN: u32 = 0x08;
+const HANDLE_FLAG_OPEN_SOURCE: u32 = 0x10;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct HandleRequest {
+    pub line_offsets: [u32; HANDLES_MAX],
+    pub flags: u32,
+    pub default_values: [u8; HANDLES_MAX],
+    pub consumer_label: [u8; LABEL_BUFSIZE],
+    pub lines: u32,
+    pub fd: c_int,
+}
+
+impl HandleRequest {
+    pub fn new(cdev_fd: c_int, pins: &[u8]) -> Result<HandleRequest> {
+        let mut handle_request = HandleRequest {
+            line_offsets: [0u32; HANDLES_MAX],
+            flags: 0,
+            default_values: [0u8; HANDLES_MAX],
+            consumer_label: [0u8; LABEL_BUFSIZE],
+            lines: 0,
+            fd: 0,
+        };
+
+        let pins: &[u8] = if pins.len() > HANDLES_MAX {
+            handle_request.lines = HANDLES_MAX as u32;
+            &pins[0..HANDLES_MAX]
+        } else {
+            handle_request.lines = pins.len() as u32;
+            pins
+        };
+
+        for (idx, pin) in pins.iter().enumerate() {
+            handle_request.line_offsets[idx] = u32::from(*pin);
+        }
+
+        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
+
+        Ok(handle_request)
+    }
+
+    pub fn levels(&self) -> Result<HandleData> {
+        let mut handle_data = HandleData::new();
+
+        parse_retval(unsafe { ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
+
+        Ok(handle_data)
+    }
+
+    pub fn set_levels(&mut self, levels: &[Level]) -> Result<()> {
+        let mut handle_data = HandleData::new();
+        let levels: &[Level] = if levels.len() > HANDLES_MAX {
+            &levels[0..HANDLES_MAX]
+        } else {
+            levels
+        };
+
+        for (idx, level) in levels.iter().enumerate() {
+            handle_data.values[idx] = *level as u8;
+        }
+
+        parse_retval(unsafe { ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
+
+        Ok(())
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct HandleData {
+    pub values: [u8; HANDLES_MAX],
+}
+
+impl HandleData {
+    pub fn new() -> HandleData {
+        HandleData {
+            values: [0u8; HANDLES_MAX],
+        }
+    }
+}
+
+const EVENT_FLAG_RISING_EDGE: u32 = 0x01;
+const EVENT_FLAG_FALLING_EDGE: u32 = 0x02;
+const EVENT_FLAG_BOTH_EDGES: u32 = EVENT_FLAG_RISING_EDGE | EVENT_FLAG_FALLING_EDGE;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct EventRequest {
+    pub line_offset: u32,
+    pub handle_flags: u32,
+    pub event_flags: u32,
+    pub consumer_label: [u8; LABEL_BUFSIZE],
+    pub fd: c_int,
+}
+
+impl EventRequest {
+    pub fn new(cdev_fd: c_int, pin: u8, trigger: Trigger) -> Result<EventRequest> {
+        let mut event_request = EventRequest {
+            line_offset: u32::from(pin),
+            handle_flags: HANDLE_FLAG_INPUT,
+            event_flags: trigger as u32,
+            consumer_label: [0u8; LABEL_BUFSIZE],
+            fd: 0,
+        };
+
+        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
+
+        Ok(event_request)
+    }
+}
+
+const EVENT_TYPE_RISING_EDGE: u32 = 0x01;
+const EVENT_TYPE_FALLING_EDGE: u32 = 0x02;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct EventData {
+    timestamp: u64,
+    id: u32,
+}
+
+impl EventData {
+    fn new(event_fd: c_int) -> Result<Option<EventData>> {
+        let mut event_data = EventData {
+            timestamp: 0,
+            id: 0,
+        };
+
+        let bytes_read = parse_retval(unsafe {
+            read(
+                event_fd,
+                &mut event_data as *mut EventData as *mut c_void,
+                size_of::<EventData>(),
+            ) as i32
+        })?;
+
+        if bytes_read != size_of::<EventData>() as i32 {
+            Ok(None)
+        } else {
+            Ok(Some(event_data))
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Event {
+    pub trigger: Trigger,
+    pub timestamp: Duration,
+}
+
+impl Event {
+    fn from_event_data(event_data: EventData) -> Event {
+        Event {
+            trigger: if event_data.id == EVENT_TYPE_RISING_EDGE {
+                Trigger::RisingEdge
+            } else {
+                Trigger::FallingEdge
+            },
+            timestamp: Duration::from_nanos(event_data.timestamp),
+        }
+    }
+}
+
+// Read interrupt event
+pub fn get_event(event_fd: c_int) -> Result<Option<Event>> {
+    if let Some(event_data) = EventData::new(event_fd)? {
+        Ok(Some(Event::from_event_data(event_data)))
+    } else {
+        Ok(None)
+    }
+}
+
+// Flush any pending interrupt events
+pub fn flush_events(event_fd: c_int) {
+    unsafe {
+        lseek(event_fd, 0, SEEK_END);
+    }
+}
+
+// Find the correct gpiochip device based on its label
+pub unsafe fn find_driver() -> Result<File> {
+    let driver_name = b"pinctrl-bcm2835\0";
 
     for idx in 0..=255 {
         let gpiochip = OpenOptions::new()
@@ -236,33 +324,36 @@ pub unsafe fn find_driver() -> Result<Option<File>> {
             .write(true)
             .open(format!("/dev/gpiochip{}", idx))?;
 
-        parse_retval(ioctl(
-            gpiochip.as_raw_fd(),
-            REQ_GET_CHIP_INFO,
-            &mut chip_info,
-        ))?;
+        let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
         if chip_info.label[0..driver_name.len()] == driver_name[..] {
-            return Ok(Some(gpiochip));
+            return Ok(gpiochip);
         }
     }
 
-    Ok(None)
+    Err(Error::Io(io::Error::from_raw_os_error(2)))
 }
 
-pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> Result<Level> {
-    let fd = gpiochip.as_raw_fd();
+pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
+    let chip_info = ChipInfo::new(cdev_fd)?;
 
-    let mut chip_info = ChipInfo::new();
-
-    parse_retval(ioctl(fd, REQ_GET_CHIP_INFO, &mut chip_info))?;
-
-    if u32::from(pin) > chip_info.lines || pin as usize >= HANDLES_MAX {
+    if u32::from(pin) > chip_info.lines {
         return Err(Error::InvalidPin(pin));
     }
 
-    let mut event_request = EventRequest::new(pin, HANDLE_FLAG_INPUT, trigger);
+    match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
+        1 => Ok(Level::High),
+        _ => Ok(Level::Low),
+    }
+}
 
-    parse_retval(ioctl(fd, REQ_GET_LINE_EVENT, &mut event_request))?;
+pub fn poll_interrupt(cdev_fd: c_int, pin: u8, trigger: Trigger) -> Result<Level> {
+    let chip_info = ChipInfo::new(cdev_fd)?;
+
+    if u32::from(pin) > chip_info.lines {
+        return Err(Error::InvalidPin(pin));
+    }
+
+    let event_request = EventRequest::new(cdev_fd, pin, trigger)?;
 
     let poll = Epoll::new()?;
     poll.add(
@@ -277,10 +368,13 @@ pub unsafe fn poll_interrupt(gpiochip: &mut File, pin: u8, trigger: Trigger) -> 
         if num_events > 0 {
             for event in &events[0..num_events] {
                 if event.u64 as c_int == event_request.fd {
-                    let event_data = EventData::from_fd(event_request.fd)?;
-                    match event_data.id {
-                        EVENT_TYPE_RISING_EDGE => return Ok(Level::High),
-                        _ => return Ok(Level::Low),
+                    if let Some(int_event) = get_event(event_request.fd)? {
+                        match int_event.trigger {
+                            Trigger::RisingEdge => return Ok(Level::High),
+                            _ => return Ok(Level::Low),
+                        }
+                    } else {
+                        return get_level(cdev_fd, pin);
                     }
                 }
             }

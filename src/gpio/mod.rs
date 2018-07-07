@@ -51,20 +51,22 @@
 //! [`set_clear_on_drop(false)`]: struct.Gpio.html#method.set_clear_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
-#![allow(dead_code)]
-
 use std::fmt;
+use std::fs::File;
 use std::io;
+use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
+mod cdev_interrupt;
 mod epoll;
-mod interrupt;
 mod ioctl;
 mod mem;
 mod sysfs;
+
+use gpio::cdev_interrupt as interrupt;
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
@@ -240,6 +242,7 @@ pub struct Gpio {
     clear_on_drop: bool,
     gpio_mem: mem::GpioMem,
     orig_pin_state: Vec<PinState>,
+    gpio_cdev: File,
     sync_interrupts: interrupt::EventLoop,
     async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
@@ -261,12 +264,16 @@ impl Gpio {
             }
         }
 
+        let cdev = unsafe { ioctl::find_driver()? };
+        let cdev_fd = cdev.as_raw_fd();
+
         let mut gpio = Gpio {
             initialized: true,
             clear_on_drop: true,
             gpio_mem: mem::GpioMem::new(),
             orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
-            sync_interrupts: interrupt::EventLoop::new(GPIO_MAX_PINS as usize)?,
+            gpio_cdev: cdev,
+            sync_interrupts: interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?,
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
@@ -515,9 +522,6 @@ impl Gpio {
     /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
-    /// The returned pin logic level is read when the trigger event is processed, and may
-    /// differ from the logic level that actually triggered the interrupt.
-    ///
     /// [`set_interrupt`]: #method.set_interrupt
     pub fn poll_interrupt(
         &mut self,
@@ -553,9 +557,6 @@ impl Gpio {
     /// at the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time `poll_interrupts` is called.
     ///
-    /// The returned pin logic level is read when the trigger event is processed, and may
-    /// differ from the logic level that actually triggered the interrupt.
-    ///
     /// [`set_interrupt`]: #method.set_interrupt
     pub fn poll_interrupts(
         &mut self,
@@ -580,8 +581,6 @@ impl Gpio {
     /// separate thread when the interrupt is triggered.
     ///
     /// The callback closure or function pointer is called with a single [`Level`] argument.
-    /// The pin logic level is read when the trigger event is processed, and may differ from the logic
-    /// level that actually triggered the interrupt.
     ///
     /// `set_async_interrupt` will remove any previously configured
     /// (a)synchronous interrupt triggers for the same pin.
@@ -605,8 +604,12 @@ impl Gpio {
         // Stop and remove existing interrupt trigger on this pin
         self.clear_async_interrupt(pin)?;
 
-        self.async_interrupts[pin as usize] =
-            Some(interrupt::AsyncInterrupt::new(pin, trigger, callback)?);
+        self.async_interrupts[pin as usize] = Some(interrupt::AsyncInterrupt::new(
+            self.gpio_cdev.as_raw_fd(),
+            pin,
+            trigger,
+            callback,
+        )?);
 
         Ok(())
     }
@@ -638,12 +641,11 @@ impl Gpio {
             return Err(Error::InvalidPin(pin));
         }
 
-        let mut gpiochip = match unsafe { ioctl::find_driver()? } {
-            Some(chip) => chip,
-            None => return Err(Error::UnknownSoC),
-        };
-
-        unsafe { Ok(ioctl::poll_interrupt(&mut gpiochip, pin, trigger)?) }
+        Ok(ioctl::poll_interrupt(
+            self.gpio_cdev.as_raw_fd(),
+            pin,
+            trigger,
+        )?)
     }
 }
 
