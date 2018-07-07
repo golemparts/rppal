@@ -181,20 +181,16 @@ impl I2c {
             .write(true)
             .open(format!("/dev/i2c-{}", bus))?;
 
-        let capabilities = unsafe { ioctl::funcs(i2cdev.as_raw_fd())? };
+        let capabilities = ioctl::funcs(i2cdev.as_raw_fd())?;
 
         // Disable 10-bit addressing if it's supported
         if capabilities.addr_10bit() {
-            unsafe {
-                ioctl::set_addr_10bit(i2cdev.as_raw_fd(), 0)?;
-            }
+            ioctl::set_addr_10bit(i2cdev.as_raw_fd(), 0)?;
         }
 
         // Disable PEC if it's supported
         if capabilities.smbus_pec() {
-            unsafe {
-                ioctl::set_pec(i2cdev.as_raw_fd(), 0)?;
-            }
+            ioctl::set_pec(i2cdev.as_raw_fd(), 0)?;
         }
 
         Ok(I2c {
@@ -264,9 +260,7 @@ impl I2c {
             return Err(Error::InvalidSlaveAddress(slave_address));
         }
 
-        unsafe {
-            ioctl::set_slave_address(self.i2cdev.as_raw_fd(), c_ulong::from(slave_address))?;
-        }
+        ioctl::set_slave_address(self.i2cdev.as_raw_fd(), c_ulong::from(slave_address))?;
 
         self.address = slave_address;
 
@@ -282,18 +276,14 @@ impl I2c {
     pub fn set_timeout(&self, timeout: u32) -> Result<()> {
         // Contrary to the i2cdev documentation, this seems to
         // be used as a timeout for (part of?) the I2C transaction.
-        unsafe {
-            ioctl::set_timeout(self.i2cdev.as_raw_fd(), timeout as c_ulong)?;
-        }
+        ioctl::set_timeout(self.i2cdev.as_raw_fd(), timeout as c_ulong)?;
 
         Ok(())
     }
 
     fn set_retries(&self, retries: u32) -> Result<()> {
         // Set to private. While i2cdev implements retries, the underlying drivers don't.
-        unsafe {
-            ioctl::set_retries(self.i2cdev.as_raw_fd(), retries as c_ulong)?;
-        }
+        ioctl::set_retries(self.i2cdev.as_raw_fd(), retries as c_ulong)?;
 
         Ok(())
     }
@@ -312,9 +302,7 @@ impl I2c {
             return Err(Error::FeatureNotSupported);
         }
 
-        unsafe {
-            ioctl::set_addr_10bit(self.i2cdev.as_raw_fd(), addr_10bit as c_ulong)?;
-        }
+        ioctl::set_addr_10bit(self.i2cdev.as_raw_fd(), addr_10bit as c_ulong)?;
 
         self.addr_10bit = addr_10bit;
 
@@ -357,15 +345,13 @@ impl I2c {
     /// [`write`]: #method.write
     /// [`read`]: #method.read
     pub fn write_read(&self, write_buffer: &[u8], read_buffer: &mut [u8]) -> Result<()> {
-        unsafe {
-            ioctl::i2c_write_read(
-                self.i2cdev.as_raw_fd(),
-                self.address,
-                self.addr_10bit,
-                write_buffer,
-                read_buffer,
-            )?;
-        }
+        ioctl::i2c_write_read(
+            self.i2cdev.as_raw_fd(),
+            self.address,
+            self.addr_10bit,
+            write_buffer,
+            read_buffer,
+        )?;
 
         Ok(())
     }
@@ -385,9 +371,7 @@ impl I2c {
     ///
     /// [`smbus_block_read`]: #method.smbus_block_read
     pub fn block_read(&self, command: u8, buffer: &mut [u8]) -> Result<()> {
-        unsafe {
-            ioctl::i2c_block_read(self.i2cdev.as_raw_fd(), command, buffer)?;
-        }
+        ioctl::i2c_block_read(self.i2cdev.as_raw_fd(), command, buffer)?;
 
         Ok(())
     }
@@ -406,9 +390,7 @@ impl I2c {
     ///
     /// [`smbus_block_write`]: #method.smbus_block_write
     pub fn block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
-        unsafe {
-            ioctl::i2c_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
-        }
+        ioctl::i2c_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
 
         Ok(())
     }
@@ -420,9 +402,7 @@ impl I2c {
     ///
     /// Sequence: START → Address + Command Bit → STOP
     pub fn smbus_quick_command(&self, command: bool) -> Result<()> {
-        unsafe {
-            ioctl::smbus_quick_command(self.i2cdev.as_raw_fd(), command)?;
-        }
+        ioctl::smbus_quick_command(self.i2cdev.as_raw_fd(), command)?;
 
         Ok(())
     }
@@ -431,16 +411,14 @@ impl I2c {
     ///
     /// Sequence: START → Address + Read Bit → Incoming Byte → STOP
     pub fn smbus_receive_byte(&self) -> Result<u8> {
-        unsafe { Ok(ioctl::smbus_receive_byte(self.i2cdev.as_raw_fd())?) }
+        Ok(ioctl::smbus_receive_byte(self.i2cdev.as_raw_fd())?)
     }
 
     /// Sends an 8-bit `value`.
     ///
     /// Sequence: START → Address + Write Bit → Outgoing Byte → STOP
     pub fn smbus_send_byte(&self, value: u8) -> Result<()> {
-        unsafe {
-            ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?;
-        }
+        ioctl::smbus_send_byte(self.i2cdev.as_raw_fd(), value)?;
 
         Ok(())
     }
@@ -450,16 +428,14 @@ impl I2c {
     /// Sequence: START → Address + Write Bit → Command → Repeated START
     /// → Address + Read Bit → Incoming Byte → STOP
     pub fn smbus_read_byte(&self, command: u8) -> Result<u8> {
-        unsafe { Ok(ioctl::smbus_read_byte(self.i2cdev.as_raw_fd(), command)?) }
+        Ok(ioctl::smbus_read_byte(self.i2cdev.as_raw_fd(), command)?)
     }
 
     /// Sends an 8-bit `command` and an 8-bit `value`.
     ///
     /// Sequence: START → Address + Write Bit → Command → Outgoing Byte → STOP
     pub fn smbus_write_byte(&self, command: u8, value: u8) -> Result<()> {
-        unsafe {
-            ioctl::smbus_write_byte(self.i2cdev.as_raw_fd(), command, value)?;
-        }
+        ioctl::smbus_write_byte(self.i2cdev.as_raw_fd(), command, value)?;
 
         Ok(())
     }
@@ -476,7 +452,7 @@ impl I2c {
     ///
     /// [`smbus_read_word_swapped`]: #method.smbus_read_word_swapped
     pub fn smbus_read_word(&self, command: u8) -> Result<u16> {
-        unsafe { Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?) }
+        Ok(ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?)
     }
 
     /// Sends an 8-bit `command`, and receives a 16-bit `value` in a non-standard swapped byte order.
@@ -490,7 +466,7 @@ impl I2c {
     ///
     /// [`smbus_read_word`]: #method.smbus_read_word
     pub fn smbus_read_word_swapped(&self, command: u8) -> Result<u16> {
-        let value = unsafe { ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)? };
+        let value = ioctl::smbus_read_word(self.i2cdev.as_raw_fd(), command)?;
 
         Ok(((value & 0xFF00) >> 8) | ((value & 0xFF) << 8))
     }
@@ -506,9 +482,7 @@ impl I2c {
     ///
     /// [`smbus_write_word_swapped`]: #method.smbus_write_word_swapped
     pub fn smbus_write_word(&self, command: u8, value: u16) -> Result<()> {
-        unsafe {
-            ioctl::smbus_write_word(self.i2cdev.as_raw_fd(), command, value)?;
-        }
+        ioctl::smbus_write_word(self.i2cdev.as_raw_fd(), command, value)?;
 
         Ok(())
     }
@@ -522,13 +496,11 @@ impl I2c {
     ///
     /// [`smbus_write_word`]: #method.smbus_write_word
     pub fn smbus_write_word_swapped(&self, command: u8, value: u16) -> Result<()> {
-        unsafe {
-            ioctl::smbus_write_word(
-                self.i2cdev.as_raw_fd(),
-                command,
-                ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
-            )?;
-        }
+        ioctl::smbus_write_word(
+            self.i2cdev.as_raw_fd(),
+            command,
+            ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
+        )?;
 
         Ok(())
     }
@@ -546,13 +518,11 @@ impl I2c {
     ///
     /// [`smbus_process_call_swapped`]: #method.smbus_process_call_swapped
     pub fn smbus_process_call(&self, command: u8, value: u16) -> Result<u16> {
-        unsafe {
-            Ok(ioctl::smbus_process_call(
-                self.i2cdev.as_raw_fd(),
-                command,
-                value,
-            )?)
-        }
+        Ok(ioctl::smbus_process_call(
+            self.i2cdev.as_raw_fd(),
+            command,
+            value,
+        )?)
     }
 
     /// Sends an 8-bit `command` and a 16-bit `value`, and then receives a 16-bit value in response, in
@@ -568,13 +538,11 @@ impl I2c {
     ///
     /// [`smbus_process_call`]: #method.smbus_process_call
     pub fn smbus_process_call_swapped(&self, command: u8, value: u16) -> Result<u16> {
-        let response = unsafe {
-            ioctl::smbus_process_call(
-                self.i2cdev.as_raw_fd(),
-                command,
-                ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
-            )?
-        };
+        let response = ioctl::smbus_process_call(
+            self.i2cdev.as_raw_fd(),
+            command,
+            ((value & 0xFF00) >> 8) | ((value & 0xFF) << 8),
+        )?;
 
         Ok(((response & 0xFF00) >> 8) | ((response & 0xFF) << 8))
     }
@@ -605,13 +573,11 @@ impl I2c {
             return Err(Error::FeatureNotSupported);
         }
 
-        unsafe {
-            Ok(ioctl::smbus_block_read(
-                self.i2cdev.as_raw_fd(),
-                command,
-                buffer,
-            )?)
-        }
+        Ok(ioctl::smbus_block_read(
+            self.i2cdev.as_raw_fd(),
+            command,
+            buffer,
+        )?)
     }
 
     /// Sends an 8-bit `command` and an 8-bit byte count along with a multi-byte `buffer`.
@@ -622,9 +588,7 @@ impl I2c {
     /// Sequence: START → Address + Write Bit → Command → Outgoing Byte Count
     /// → Outgoing Bytes → STOP
     pub fn smbus_block_write(&self, command: u8, buffer: &[u8]) -> Result<()> {
-        unsafe {
-            ioctl::smbus_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
-        }
+        ioctl::smbus_block_write(self.i2cdev.as_raw_fd(), command, buffer)?;
 
         Ok(())
     }
@@ -638,9 +602,7 @@ impl I2c {
     ///
     /// By default, `pec` is set to `false`.
     pub fn set_smbus_pec(&self, pec: bool) -> Result<()> {
-        unsafe {
-            ioctl::set_pec(self.i2cdev.as_raw_fd(), pec as c_ulong)?;
-        }
+        ioctl::set_pec(self.i2cdev.as_raw_fd(), pec as c_ulong)?;
 
         Ok(())
     }

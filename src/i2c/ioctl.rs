@@ -306,7 +306,7 @@ struct SmbusRequest {
     data: *mut SmbusBuffer,
 }
 
-unsafe fn smbus_request(
+fn smbus_request(
     fd: c_int,
     read_write: SmbusReadWrite,
     command: u8,
@@ -324,12 +324,12 @@ unsafe fn smbus_request(
         },
     };
 
-    parse_retval(ioctl(fd, REQ_SMBUS, &mut request))?;
+    parse_retval(unsafe { ioctl(fd, REQ_SMBUS, &mut request) })?;
 
     Ok(())
 }
 
-pub unsafe fn smbus_quick_command(fd: c_int, value: bool) -> Result<()> {
+pub fn smbus_quick_command(fd: c_int, value: bool) -> Result<()> {
     // Quick Command uses the read_write field, instead of the data buffer
     smbus_request(
         fd,
@@ -344,7 +344,7 @@ pub unsafe fn smbus_quick_command(fd: c_int, value: bool) -> Result<()> {
     )
 }
 
-pub unsafe fn smbus_receive_byte(fd: c_int) -> Result<u8> {
+pub fn smbus_receive_byte(fd: c_int) -> Result<u8> {
     let mut buffer = SmbusBuffer::new();
     smbus_request(
         fd,
@@ -357,12 +357,12 @@ pub unsafe fn smbus_receive_byte(fd: c_int) -> Result<u8> {
     Ok(buffer.data[0])
 }
 
-pub unsafe fn smbus_send_byte(fd: c_int, value: u8) -> Result<()> {
+pub fn smbus_send_byte(fd: c_int, value: u8) -> Result<()> {
     // Send Byte uses the command field, instead of the data buffer
     smbus_request(fd, SmbusReadWrite::Write, value, SmbusSize::Byte, None)
 }
 
-pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
+pub fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
     let mut buffer = SmbusBuffer::new();
     smbus_request(
         fd,
@@ -375,7 +375,7 @@ pub unsafe fn smbus_read_byte(fd: c_int, command: u8) -> Result<u8> {
     Ok(buffer.data[0])
 }
 
-pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
+pub fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
     let mut buffer = SmbusBuffer::new();
     smbus_request(
         fd,
@@ -389,7 +389,7 @@ pub unsafe fn smbus_read_word(fd: c_int, command: u8) -> Result<u16> {
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
-pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<()> {
+pub fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<()> {
     let mut buffer = SmbusBuffer::with_byte(value);
     smbus_request(
         fd,
@@ -400,7 +400,7 @@ pub unsafe fn smbus_write_byte(fd: c_int, command: u8, value: u8) -> Result<()> 
     )
 }
 
-pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<()> {
+pub fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<()> {
     let mut buffer = SmbusBuffer::with_word(value);
     smbus_request(
         fd,
@@ -411,7 +411,7 @@ pub unsafe fn smbus_write_word(fd: c_int, command: u8, value: u16) -> Result<()>
     )
 }
 
-pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u16> {
+pub fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u16> {
     let mut buffer = SmbusBuffer::with_word(value);
     smbus_request(
         fd,
@@ -425,7 +425,7 @@ pub unsafe fn smbus_process_call(fd: c_int, command: u8, value: u16) -> Result<u
     Ok(u16::from(buffer.data[0]) | (u16::from(buffer.data[1]) << 8))
 }
 
-pub unsafe fn smbus_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<usize> {
+pub fn smbus_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<usize> {
     let mut buffer = SmbusBuffer::new();
     smbus_request(
         fd,
@@ -453,7 +453,7 @@ pub unsafe fn smbus_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Resu
     Ok(incoming_length)
 }
 
-pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
+pub fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(
         fd,
@@ -464,7 +464,7 @@ pub unsafe fn smbus_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<
     )
 }
 
-pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<()> {
+pub fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::new();
     buffer.data[0] = if value.len() > SMBUS_BLOCK_MAX {
         SMBUS_BLOCK_MAX as u8
@@ -485,7 +485,7 @@ pub unsafe fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result
     Ok(())
 }
 
-pub unsafe fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
+pub fn i2c_block_write(fd: c_int, command: u8, value: &[u8]) -> Result<()> {
     let mut buffer = SmbusBuffer::with_buffer(value);
     smbus_request(
         fd,
@@ -520,7 +520,7 @@ struct RdwrRequest {
     nmsgs: u32,
 }
 
-pub unsafe fn i2c_write_read(
+pub fn i2c_write_read(
     fd: c_int,
     address: u16,
     addr_10bit: bool,
@@ -556,30 +556,30 @@ pub unsafe fn i2c_write_read(
         nmsgs: 2,
     };
 
-    parse_retval(ioctl(fd, REQ_RDWR, &mut request))?;
+    parse_retval(unsafe { ioctl(fd, REQ_RDWR, &mut request) })?;
 
     Ok(())
 }
 
-pub unsafe fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(ioctl(fd, REQ_SLAVE, value))?;
+pub fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(unsafe { ioctl(fd, REQ_SLAVE, value) })?;
 
     Ok(())
 }
 
-pub unsafe fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(ioctl(fd, REQ_TENBIT, value))?;
+pub fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(unsafe { ioctl(fd, REQ_TENBIT, value) })?;
 
     Ok(())
 }
 
-pub unsafe fn set_pec(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(ioctl(fd, REQ_PEC, value))?;
+pub fn set_pec(fd: c_int, value: c_ulong) -> Result<()> {
+    parse_retval(unsafe { ioctl(fd, REQ_PEC, value) })?;
 
     Ok(())
 }
 
-pub unsafe fn set_timeout(fd: c_int, value: c_ulong) -> Result<()> {
+pub fn set_timeout(fd: c_int, value: c_ulong) -> Result<()> {
     // Timeout is specified in units of 10ms
     let timeout: c_ulong = if value > 0 && value < 10 {
         1
@@ -587,22 +587,22 @@ pub unsafe fn set_timeout(fd: c_int, value: c_ulong) -> Result<()> {
         value / 10
     };
 
-    parse_retval(ioctl(fd, REQ_TIMEOUT, timeout))?;
+    parse_retval(unsafe { ioctl(fd, REQ_TIMEOUT, timeout) })?;
 
     Ok(())
 }
 
-pub unsafe fn set_retries(fd: c_int, value: c_ulong) -> Result<()> {
+pub fn set_retries(fd: c_int, value: c_ulong) -> Result<()> {
     // Number of retries on arbitration loss
-    parse_retval(ioctl(fd, REQ_RETRIES, value))?;
+    parse_retval(unsafe { ioctl(fd, REQ_RETRIES, value) })?;
 
     Ok(())
 }
 
-pub unsafe fn funcs(fd: c_int) -> Result<Capabilities> {
+pub fn funcs(fd: c_int) -> Result<Capabilities> {
     let mut funcs: c_ulong = 0;
 
-    parse_retval(ioctl(fd, REQ_FUNCS, &mut funcs))?;
+    parse_retval(unsafe { ioctl(fd, REQ_FUNCS, &mut funcs) })?;
 
     Ok(Capabilities::new(funcs))
 }
