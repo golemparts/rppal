@@ -50,9 +50,9 @@ pub struct EventFd {
 impl EventFd {
     pub fn new() -> Result<EventFd> {
         Ok(EventFd {
-            fd: unsafe {
-                parse_retval(libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE))?
-            },
+            fd: parse_retval(unsafe {
+                libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE)
+            })?,
         })
     }
 
@@ -87,7 +87,7 @@ pub struct Epoll {
 impl Epoll {
     pub fn new() -> Result<Epoll> {
         Ok(Epoll {
-            fd: unsafe { parse_retval(libc::epoll_create1(0))? },
+            fd: parse_retval(unsafe { libc::epoll_create1(0) })?,
         })
     }
 
@@ -97,14 +97,7 @@ impl Epoll {
             u64: id as u64,
         };
 
-        unsafe {
-            parse_retval(libc::epoll_ctl(
-                self.fd,
-                libc::EPOLL_CTL_ADD,
-                fd,
-                &mut event,
-            ))?;
-        }
+        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_ADD, fd, &mut event) })?;
 
         Ok(())
     }
@@ -115,14 +108,7 @@ impl Epoll {
             u64: id as u64,
         };
 
-        unsafe {
-            parse_retval(libc::epoll_ctl(
-                self.fd,
-                libc::EPOLL_CTL_MOD,
-                fd,
-                &mut event,
-            ))?;
-        }
+        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_MOD, fd, &mut event) })?;
 
         Ok(())
     }
@@ -130,14 +116,7 @@ impl Epoll {
     pub fn delete(&self, fd: i32) -> Result<()> {
         let mut event = libc::epoll_event { events: 0, u64: 0 };
 
-        unsafe {
-            parse_retval(libc::epoll_ctl(
-                self.fd,
-                libc::EPOLL_CTL_DEL,
-                fd,
-                &mut event,
-            ))?;
-        }
+        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_DEL, fd, &mut event) })?;
 
         Ok(())
     }
@@ -157,14 +136,9 @@ impl Epoll {
             -1
         };
 
-        unsafe {
-            Ok(parse_retval(libc::epoll_wait(
-                self.fd,
-                events.as_mut_ptr(),
-                events.len() as i32,
-                timeout,
-            ))? as usize)
-        }
+        Ok(parse_retval(unsafe {
+            libc::epoll_wait(self.fd, events.as_mut_ptr(), events.len() as i32, timeout)
+        })? as usize)
     }
 }
 
