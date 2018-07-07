@@ -24,8 +24,6 @@ use std::fmt;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use libc::c_int;
-
 use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use gpio::ioctl;
 use gpio::{Error, Level, Result, Trigger};
@@ -34,12 +32,12 @@ use gpio::{Error, Level, Result, Trigger};
 struct Interrupt {
     pin: u8,
     trigger: Trigger,
-    cdev_fd: c_int,
-    event_fd: c_int,
+    cdev_fd: i32,
+    event_fd: i32,
 }
 
 impl Interrupt {
-    fn new(fd: c_int, pin: u8, trigger: Trigger) -> Result<Interrupt> {
+    fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
         let chip_info = ioctl::ChipInfo::new(fd)?;
 
         if u32::from(pin) > chip_info.lines {
@@ -115,7 +113,7 @@ pub struct EventLoop {
     poll: Epoll,
     events: Vec<epoll_event>,
     trigger_status: Vec<TriggerStatus>,
-    cdev_fd: c_int,
+    cdev_fd: i32,
 }
 
 impl fmt::Debug for EventLoop {
@@ -130,7 +128,7 @@ impl fmt::Debug for EventLoop {
 }
 
 impl EventLoop {
-    pub fn new(cdev_fd: c_int, capacity: usize) -> Result<EventLoop> {
+    pub fn new(cdev_fd: i32, capacity: usize) -> Result<EventLoop> {
         let mut trigger_status = Vec::with_capacity(capacity);
 
         // Initialize trigger_status while circumventing the Copy/Clone requirement
@@ -278,7 +276,7 @@ pub struct AsyncInterrupt {
 }
 
 impl AsyncInterrupt {
-    pub fn new<C>(fd: c_int, pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
+    pub fn new<C>(fd: i32, pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
     where
         C: FnMut(Level) + Send + 'static,
     {
