@@ -16,7 +16,7 @@ Documentation for the latest release can be found at [docs.golemparts.com/rppal]
 
 ### GPIO
 
-To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the sysfs interface.
+To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
 
 #### Features
 

@@ -22,7 +22,7 @@
 //!
 //! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
 //! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
-//! GPIO interrupts are controlled using the sysfs interface.
+//! GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
 //!
 //! On a typical up-to-date Raspbian installation, any user that's a member of the
 //! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
