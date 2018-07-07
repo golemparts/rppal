@@ -18,6 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![allow(dead_code)]
+
 #![cfg_attr(feature = "cargo-clippy", allow(duration_subsec))]
 
 use std::io;
