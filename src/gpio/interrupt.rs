@@ -18,36 +18,39 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![allow(dead_code)]
+
 use std::fmt;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
-use std::os::unix::io::AsRawFd;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
-use gpio::sysfs;
+use gpio::ioctl;
 use gpio::{Error, Level, Result, Trigger};
 
 #[derive(Debug)]
 struct Interrupt {
     pin: u8,
     trigger: Trigger,
-    sysfs_value: File,
+    cdev_fd: i32,
+    event_fd: i32,
 }
 
 impl Interrupt {
-    fn new(pin: u8, trigger: Trigger) -> Result<Interrupt> {
-        // Export the GPIO pin so we can configure it through sysfs, set its mode to
-        // input, and set the trigger type.
-        sysfs::export(pin)?;
-        sysfs::set_direction(pin, sysfs::Direction::In)?;
-        sysfs::set_edge(pin, trigger)?;
+    fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
+        let chip_info = ioctl::ChipInfo::new(fd)?;
+
+        if u32::from(pin) > chip_info.lines {
+            return Err(Error::InvalidPin(pin));
+        }
+
+        let event_request = ioctl::EventRequest::new(fd, pin, trigger)?;
 
         Ok(Interrupt {
             pin,
             trigger,
-            sysfs_value: sysfs::open_value(pin)?,
+            cdev_fd: fd,
+            event_fd: event_request.fd,
         })
     }
 
@@ -56,31 +59,46 @@ impl Interrupt {
     }
 
     fn fd(&self) -> i32 {
-        self.sysfs_value.as_raw_fd()
+        self.event_fd
+    }
+
+    fn pin(&self) -> u8 {
+        self.pin
     }
 
     fn set_trigger(&mut self, trigger: Trigger) -> Result<()> {
         self.trigger = trigger;
-        sysfs::set_edge(self.pin, trigger)?;
+
+        self.reset()
+    }
+
+    // This might block if there are no events waiting
+    fn event(&mut self) -> Result<Option<ioctl::Event>> {
+        ioctl::get_event(self.event_fd)
+    }
+
+    fn reset(&mut self) -> Result<()> {
+        if self.event_fd > -1 {
+            ioctl::close(self.event_fd);
+            self.event_fd = -1;
+        }
+
+        let event_request = ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger)?;
+        self.event_fd = event_request.fd;
 
         Ok(())
     }
 
     fn level(&mut self) -> Result<Level> {
-        let mut buffer = [0; 1];
-        self.sysfs_value.read_exact(&mut buffer)?;
-        self.sysfs_value.seek(SeekFrom::Start(0))?;
-
-        match &buffer {
-            b"0" => Ok(Level::Low),
-            _ => Ok(Level::High),
-        }
+        ioctl::get_level(self.cdev_fd, self.pin)
     }
 }
 
 impl Drop for Interrupt {
     fn drop(&mut self) {
-        sysfs::unexport(self.pin).ok();
+        if self.event_fd > -1 {
+            ioctl::close(self.event_fd);
+        }
     }
 }
 
@@ -95,6 +113,7 @@ pub struct EventLoop {
     poll: Epoll,
     events: Vec<epoll_event>,
     trigger_status: Vec<TriggerStatus>,
+    cdev_fd: i32,
 }
 
 impl fmt::Debug for EventLoop {
@@ -103,12 +122,13 @@ impl fmt::Debug for EventLoop {
             .field("poll", &self.poll)
             .field("events", &format_args!("{{ .. }}"))
             .field("trigger_status", &format_args!("{{ .. }}"))
+            .field("cdev_fd", &self.cdev_fd)
             .finish()
     }
 }
 
 impl EventLoop {
-    pub fn new(capacity: usize) -> Result<EventLoop> {
+    pub fn new(cdev_fd: i32, capacity: usize) -> Result<EventLoop> {
         let mut trigger_status = Vec::with_capacity(capacity);
 
         // Initialize trigger_status while circumventing the Copy/Clone requirement
@@ -124,6 +144,7 @@ impl EventLoop {
             poll: Epoll::new()?,
             events: vec![epoll_event { events: 0, u64: 0 }; capacity],
             trigger_status,
+            cdev_fd,
         })
     }
 
@@ -147,10 +168,16 @@ impl EventLoop {
                 }
             }
 
-            // Read the logic level to reset any pending trigger events
+            // Reset any pending trigger events
             if let Some(ref mut interrupt) = self.trigger_status[*pin as usize].interrupt {
                 if reset {
-                    interrupt.level()?;
+                    self.poll.delete(interrupt.fd())?;
+                    interrupt.reset()?;
+                    self.poll.add(
+                        interrupt.fd(),
+                        u64::from(interrupt.pin()),
+                        EPOLLIN | EPOLLPRI,
+                    )?;
                 }
             }
         }
@@ -171,7 +198,14 @@ impl EventLoop {
                     self.trigger_status[pin].triggered = true;
                     self.trigger_status[pin].level =
                         if let Some(ref mut interrupt) = self.trigger_status[pin].interrupt {
-                            interrupt.level()?
+                            if let Some(trigger_event) = interrupt.event()? {
+                                match trigger_event.trigger {
+                                    Trigger::RisingEdge => Level::High,
+                                    _ => Level::Low,
+                                }
+                            } else {
+                                interrupt.level()?
+                            }
                         } else {
                             Level::Low
                         };
@@ -205,18 +239,21 @@ impl EventLoop {
         // Interrupt already exists. We just need to change the trigger.
         if let Some(ref mut interrupt) = self.trigger_status[pin as usize].interrupt {
             if interrupt.trigger != trigger {
+                // This requires a new event request, so the fd might change
+                self.poll.delete(interrupt.fd())?;
                 interrupt.set_trigger(trigger)?;
+                self.poll
+                    .add(interrupt.fd(), u64::from(pin), EPOLLIN | EPOLLPRI)?;
             }
 
             return Ok(());
         }
 
         // Register a new interrupt
-        let mut base = Interrupt::new(pin, trigger)?;
-        base.level()?;
+        let interrupt = Interrupt::new(self.cdev_fd, pin, trigger)?;
         self.poll
-            .add(base.fd(), u64::from(pin), EPOLLERR | EPOLLET | EPOLLPRI)?;
-        self.trigger_status[pin as usize].interrupt = Some(base);
+            .add(interrupt.fd(), u64::from(pin), EPOLLIN | EPOLLPRI)?;
+        self.trigger_status[pin as usize].interrupt = Some(interrupt);
 
         Ok(())
     }
@@ -232,14 +269,14 @@ impl EventLoop {
     }
 }
 
+#[derive(Debug)]
 pub struct AsyncInterrupt {
-    pin: u8,
     poll_thread: Option<thread::JoinHandle<Result<()>>>,
     tx: EventFd,
 }
 
 impl AsyncInterrupt {
-    pub fn new<C>(pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
+    pub fn new<C>(fd: i32, pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
     where
         C: FnMut(Level) + Send + 'static,
     {
@@ -252,11 +289,8 @@ impl AsyncInterrupt {
             // rx becomes readable when the main thread calls notify()
             poll.add(rx, rx as u64, EPOLLERR | EPOLLET | EPOLLIN)?;
 
-            // Triggering an interrupt sets error and priority
-            let mut base = Interrupt::new(pin, trigger)?;
-            let base_fd = base.fd();
-            base.level()?;
-            poll.add(base_fd, base_fd as u64, EPOLLERR | EPOLLET | EPOLLPRI)?;
+            let mut interrupt = Interrupt::new(fd, pin, trigger)?;
+            poll.add(interrupt.fd(), interrupt.fd() as u64, EPOLLIN | EPOLLPRI)?;
 
             let mut events = [epoll_event { events: 0, u64: 0 }; 2];
             loop {
@@ -266,8 +300,17 @@ impl AsyncInterrupt {
                         let fd = event.u64 as i32;
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
-                        } else if fd == base.fd() {
-                            callback(base.level()?);
+                        } else if fd == interrupt.fd() {
+                            let level = if let Some(trigger_event) = interrupt.event()? {
+                                match trigger_event.trigger {
+                                    Trigger::RisingEdge => Level::High,
+                                    _ => Level::Low,
+                                }
+                            } else {
+                                interrupt.level()?
+                            };
+
+                            callback(level);
                         }
                     }
                 }
@@ -275,7 +318,6 @@ impl AsyncInterrupt {
         });
 
         Ok(AsyncInterrupt {
-            pin,
             poll_thread: Some(poll_thread),
             tx,
         })
@@ -292,23 +334,5 @@ impl AsyncInterrupt {
         }
 
         Ok(())
-    }
-}
-
-impl Drop for AsyncInterrupt {
-    fn drop(&mut self) {
-        // Unexport the pin here, because we can't rely on the thread
-        // living long enough to unexport it.
-        sysfs::unexport(self.pin).ok();
-    }
-}
-
-impl fmt::Debug for AsyncInterrupt {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("AsyncInterrupt")
-            .field("pin", &self.pin)
-            .field("poll_thread", &self.poll_thread)
-            .field("tx", &self.tx)
-            .finish()
     }
 }

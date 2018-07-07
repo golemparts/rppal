@@ -60,13 +60,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
-mod cdev_interrupt;
 mod epoll;
+mod interrupt;
 mod ioctl;
 mod mem;
-mod sysfs;
-
-use gpio::cdev_interrupt as interrupt;
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
