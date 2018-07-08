@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 (TBD)
+
+* Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
+* Pwm: Add support for PWM.
+* Uart: Add support for UART.
+
 ## 0.7.1 (June 26, 2018)
 
 * Reverted the use of the recently stabilized Duration::subsec_millis() back to Duration::subsec_nanos() to allow older stable versions of the compiler to work.
