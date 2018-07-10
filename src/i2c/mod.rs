@@ -52,15 +52,29 @@
 //! clock frequency in herz (Hz). Remember to reboot
 //! the Raspberry Pi afterwards.
 //!
+//! ## Not supported
+//!
+//! Some I2C and SMBus features aren't fully supported by the i2cdev interface, the underlying driver or
+//! the BCM283x SoC: 10-bit slave addresses, SMBus Block Read, SMBus Block Process Call, SMBus Host Notify,
+//! SMBus Read/Write 32/64, and the SMBus Address Resolution Protocol.
+//!
+//! While clock stretching is supported, a bug exists in the implementation on the BCM283x SoC that will result
+//! in corrupted data when a slave device tries to use clock stretching at arbitrary points during the transfer.
+//! Clock stretching only works properly during read operations, directly after the ACK phase, when the additional
+//! delay is longer than half of a clock period. More information can be found [here](https://elinux.org/BCM2835_datasheet_errata#p35_I2C_clock_stretching).
+//!
+//! A possible workaround for slave devices that require clock stretching at other points during the transfer is
+//! to use a bit-banged software I2C bus by configuring the `i2c-gpio` device tree overlay as described in `/boot/overlays/README`.
+//!
 //! ## Troubleshooting
 //!
-//! ### Permission Denied
+//! ### Permission denied
 //!
 //! If [`new`] returns an `io::ErrorKind::PermissionDenied`
 //! error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are correct, and the current user is a member of the `i2c` group.
 //!
-//! ### Timed Out
+//! ### Timed out
 //!
 //! Transactions return an `io::ErrorKind::TimedOut` error when their duration
 //! exceeds the timeout value. You can change the timeout using [`set_timeout`].

@@ -35,20 +35,6 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 
-#### Unsupported features
-
-Some I2C and SMBus features aren't fully supported by the i2cdev interface, the underlying driver or
-the BCM283x SoC: 10-bit slave addresses, SMBus Block Read, SMBus Block Process Call, SMBus Host Notify,
-SMBus Read/Write 32/64, and the SMBus Address Resolution Protocol.
-
-While clock stretching is supported, a bug exists in the implementation on the BCM283x SoC that will result
-in corrupted data when a slave device tries to use clock stretching at arbitrary points during the transfer.
-Clock stretching only works properly during read operations, directly after the ACK phase, when the additional
-delay is longer than half of a clock period. More information can be found [here](https://elinux.org/BCM2835_datasheet_errata#p35_I2C_clock_stretching).
-
-A possible workaround for slave devices that require clock stretching at other points during the transfer is
-to use a bit-banged software I2C bus by configuring the `i2c-gpio` device tree overlay as described in `/boot/overlays/README`.
-
 ### PWM
 
 _Coming in Release 0.8.0._
@@ -71,25 +57,6 @@ RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
-
-#### Unsupported features
-
-Some features exposed by the generic spidev interface aren't fully
-supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
-first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
-SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
-SPI_TX_DUAL/SPI_RX_DUAL (dual SPI), SPI_TX_QUAD/SPI_RX_QUAD (quad SPI),
-and any number of bits per word other than 8.
-
-If your slave device requires SPI_LSB_FIRST, you can use the
-`reverse_bits` function instead to reverse the bit order in software.
-
-SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
-together.
-
-SPI_NO_CS can be implemented by connecting the Slave Select pin on your
-slave device to any other available GPIO pin on the Pi, and manually
-changing it to high and low as needed.
 
 ### UART
 

@@ -75,9 +75,9 @@
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
 //! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
 //!
-//! ## Unsupported features
+//! ## Not supported
 //!
-//! Several features offered by the generic spidev interface aren't fully
+//! Some features exposed by the generic spidev interface aren't fully
 //! supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
 //! first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
 //! SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
