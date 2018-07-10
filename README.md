@@ -39,7 +39,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 _Coming in Release 0.8.0._
 
-RPPAL configures the Raspberry Pi's PWM peripheral through the sysfs interface.
+RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
 
 #### Features
 

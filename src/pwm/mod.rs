@@ -20,8 +20,13 @@
 
 //! Interface for the PWM peripheral.
 //!
+//! RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm`
+//! sysfs interface.
+//!
 //! ## PWM channels
 //!
+//! The BCM283x SoC supports two hardware PWM channels. By default, both channels
+//! are disabled.
 //!
 //! Note: Overlapping pins with SPI/I2C
 //!
@@ -48,7 +53,13 @@
 //!
 //! ## Troubleshooting
 //!
-//! ### Permission Denied
+//! ### Permission denied
+//!
+//! If [`new`] returns an `io::ErrorKind::PermissionDenied`
+//! error, make sure `/sys/class/pwm` and all of its subdirectories
+//! are owned by `root:gpio`, the current user is a member of the `gpio` group
+//! and udev is properly configured as mentioned above. Alternatively, you can
+//! launch your application using `sudo`.
 //!
 //! [patch]: https://github.com/raspberrypi/linux/issues/1983
 
@@ -84,7 +95,12 @@ pub enum Polarity {
     Inverse,
 }
 
-/// Pwn
+/// Provides access to the Raspberry Pi's PWM peripheral.
+///
+/// Before using `Pwm`, make sure your Raspberry Pi has the necessary PWM
+/// channels enabled. More information can be found [here].
+///
+/// [here]: index.html
 pub struct Pwm {
     channel: Channel,
 }
@@ -94,12 +110,19 @@ impl Pwm {
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
+        let pwm = Pwm { channel };
+
         // Always reset "enable" to 0. The sysfs interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
         // "enable" is still set to 1, even though the channel isn't enabled.
-        let _ = sysfs::set_enabled(channel as u8, false);
+        let _ = pwm.disable();
 
-        Ok(Pwm { channel })
+        // Default settings
+        let _ = pwm.set_duty_cycle(Duration::from_secs(0));
+        let _ = pwm.set_period(Duration::from_secs(0));
+        let _ = pwm.set_polarity(Polarity::Normal);
+
+        Ok(pwm)
     }
 
     /// Constructs a new `Pwm` using the specified settings.
@@ -117,7 +140,7 @@ impl Pwm {
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
         // "enable" is still set to 1, even though the channel isn't enabled.
-        let _ = pwm.set_enabled(false);
+        let _ = pwm.disable();
 
         // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
         let _ = pwm.set_duty_cycle(Duration::from_secs(0));
@@ -125,17 +148,21 @@ impl Pwm {
         pwm.set_period(period)?;
         pwm.set_duty_cycle(duty_cycle)?;
         pwm.set_polarity(polarity)?;
-        pwm.set_enabled(enabled)?;
+        if enabled {
+            pwm.enable()?;
+        }
 
         Ok(pwm)
     }
 
-    // Returns the period.
+    // Gets the period.
     pub fn period(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::period(self.channel as u8)?))
     }
 
     /// Sets the period.
+    ///
+    /// `period` must be longer than or equal to the selected duty cycle.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
             self.channel as u8,
@@ -146,12 +173,14 @@ impl Pwm {
         Ok(())
     }
 
-    /// Returns the duty cycle.
+    /// Gets the duty cycle.
     pub fn duty_cycle(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::duty_cycle(self.channel as u8)?))
     }
 
     /// Sets the duty cycle.
+    ///
+    /// `duty_cycle` must be shorter than or equal to the selected period.
     pub fn set_duty_cycle(&self, duty_cycle: Duration) -> Result<()> {
         sysfs::set_duty_cycle(
             self.channel as u8,
@@ -162,26 +191,40 @@ impl Pwm {
         Ok(())
     }
 
-    // Returns the polarity.
+    /// Gets the polarity.
     pub fn polarity(&self) -> Result<Polarity> {
         Ok(sysfs::polarity(self.channel as u8)?)
     }
 
-    // Sets the polarity.
+    /// Sets the polarity.
+    ///
+    /// Changing the polarity from [`Normal`] to [`Inverse`] inverts
+    /// the selected duty cycle.
+    ///
+    /// By default, `polarity` is set to [`Normal`].
+    ///
+    /// [`Normal`]: enum.Polarity.html
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
         sysfs::set_polarity(self.channel as u8, polarity)?;
 
         Ok(())
     }
 
-    // Returns the active status.
+    /// Gets the enabled status.
     pub fn enabled(&self) -> Result<bool> {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
-    // Enables/disables the PWM channel.
-    pub fn set_enabled(&self, enabled: bool) -> Result<()> {
-        sysfs::set_enabled(self.channel as u8, enabled)?;
+    /// Enables the PWM channel.
+    pub fn enable(&self) -> Result<()> {
+        sysfs::set_enabled(self.channel as u8, true)?;
+
+        Ok(())
+    }
+
+    /// Disables the PWM channel.
+    pub fn disable(&self) -> Result<()> {
+        sysfs::set_enabled(self.channel as u8, false)?;
 
         Ok(())
     }
