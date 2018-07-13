@@ -260,12 +260,6 @@ impl I2c {
     ///
     /// [`set_addr_10bit`]: #method.set_addr_10bit
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
-        // linux/Documentation/i2c/ten-bit-addresses mentions adding
-        // an 0xa000 offset to 10-bit addresses to prevent overlap with
-        // 7-bit addresses. However, i2c-dev.c doesn't seem to have
-        // that implemented and returns EINVALID for anything > 0x03FF.
-        // TODO: Try 10-bit addresses both with and without the offset to make sure we're not missing something obvious.
-
         // Filter out reserved, invalid and unsupported addresses
         if (!self.addr_10bit
             && (slave_address < 8 || (slave_address >> 3) == 0b1111 || slave_address > 0x7F))
