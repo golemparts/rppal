@@ -3,8 +3,8 @@
 ## 0.8.0 (TBD)
 
 * Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
-* Pwm: Add support for PWM.
-* Uart: Add support for UART.
+* Pwm: Add support for up to two hardware PWM channels with configurable period/frequency, duty cycle and polarity.
+* Uart: Add support for UART0 (PL011), UART1 (Mini UART) and USB serial devices.
 
 ## 0.7.1 (June 26, 2018)
 
