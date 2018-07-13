@@ -90,14 +90,19 @@ quick_error! {
 /// Result type returned from methods that can have `pwm::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Channel
+/// PWM channels.
+///
+/// More information on enabling and configuring the PWM channels can be
+/// found [here].
+///
+/// [here]: index.html
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
 }
 
-/// Polarity
+/// Output polarities.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Polarity {
     Normal,
@@ -106,8 +111,8 @@ pub enum Polarity {
 
 /// Provides access to the Raspberry Pi's PWM peripheral.
 ///
-/// Before using `Pwm`, make sure your Raspberry Pi has the necessary PWM
-/// channels enabled. More information can be found [here].
+/// Before using `Pwm`, make sure the selected PWM channel has been configured
+/// and activated. More information can be found [here].
 ///
 /// [here]: index.html
 pub struct Pwm {
@@ -135,7 +140,21 @@ impl Pwm {
     }
 
     /// Constructs a new `Pwm` using the specified settings.
-    pub fn with_settings(
+    ///
+    /// `period` represents the time it takes for the PWM channel to complete one cycle.
+    ///
+    /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
+    /// high (or low if the polarity is set to [`Inverse`]) during a single period.
+    ///
+    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
+    ///
+    /// `enabled` immediately enables PWM on the selected channel.
+    ///
+    /// This method will fail if `period` is shorter than `duty_cycle`.
+    ///
+    /// [`Normal`]: enum.Polarity.html
+    /// [`Inverse`]: enum.Polarity.html
+    pub fn with_period(
         channel: Channel,
         period: Duration,
         duty_cycle: Duration,
@@ -152,7 +171,7 @@ impl Pwm {
         let _ = pwm.disable();
 
         // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
-        let _ = pwm.set_duty_cycle(Duration::from_secs(0));
+        let _ = sysfs::set_duty_cycle(channel as u8, 0);
 
         pwm.set_period(period)?;
         pwm.set_duty_cycle(duty_cycle)?;
@@ -164,14 +183,64 @@ impl Pwm {
         Ok(pwm)
     }
 
-    // Gets the period.
+    /// Constructs a new `Pwm` using the specified settings.
+    ///
+    /// `with_frequency` is a convenience method that converts `frequency` to a period,
+    /// and calculates the duty cycle as a percentage of the frequency.
+    ///
+    /// `frequency` is specified in herz (Hz).
+    ///
+    /// `duty_cycle` is specified as a floating point percentage, where `1.0` represents 100%.
+    ///
+    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
+    ///
+    /// `enabled` immediately enables PWM on the selected channel.
+    ///
+    /// [`Normal`]: enum.Polarity.html
+    /// [`Inverse`]: enum.Polarity.html
+    pub fn with_frequency(
+        channel: Channel,
+        frequency: f64,
+        duty_cycle: f64,
+        polarity: Polarity,
+        enabled: bool,
+    ) -> Result<Pwm> {
+        sysfs::export(channel as u8)?;
+
+        let pwm = Pwm { channel };
+
+        // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
+        // export may have left "enable" as 1 after unexporting. On the next export,
+        // "enable" is still set to 1, even though the channel isn't enabled.
+        let _ = pwm.disable();
+
+        // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
+        let _ = sysfs::set_duty_cycle(channel as u8, 0);
+
+        // Convert to nanoseconds
+        let period = (1.0f64 / frequency) * 1_000_000_000f64;
+        let duty_cycle = period * duty_cycle.min(1.0);
+
+        sysfs::set_period(channel as u8, period as u64)?;
+        sysfs::set_duty_cycle(channel as u8, duty_cycle as u64)?;
+
+        pwm.set_polarity(polarity)?;
+        if enabled {
+            pwm.enable()?;
+        }
+
+        Ok(pwm)
+    }
+
+    /// Gets the configured period.
     pub fn period(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::period(self.channel as u8)?))
     }
 
     /// Sets the period.
     ///
-    /// `period` must be longer than or equal to the selected duty cycle.
+    /// `period` represents the time it takes for the PWM channel to complete one cycle.
+    /// The selected period must be longer than or equal to the duty cycle.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
             self.channel as u8,
@@ -182,14 +251,18 @@ impl Pwm {
         Ok(())
     }
 
-    /// Gets the duty cycle.
+    /// Gets the configured duty cycle.
     pub fn duty_cycle(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::duty_cycle(self.channel as u8)?))
     }
 
     /// Sets the duty cycle.
     ///
-    /// `duty_cycle` must be shorter than or equal to the selected period.
+    /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
+    /// high (or low if the polarity is set to [`Inverse`]) during a single period. The
+    /// duty cycle must be shorter than or equal to the period.
+    ///
+    /// [`Inverse`]: enum.Polarity.html
     pub fn set_duty_cycle(&self, duty_cycle: Duration) -> Result<()> {
         sysfs::set_duty_cycle(
             self.channel as u8,
@@ -200,15 +273,36 @@ impl Pwm {
         Ok(())
     }
 
-    /// Gets the polarity.
+    /// Sets the frequency and duty cycle.
+    ///
+    /// `set_frequency` is a convenience method that converts `frequency` to a period,
+    /// and calculates the duty cycle as a percentage of the frequency.
+    ///
+    /// `frequency` is specified in herz (Hz).
+    ///
+    /// `duty_cycle` is specified as a floating point percentage, where `1.0` represents 100%.
+    pub fn set_frequency(&self, frequency: f64, duty_cycle: f64) -> Result<()> {
+        // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
+        let _ = sysfs::set_duty_cycle(self.channel as u8, 0);
+
+        // Convert to nanoseconds
+        let period = (1.0f64 / frequency) * 1_000_000_000f64;
+        let duty_cycle = period * duty_cycle.min(1.0);
+
+        sysfs::set_period(self.channel as u8, period as u64)?;
+        sysfs::set_duty_cycle(self.channel as u8, duty_cycle as u64)?;
+
+        Ok(())
+    }
+
+    /// Gets the configured polarity.
     pub fn polarity(&self) -> Result<Polarity> {
         Ok(sysfs::polarity(self.channel as u8)?)
     }
 
     /// Sets the polarity.
     ///
-    /// Changing the polarity from [`Normal`] to [`Inverse`] inverts
-    /// the selected duty cycle.
+    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
     ///
     /// By default, `polarity` is set to [`Normal`].
     ///
@@ -219,19 +313,19 @@ impl Pwm {
         Ok(())
     }
 
-    /// Gets the enabled status.
+    /// Checks whether PWM is currently enabled on the selected channel.
     pub fn enabled(&self) -> Result<bool> {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
-    /// Enables the PWM channel.
+    /// Enables PWM on the selected channel.
     pub fn enable(&self) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, true)?;
 
         Ok(())
     }
 
-    /// Disables the PWM channel.
+    /// Disables PWM on the selected channel.
     pub fn disable(&self) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, false)?;
 
