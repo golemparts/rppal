@@ -628,23 +628,6 @@ impl Gpio {
 
         Ok(())
     }
-
-    // TODO: Remove this method
-    pub fn cdev_gpio_poll_interrupt(&self, pin: u8, trigger: Trigger) -> Result<Level> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
-
-        Ok(ioctl::poll_interrupt(
-            self.gpio_cdev.as_raw_fd(),
-            pin,
-            trigger,
-        )?)
-    }
 }
 
 impl Drop for Gpio {

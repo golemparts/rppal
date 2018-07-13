@@ -28,7 +28,6 @@ use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
-use gpio::epoll::{epoll_event, Epoll, EPOLLIN, EPOLLPRI};
 use gpio::{Error, Level, Result, Trigger};
 
 fn parse_retval(retval: c_int) -> Result<i32> {
@@ -343,41 +342,5 @@ pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
 pub fn close(fd: c_int) {
     unsafe {
         libc::close(fd);
-    }
-}
-
-pub fn poll_interrupt(cdev_fd: c_int, pin: u8, trigger: Trigger) -> Result<Level> {
-    let chip_info = ChipInfo::new(cdev_fd)?;
-
-    if u32::from(pin) > chip_info.lines {
-        return Err(Error::InvalidPin(pin));
-    }
-
-    let event_request = EventRequest::new(cdev_fd, pin, trigger)?;
-
-    let poll = Epoll::new()?;
-    poll.add(
-        event_request.fd,
-        event_request.fd as u64,
-        EPOLLIN | EPOLLPRI,
-    )?;
-
-    let mut events = [epoll_event { events: 0, u64: 0 }; 1];
-    loop {
-        let num_events = poll.wait(&mut events, None)?;
-        if num_events > 0 {
-            for event in &events[0..num_events] {
-                if event.u64 as c_int == event_request.fd {
-                    if let Some(int_event) = get_event(event_request.fd)? {
-                        match int_event.trigger {
-                            Trigger::RisingEdge => return Ok(Level::High),
-                            _ => return Ok(Level::Low),
-                        }
-                    } else {
-                        return get_level(cdev_fd, pin);
-                    }
-                }
-            }
-        }
     }
 }
