@@ -4,7 +4,7 @@
 [![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
+RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
