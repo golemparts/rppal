@@ -256,9 +256,10 @@ pub fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
 
 pub fn set_raw_mode(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
+    // Change flags to enable non-canonical mode
     unsafe {
         cfmakeraw(&mut attr);
-    } // Changes flags to enable non-canonical mode
+    }
     attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
     attr.c_cc[VTIME] = 0; // No timeout needed
     set_attributes(fd, &attr)?;

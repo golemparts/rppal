@@ -20,7 +20,10 @@
 
 //! Interface for the UART peripheral.
 //!
-//!
+//! RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals
+//! through the ttyAMA0 and ttyS0 device interfaces. In addition to the built-in
+//! UARTs, communicating with USB serial devices is supported through ttyUSBx
+//! and ttyACMx.
 //!
 //! ## UART devices
 //!
@@ -46,7 +49,7 @@
 //!
 //! ## Troubleshooting
 //!
-//! ### Permission Denied
+//! ### Permission denied
 //!
 //!
 
@@ -83,14 +86,14 @@ pub type Result<T> = result::Result<T, Error>;
 /// More information on the differences between the two UARTs, and how to
 /// enable them, can be found [here].
 ///
-/// In addition to the built-in UARTs, `Uart` also supports USB to serial
-/// converters and other USB devices with a UART interface. Depending on the type of device, these
+/// In addition to the built-in UARTs, `Uart` also supports USB devices
+/// with a serial interface. Depending on the type of device, these
 /// can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
 /// is an index starting at `0`. The numbering is based on the order
 /// in which the devices are discovered by the kernel, so you'll need to find
-/// a way to uniquely identify them when you have multiple connected
+/// a way to uniquely identify them when you have multiple devices connected
 /// at the same time. For instance, you can find the assigned tty device name
-/// based on the id in `/dev/serial/by-id`.
+/// based on the device id in `/dev/serial/by-id`.
 ///
 /// [here]: index.html
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -101,6 +104,11 @@ pub enum Device {
     Usb(u8),
 }
 
+/// Parities.
+///
+/// `None` omits the parity bit, while the other variations either base the
+/// value of the parity bit on the number of 1-bits in the data bits, or set
+/// a fixed value.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Parity {
     None,
@@ -110,6 +118,7 @@ pub enum Parity {
     Space,
 }
 
+/// Provides access to the Raspberry Pi's UART peripherals, and USB serial devices.
 #[derive(Debug)]
 pub struct Uart {
     device: File,
@@ -152,6 +161,13 @@ impl Uart {
     }
 
     /// Sets the line speed in baud (Bd).
+    ///
+    /// Valid values are
+    /// 0, 50, 75, 110, 134, 150, 200, 300, 600, 1_200, 1_800, 2_400, 4_800,
+    /// 9_600, 19_200, 38_400, 57_600, 115_200, 230_400, 460_800, 500_000,
+    /// 576_000, 921_600, 1_000_000, 1_152_000, 1_500_000, 2_000_000,
+    /// 2_500_000, 3_000_000, 3_500_000 and 4_000_000,
+    /// but support is device-dependent.
     pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
         termios::set_line_speed(self.device.as_raw_fd(), line_speed)?;
 
@@ -201,17 +217,26 @@ impl Uart {
     }
 
     /// Returns the status of the RTS/CTS hardware flow control setting.
-    pub fn hardware_flow_control(&self) {
+    pub fn hardware_flow_control(&self) -> Result<bool> {
         unimplemented!()
     }
 
     /// Enables or disables RTS/CTS hardware flow control.
     ///
+    /// Enabling flow control will configure the corresponding GPIO pins.
+    /// More information on the GPIO pin numbers associated with RTS and
+    /// CTS can be found [here].
+    ///
     /// Support for RTS/CTS is device-dependent.
-    pub fn set_hardware_flow_control(&self) {
+    ///
+    /// [here]: index.html
+    pub fn set_hardware_flow_control(&self, enabled: bool) -> Result<()> {
         unimplemented!()
     }
 
+    /// Receives incoming data from the device and stores it in `buffer`.
+    ///
+    /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         match self.device.read(buffer) {
             Ok(bytes_read) => Ok(bytes_read),
@@ -220,6 +245,9 @@ impl Uart {
         }
     }
 
+    /// Sends the contents of `buffer` to the device.
+    ///
+    /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         match self.device.write(buffer) {
             Ok(bytes_written) => Ok(bytes_written),
@@ -228,10 +256,12 @@ impl Uart {
         }
     }
 
+    /// .
     pub fn flush(&self) {
         unimplemented!()
     }
 
+    /// .
     pub fn drain(&self) {
         unimplemented!()
     }
