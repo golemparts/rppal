@@ -18,14 +18,44 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the UART peripheral.
+//! Interface for the UART peripherals and USB serial devices.
 //!
 //! RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals
 //! through the ttyAMA0 and ttyS0 device interfaces. In addition to the built-in
 //! UARTs, communicating with USB serial devices is supported through ttyUSBx
 //! and ttyACMx.
 //!
-//! ## UART devices
+//! ## UART peripherals
+//!
+//! On earlier Pi models without Bluetooth, UART0 is used as a Linux serial console
+//! if that feature is enabled. On more recent models with Bluetooth (3B, 3B+, Zero W), UART0
+//! is connected to the Bluetooth module, and UART1 is used as a serial console if enabled.
+//! Due to the limitations of UART1, in most cases you'll want to use UART0 for serial
+//! communication.
+//!
+//! To disable the serial console, either deactivate it through `sudo raspi-config`, or
+//! remove the line `enable_uart=1` from `/boot/config.txt`. You'll also want to remove
+//! the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//!
+//! On Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
+//! UART0 becomes available for serial communication, or tie UART1 to the Bluetooth module
+//! instead of UART0.
+//!
+//! To disable Bluetooth, add 'dtoverlay=pi3-disable-bt' to `/boot/config.txt`. You'll also
+//! need to disable the service that initializes the modem with `sudo systemctl disable hciuart`.
+//!
+//! To move the Bluetooth module to UART1, instead of the above-mentioned steps, add
+//! `dtoverlay=pi3-miniuart-bt` to `/boot/config.txt`. You'll also need to edit `/lib/systemd/system/hciuart.service`
+//! and replace `ttyAMA0` with `ttyS0`, and set a fixed core frequency by adding `core_freq=250` to
+//! `/boot/config.txt`.
+//!
+//! By default, TX (outgoing data) for both UARTs is configured as BCM GPIO 14 (physical pin 8). RX (incoming data) for
+//! both UARTs is configured as BCM GPIO 15 (physical pin 10). You can move these to different pins using the `uart0`
+//! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
+//! current Raspberry Pi models. They are only available through the Compute Module and Compute Module 3's SO-DIMM pads.
+//!
+//! Remember to reboot the Raspberry Pi after making any changes. More information on `enable_uart`, `pi3-disable-bt`,
+//! `pi3-miniuart-bt`, `uart0` and `uart1` can be found in `/boot/overlays/README`.
 //!
 //! ### UART0 (`/dev/ttyAMA0`)
 //!
@@ -45,7 +75,7 @@
 //! * CTS: BCM GPIO 16 Alt5 (physical pin 36)
 //! * RTS: BCM GPIO 17 Alt5 (physical pin 11)
 //!
-//! ## USB devices (`/dev/ttyUSBx`, `/dev/ttyACMx`)
+//! ## USB serial devices
 //!
 //! ## Troubleshooting
 //!
