@@ -4,7 +4,7 @@
 
 * Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
 * Pwm: Add support for up to two hardware PWM channels with configurable period/frequency, duty cycle and polarity.
-* Uart: Add support for UART0 (PL011), UART1 (Mini UART) and USB serial devices.
+* Spi: Fix 0-length transfers caused by TransferSegment instances with write_buffer set to None.
 
 ## 0.7.1 (June 26, 2018)
 
