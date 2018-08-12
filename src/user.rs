@@ -44,7 +44,8 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
                 buf.as_mut_ptr(),
                 buf.len(),
                 &mut res,
-            ) == 0 && res as usize > 0
+            ) == 0
+                && res as usize > 0
             {
                 return Some((*res).pw_uid);
             }
@@ -73,7 +74,8 @@ pub fn group_to_gid(name: &str) -> Option<u32> {
                 buf.as_mut_ptr(),
                 buf.len(),
                 &mut res,
-            ) == 0 && res as usize > 0
+            ) == 0
+                && res as usize > 0
             {
                 return Some((*res).gr_gid);
             }
