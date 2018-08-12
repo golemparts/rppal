@@ -58,19 +58,6 @@ RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
 
-### UART
-
-_Coming in Release 0.8.0._
-
-RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals through the ttyAMA0 and ttyS0 device interfaces.
-In addition to the built-in UARTs, communicating with USB serial devices is supported through ttyUSBx and ttyACMx.
-
-#### Features
-
-* UART0 (PL011): None/even/odd/mark/space parity, 5-8 data bits, 1-2 stop bits, stable transfer rates up to ~1Mbit/s, RTS/CTS hardware flow control
-* UART1 (Mini UART): No parity bit, 7-8 data bits, 1 stop bit, limited transfer rates tied to the VPU core frequency, limited flow control
-* USB/ACM: Transfer rates up to 4Mbit/s
-
 ## Usage
 
 Add a dependency for `rppal` to your `Cargo.toml`.
