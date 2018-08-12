@@ -194,7 +194,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         };
 
         let rx_buf = if let Some(buffer) = read_buffer {
-            if len > buffer.len() as u32 {
+            if (len > buffer.len() as u32) || tx_buf == 0 {
                 len = buffer.len() as u32;
             }
             buffer.as_ptr() as u64
