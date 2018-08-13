@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0 (TBD)
+## 0.8.0 (August 13, 2018)
 
 * Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
 * Pwm: Add support for up to two hardware PWM channels with configurable period/frequency, duty cycle and polarity.
