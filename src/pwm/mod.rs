@@ -70,6 +70,12 @@
 //! and udev is properly configured as mentioned above. Alternatively, you can
 //! launch your application using `sudo`.
 //!
+//! ### Not found
+//!
+//! If [`new`] returns an `io::ErrorKind::NotFound` error, you may have
+//! forgotten to enable the selected PWM channel. The configuration options
+//! to enable either of the two PWM channels are listed above.
+//!
 //! [patch]: https://github.com/raspberrypi/linux/issues/1983
 //! [`new`]: struct.Pwm.html#method.new
 
