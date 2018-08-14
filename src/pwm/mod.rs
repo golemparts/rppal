@@ -71,6 +71,7 @@
 //! launch your application using `sudo`.
 //!
 //! [patch]: https://github.com/raspberrypi/linux/issues/1983
+//! [`new`]: struct.Pwm.html#method.new
 
 use std::io;
 use std::result;
