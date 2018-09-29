@@ -20,8 +20,7 @@
 
 #![allow(dead_code)]
 
-use libc;
-use libc::{c_int, c_ulong, c_void, ioctl, read};
+use libc::{self, c_int, c_ulong, c_void, ioctl, read};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -29,6 +28,11 @@ use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
 use gpio::{Error, Level, Result, Trigger};
+
+#[cfg(target_env = "gnu")]
+type IoctlLong = libc::c_ulong;
+#[cfg(target_env = "musl")]
+type IoctlLong = libc::c_long;
 
 fn parse_retval(retval: c_int) -> Result<i32> {
     if retval == -1 {
@@ -48,35 +52,35 @@ const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
 const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
 const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
 
-const NR_GET_CHIP_INFO: c_ulong = 0x01 << NRSHIFT;
-const NR_GET_LINE_INFO: c_ulong = 0x02 << NRSHIFT;
-const NR_GET_LINE_HANDLE: c_ulong = 0x03 << NRSHIFT;
-const NR_GET_LINE_EVENT: c_ulong = 0x04 << NRSHIFT;
-const NR_GET_LINE_VALUES: c_ulong = 0x08 << NRSHIFT;
-const NR_SET_LINE_VALUES: c_ulong = 0x09 << NRSHIFT;
+const NR_GET_CHIP_INFO: IoctlLong = 0x01 << NRSHIFT;
+const NR_GET_LINE_INFO: IoctlLong = 0x02 << NRSHIFT;
+const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << NRSHIFT;
+const NR_GET_LINE_EVENT: IoctlLong = 0x04 << NRSHIFT;
+const NR_GET_LINE_VALUES: IoctlLong = 0x08 << NRSHIFT;
+const NR_SET_LINE_VALUES: IoctlLong = 0x09 << NRSHIFT;
 
-const TYPE_GPIO: c_ulong = (0xB4 as c_ulong) << TYPESHIFT;
+const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << TYPESHIFT;
 
-const SIZE_CHIP_INFO: c_ulong = (size_of::<ChipInfo>() as c_ulong) << SIZESHIFT;
-const SIZE_LINE_INFO: c_ulong = (size_of::<LineInfo>() as c_ulong) << SIZESHIFT;
-const SIZE_HANDLE_REQUEST: c_ulong = (size_of::<HandleRequest>() as c_ulong) << SIZESHIFT;
-const SIZE_EVENT_REQUEST: c_ulong = (size_of::<EventRequest>() as c_ulong) << SIZESHIFT;
-const SIZE_HANDLE_DATA: c_ulong = (size_of::<HandleData>() as c_ulong) << SIZESHIFT;
+const SIZE_CHIP_INFO: IoctlLong = (size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
+const SIZE_LINE_INFO: IoctlLong = (size_of::<LineInfo>() as IoctlLong) << SIZESHIFT;
+const SIZE_HANDLE_REQUEST: IoctlLong = (size_of::<HandleRequest>() as IoctlLong) << SIZESHIFT;
+const SIZE_EVENT_REQUEST: IoctlLong = (size_of::<EventRequest>() as IoctlLong) << SIZESHIFT;
+const SIZE_HANDLE_DATA: IoctlLong = (size_of::<HandleData>() as IoctlLong) << SIZESHIFT;
 
 const DIR_NONE: c_ulong = 0;
-const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
-const DIR_READ: c_ulong = 2 << DIRSHIFT;
-const DIR_READ_WRITE: c_ulong = DIR_READ | DIR_WRITE;
+const DIR_WRITE: IoctlLong = 1 << DIRSHIFT;
+const DIR_READ: IoctlLong = 2 << DIRSHIFT;
+const DIR_READ_WRITE: IoctlLong = DIR_READ | DIR_WRITE;
 
-const REQ_GET_CHIP_INFO: c_ulong = DIR_READ | TYPE_GPIO | NR_GET_CHIP_INFO | SIZE_CHIP_INFO;
-const REQ_GET_LINE_INFO: c_ulong = DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_INFO | SIZE_LINE_INFO;
-const REQ_GET_LINE_HANDLE: c_ulong =
+const REQ_GET_CHIP_INFO: IoctlLong = DIR_READ | TYPE_GPIO | NR_GET_CHIP_INFO | SIZE_CHIP_INFO;
+const REQ_GET_LINE_INFO: IoctlLong = DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_INFO | SIZE_LINE_INFO;
+const REQ_GET_LINE_HANDLE: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_HANDLE | SIZE_HANDLE_REQUEST;
-const REQ_GET_LINE_EVENT: c_ulong =
+const REQ_GET_LINE_EVENT: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_EVENT | SIZE_EVENT_REQUEST;
-const REQ_GET_LINE_VALUES: c_ulong =
+const REQ_GET_LINE_VALUES: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLE_DATA;
-const REQ_SET_LINE_VALUES: c_ulong =
+const REQ_SET_LINE_VALUES: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLE_DATA;
 
 const NAME_BUFSIZE: usize = 32;
