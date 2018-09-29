@@ -13,3 +13,6 @@ script:
 env:
   - TARGET=armv7-unknown-linux-musleabihf
   - TARGET=armv7-unknown-linux-gnueabihf
+matrix:
+  allow_failures:
+  - rust: nightly
