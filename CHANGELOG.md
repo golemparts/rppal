@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 (TBD)
+
+* Add support for musl (contributed by @gferon).
+
 ## 0.8.0 (August 14, 2018)
 
 * Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
@@ -8,7 +12,7 @@
 
 ## 0.7.1 (June 26, 2018)
 
-* Reverted the use of the recently stabilized Duration::subsec_millis() back to Duration::subsec_nanos() to allow older stable versions of the compiler to work.
+* Revert the use of the recently stabilized Duration::subsec_millis() back to Duration::subsec_nanos() to allow older stable versions of the compiler to work.
 
 ## 0.7.0 (June 26, 2018)
 
