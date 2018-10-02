@@ -44,6 +44,7 @@ fn parse_retval(retval: c_int) -> Result<i32> {
     }
 }
 
+#[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {
     let mut attr = termios {
         c_iflag: 0,
@@ -54,6 +55,24 @@ pub fn attributes(fd: c_int) -> Result<termios> {
         c_cc: [0u8; 32],
         c_ispeed: 0,
         c_ospeed: 0,
+    };
+
+    parse_retval(unsafe { tcgetattr(fd, &mut attr) })?;
+
+    Ok(attr)
+}
+
+#[cfg(target_env = "musl")]
+pub fn attributes(fd: c_int) -> Result<termios> {
+    let mut attr = termios {
+        c_iflag: 0,
+        c_oflag: 0,
+        c_cflag: 0,
+        c_lflag: 0,
+        c_line: 0,
+        c_cc: [0u8; 32],
+        __c_ispeed: 0,
+        __c_ospeed: 0,
     };
 
     parse_retval(unsafe { tcgetattr(fd, &mut attr) })?;

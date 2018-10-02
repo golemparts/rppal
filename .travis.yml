@@ -1,8 +1,18 @@
 language: rust
+services: docker
 rust:
-- stable
-- beta
-- nightly
+  - stable
+  - beta
+  - nightly
+install:
+  - cargo install cross
+  - source ~/.cargo/env || true
+script:
+  - cross build --target $TARGET
+  - cross build --target $TARGET --release
+env:
+  - TARGET=armv7-unknown-linux-musleabihf
+  - TARGET=armv7-unknown-linux-gnueabihf
 matrix:
   allow_failures:
   - rust: nightly

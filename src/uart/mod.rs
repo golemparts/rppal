@@ -261,7 +261,7 @@ impl Uart {
     /// Support for RTS/CTS is device-dependent.
     ///
     /// [here]: index.html
-    pub fn set_hardware_flow_control(&self, enabled: bool) -> Result<()> {
+    pub fn set_hardware_flow_control(&self, _enabled: bool) -> Result<()> {
         unimplemented!()
     }
 

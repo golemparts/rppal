@@ -25,7 +25,12 @@ use std::io;
 use std::ptr;
 use std::result;
 
-use libc::{c_int, c_ulong, ioctl};
+use libc::{self, c_int, c_ulong, ioctl};
+
+#[cfg(target_env = "gnu")]
+type IoctlLong = libc::c_ulong;
+#[cfg(target_env = "musl")]
+type IoctlLong = libc::c_long;
 
 pub type Result<T> = result::Result<T, io::Error>;
 
@@ -200,15 +205,15 @@ impl fmt::Debug for Capabilities {
 }
 
 // ioctl() requests supported by i2cdev
-const REQ_RETRIES: c_ulong = 0x0701; // How many retries when waiting for an ACK
-const REQ_TIMEOUT: c_ulong = 0x0702; // Timeout in 10ms units
-const REQ_SLAVE: c_ulong = 0x0706; // Set slave address
-const REQ_SLAVE_FORCE: c_ulong = 0x0703; // Set slave address, even if it's already in use by a driver
-const REQ_TENBIT: c_ulong = 0x0704; // Use 10-bit slave addresses
-const REQ_FUNCS: c_ulong = 0x0705; // Read I2C bus capabilities
-const REQ_RDWR: c_ulong = 0x0707; // Combined read/write transfer with a single STOP
-const REQ_PEC: c_ulong = 0x0708; // SMBus: Use Packet Error Checking
-const REQ_SMBUS: c_ulong = 0x0720; // SMBus: Transfer data
+const REQ_RETRIES: IoctlLong = 0x0701; // How many retries when waiting for an ACK
+const REQ_TIMEOUT: IoctlLong = 0x0702; // Timeout in 10ms units
+const REQ_SLAVE: IoctlLong = 0x0706; // Set slave address
+const REQ_SLAVE_FORCE: IoctlLong = 0x0703; // Set slave address, even if it's already in use by a driver
+const REQ_TENBIT: IoctlLong = 0x0704; // Use 10-bit slave addresses
+const REQ_FUNCS: IoctlLong = 0x0705; // Read I2C bus capabilities
+const REQ_RDWR: IoctlLong = 0x0707; // Combined read/write transfer with a single STOP
+const REQ_PEC: IoctlLong = 0x0708; // SMBus: Use Packet Error Checking
+const REQ_SMBUS: IoctlLong = 0x0720; // SMBus: Transfer data
 
 // NOTE: REQ_RETRIES - Supported in i2cdev, but not used in the underlying drivers
 // NOTE: REQ_RDWR - Only a single read operation is supported as the final message (see i2c-bcm2835.c)

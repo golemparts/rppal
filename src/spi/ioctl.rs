@@ -20,12 +20,17 @@
 
 #![allow(dead_code)]
 
-use libc::{c_int, c_ulong, ioctl};
+use libc::{self, c_int, ioctl};
 use std::fmt;
 use std::io;
 use std::marker;
 use std::mem::size_of;
 use std::result;
+
+#[cfg(target_env = "gnu")]
+type IoctlLong = libc::c_ulong;
+#[cfg(target_env = "musl")]
+type IoctlLong = libc::c_long;
 
 pub type Result<T> = result::Result<T, io::Error>;
 
@@ -47,34 +52,34 @@ const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
 const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
 const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
 
-const NR_MESSAGE: c_ulong = 0 << NRSHIFT;
-const NR_MODE: c_ulong = 1 << NRSHIFT;
-const NR_LSB_FIRST: c_ulong = 2 << NRSHIFT;
-const NR_BITS_PER_WORD: c_ulong = 3 << NRSHIFT;
-const NR_MAX_SPEED_HZ: c_ulong = 4 << NRSHIFT;
-const NR_MODE32: c_ulong = 5 << NRSHIFT;
+const NR_MESSAGE: IoctlLong = 0 << NRSHIFT;
+const NR_MODE: IoctlLong = 1 << NRSHIFT;
+const NR_LSB_FIRST: IoctlLong = 2 << NRSHIFT;
+const NR_BITS_PER_WORD: IoctlLong = 3 << NRSHIFT;
+const NR_MAX_SPEED_HZ: IoctlLong = 4 << NRSHIFT;
+const NR_MODE32: IoctlLong = 5 << NRSHIFT;
 
-const TYPE_SPI: c_ulong = (b'k' as c_ulong) << TYPESHIFT;
+const TYPE_SPI: IoctlLong = (b'k' as IoctlLong) << TYPESHIFT;
 
-const SIZE_U8: c_ulong = (size_of::<u8>() as c_ulong) << SIZESHIFT;
-const SIZE_U32: c_ulong = (size_of::<u32>() as c_ulong) << SIZESHIFT;
+const SIZE_U8: IoctlLong = (size_of::<u8>() as IoctlLong) << SIZESHIFT;
+const SIZE_U32: IoctlLong = (size_of::<u32>() as IoctlLong) << SIZESHIFT;
 
-const DIR_NONE: c_ulong = 0;
-const DIR_WRITE: c_ulong = 1 << DIRSHIFT;
-const DIR_READ: c_ulong = 2 << DIRSHIFT;
+const DIR_NONE: IoctlLong = 0;
+const DIR_WRITE: IoctlLong = 1 << DIRSHIFT;
+const DIR_READ: IoctlLong = 2 << DIRSHIFT;
 
-const REQ_RD_MODE: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE | SIZE_U8);
-const REQ_RD_LSB_FIRST: c_ulong = (DIR_READ | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
-const REQ_RD_BITS_PER_WORD: c_ulong = (DIR_READ | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
-const REQ_RD_MAX_SPEED_HZ: c_ulong = (DIR_READ | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
-const REQ_RD_MODE_32: c_ulong = (DIR_READ | TYPE_SPI | NR_MODE32 | SIZE_U32);
+const REQ_RD_MODE: IoctlLong = (DIR_READ | TYPE_SPI | NR_MODE | SIZE_U8);
+const REQ_RD_LSB_FIRST: IoctlLong = (DIR_READ | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
+const REQ_RD_BITS_PER_WORD: IoctlLong = (DIR_READ | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
+const REQ_RD_MAX_SPEED_HZ: IoctlLong = (DIR_READ | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
+const REQ_RD_MODE_32: IoctlLong = (DIR_READ | TYPE_SPI | NR_MODE32 | SIZE_U32);
 
-const REQ_WR_MESSAGE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MESSAGE);
-const REQ_WR_MODE: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE | SIZE_U8);
-const REQ_WR_LSB_FIRST: c_ulong = (DIR_WRITE | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
-const REQ_WR_BITS_PER_WORD: c_ulong = (DIR_WRITE | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
-const REQ_WR_MAX_SPEED_HZ: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
-const REQ_WR_MODE_32: c_ulong = (DIR_WRITE | TYPE_SPI | NR_MODE32 | SIZE_U32);
+const REQ_WR_MESSAGE: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_MESSAGE);
+const REQ_WR_MODE: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_MODE | SIZE_U8);
+const REQ_WR_LSB_FIRST: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_LSB_FIRST | SIZE_U8);
+const REQ_WR_BITS_PER_WORD: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_BITS_PER_WORD | SIZE_U8);
+const REQ_WR_MAX_SPEED_HZ: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_MAX_SPEED_HZ | SIZE_U32);
+const REQ_WR_MODE_32: IoctlLong = (DIR_WRITE | TYPE_SPI | NR_MODE32 | SIZE_U32);
 
 pub const MODE_CPHA: u8 = 0x01;
 pub const MODE_CPOL: u8 = 0x02;
@@ -363,7 +368,7 @@ pub fn transfer(fd: c_int, segments: &[TransferSegment]) -> Result<i32> {
         ioctl(
             fd,
             REQ_WR_MESSAGE
-                | (((segments.len() * size_of::<TransferSegment>()) as c_ulong) << SIZESHIFT),
+                | (((segments.len() * size_of::<TransferSegment>()) as IoctlLong) << SIZESHIFT),
             segments,
         )
     })
