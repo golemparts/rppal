@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.1 (TBD)
+## 0.8.1 (October 5, 2018)
 
 * Add support for musl (contributed by @gferon).
 
