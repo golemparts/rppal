@@ -14,7 +14,7 @@ Documentation for the latest release can be found at [docs.golemparts.com/rppal]
 
 ## Supported peripherals
 
-### GPIO
+### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
 
 To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
 
@@ -25,7 +25,7 @@ To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directl
 * Activate built-in pull-up/pull-down resistors
 * Configure synchronous and asynchronous interrupt handlers
 
-### I2C
+### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
 The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compliant with the I2C bus/interface. RPPAL communicates with the BSC using the i2cdev device interface.
 
@@ -35,7 +35,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 
-### PWM
+### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
 RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
 
@@ -44,7 +44,7 @@ RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` 
 * Up to two hardware PWM channels
 * Configurable frequency/period, duty cycle and polarity
 
-### SPI
+### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
 RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the spidev device interface.
 
