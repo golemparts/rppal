@@ -555,7 +555,7 @@ impl I2c {
         Ok(((response & 0xFF00) >> 8) | ((response & 0xFF) << 8))
     }
 
-    /// Sends an 8-bit 'command', and then receives an 8-bit byte count along with a
+    /// Sends an 8-bit `command`, and then receives an 8-bit byte count along with a
     /// multi-byte `buffer`.
     ///
     /// `smbus_block_read` currently isn't supported on the Raspberry Pi, and returns
