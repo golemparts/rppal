@@ -287,10 +287,10 @@ impl SmbusBuffer {
         };
 
         buffer.data[0] = if value.len() > SMBUS_BLOCK_MAX {
-            buffer.data[1..SMBUS_BLOCK_MAX + 1].copy_from_slice(&value[..SMBUS_BLOCK_MAX]);
+            buffer.data[1..=SMBUS_BLOCK_MAX].copy_from_slice(&value[..SMBUS_BLOCK_MAX]);
             SMBUS_BLOCK_MAX as u8
         } else {
-            buffer.data[1..value.len() + 1].copy_from_slice(&value);
+            buffer.data[1..=value.len()].copy_from_slice(&value);
             value.len() as u8
         };
 
@@ -450,9 +450,9 @@ pub fn smbus_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<usiz
     // Make sure the incoming data fits in the value buffer
     let value_length = value.len();
     if incoming_length > value_length {
-        value.copy_from_slice(&buffer.data[1..value_length + 1]);
+        value.copy_from_slice(&buffer.data[1..=value_length]);
     } else {
-        value[..incoming_length].copy_from_slice(&buffer.data[1..incoming_length + 1]);
+        value[..incoming_length].copy_from_slice(&buffer.data[1..=incoming_length]);
     }
 
     Ok(incoming_length)
@@ -485,7 +485,7 @@ pub fn i2c_block_read(fd: c_int, command: u8, value: &mut [u8]) -> Result<()> {
         Some(&mut buffer),
     )?;
 
-    value[..buffer.data[0] as usize].copy_from_slice(&buffer.data[1..buffer.data[0] as usize + 1]);
+    value[..buffer.data[0] as usize].copy_from_slice(&buffer.data[1..=buffer.data[0] as usize]);
 
     Ok(())
 }

@@ -160,7 +160,7 @@ impl GpioMem {
             return 0;
         }
 
-        unsafe { ptr::read_volatile(self.mem_ptr.offset(offset as isize)) }
+        unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
     }
 
     pub fn write(&self, offset: usize, value: u32) {
@@ -169,7 +169,7 @@ impl GpioMem {
         }
 
         unsafe {
-            ptr::write_volatile(self.mem_ptr.offset(offset as isize), value);
+            ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
     }
 }

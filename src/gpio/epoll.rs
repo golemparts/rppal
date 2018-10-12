@@ -20,8 +20,6 @@
 
 #![allow(dead_code)]
 
-#![cfg_attr(feature = "cargo-clippy", allow(duration_subsec))]
-
 use std::io;
 use std::result;
 use std::time::Duration;
