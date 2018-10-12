@@ -18,8 +18,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#![cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
-
 use std::fmt;
 use std::io;
 use std::ptr;
@@ -82,101 +80,101 @@ impl Capabilities {
         Capabilities { funcs }
     }
 
-    pub(crate) fn i2c(&self) -> bool {
+    pub(crate) fn i2c(self) -> bool {
         (self.funcs & FUNC_I2C) > 0
     }
 
-    pub(crate) fn slave(&self) -> bool {
+    pub(crate) fn slave(self) -> bool {
         (self.funcs & FUNC_SLAVE) > 0
     }
 
     /// Indicates whether 10-bit addresses are supported.
-    pub fn addr_10bit(&self) -> bool {
+    pub fn addr_10bit(self) -> bool {
         (self.funcs & FUNC_10BIT_ADDR) > 0
     }
 
     /// Indicates whether I2C Block Read is supported.
-    pub fn i2c_block_read(&self) -> bool {
+    pub fn i2c_block_read(self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_I2C_BLOCK) > 0
     }
 
     /// Indicates whether I2C Block Write is supported.
-    pub fn i2c_block_write(&self) -> bool {
+    pub fn i2c_block_write(self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_I2C_BLOCK) > 0
     }
 
     /// Indicates whether protocol mangling is supported.
-    pub(crate) fn protocol_mangling(&self) -> bool {
+    pub(crate) fn protocol_mangling(self) -> bool {
         (self.funcs & FUNC_PROTOCOL_MANGLING) > 0
     }
 
     /// Indicates whether the NOSTART flag is supported.
-    pub(crate) fn nostart(&self) -> bool {
+    pub(crate) fn nostart(self) -> bool {
         (self.funcs & FUNC_NOSTART) > 0
     }
 
     /// Indicates whether SMBus Quick Command is supported.
-    pub fn smbus_quick_command(&self) -> bool {
+    pub fn smbus_quick_command(self) -> bool {
         (self.funcs & FUNC_SMBUS_QUICK) > 0
     }
 
     /// Indicates whether SMBus Receive Byte is supported.
-    pub fn smbus_receive_byte(&self) -> bool {
+    pub fn smbus_receive_byte(self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BYTE) > 0
     }
 
     /// Indicates whether SMBus Send Byte is supported.
-    pub fn smbus_send_byte(&self) -> bool {
+    pub fn smbus_send_byte(self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BYTE) > 0
     }
 
     /// Indicates whether SMBus Read Byte is supported.
-    pub fn smbus_read_byte(&self) -> bool {
+    pub fn smbus_read_byte(self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BYTE_DATA) > 0
     }
 
     /// Indicates whether SMBus Write Byte is supported.
-    pub fn smbus_write_byte(&self) -> bool {
+    pub fn smbus_write_byte(self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BYTE_DATA) > 0
     }
 
     /// Indicates whether SMBus Read Word is supported.
-    pub fn smbus_read_word(&self) -> bool {
+    pub fn smbus_read_word(self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_WORD_DATA) > 0
     }
 
     /// Indicates whether SMBus Write Word is supported.
-    pub fn smbus_write_word(&self) -> bool {
+    pub fn smbus_write_word(self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_WORD_DATA) > 0
     }
 
     /// Indicates whether SMBus Process Call is supported.
-    pub fn smbus_process_call(&self) -> bool {
+    pub fn smbus_process_call(self) -> bool {
         (self.funcs & FUNC_SMBUS_PROC_CALL) > 0
     }
 
     /// Indicates whether SMBus Block Read is supported.
-    pub fn smbus_block_read(&self) -> bool {
+    pub fn smbus_block_read(self) -> bool {
         (self.funcs & FUNC_SMBUS_READ_BLOCK_DATA) > 0
     }
 
     /// Indicates whether SMBus Block Write is supported.
-    pub fn smbus_block_write(&self) -> bool {
+    pub fn smbus_block_write(self) -> bool {
         (self.funcs & FUNC_SMBUS_WRITE_BLOCK_DATA) > 0
     }
 
     /// Indicates whether SMBus Block Process Call is supported.
-    pub fn smbus_block_process_call(&self) -> bool {
+    pub fn smbus_block_process_call(self) -> bool {
         (self.funcs & FUNC_SMBUS_BLOCK_PROC_CALL) > 0
     }
 
     /// Indicates whether SMBus Packet Error Checking is supported.
-    pub fn smbus_pec(&self) -> bool {
+    pub fn smbus_pec(self) -> bool {
         (self.funcs & FUNC_SMBUS_PEC) > 0
     }
 
     /// Indicates whether SMBus Host Notify is supported.
-    pub fn smbus_host_notify(&self) -> bool {
+    pub fn smbus_host_notify(self) -> bool {
         (self.funcs & FUNC_SMBUS_HOST_NOTIFY) > 0
     }
 }
