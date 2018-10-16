@@ -255,6 +255,7 @@ impl Gpio {
     ///
     /// [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
     pub fn new() -> Result<Gpio> {
+        // Check if a Gpio instance already exists before initializing everything
         unsafe {
             if GPIO_INSTANCED.load(Ordering::SeqCst) {
                 return Err(Error::InstanceExists);
@@ -290,7 +291,12 @@ impl Gpio {
         }
 
         unsafe {
-            GPIO_INSTANCED.store(true, Ordering::SeqCst);
+            // Returns true if GPIO_INSTANCED was set to true on a different thread
+            // while we were still initializing ourselves, otherwise atomically sets
+            // it to true here
+            if GPIO_INSTANCED.compare_and_swap(false, true, Ordering::SeqCst) {
+                return Err(Error::InstanceExists);
+            }
         }
 
         Ok(gpio)
