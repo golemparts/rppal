@@ -39,4 +39,4 @@ pub mod i2c;
 pub mod pwm;
 pub mod spi;
 pub mod system;
-pub mod uart;
+// pub mod uart;
