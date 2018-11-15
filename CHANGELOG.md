@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 (TBD)
+## 0.9.0 (November 15, 2018)
 
 * DeviceInfo: Add support for Raspberry Pi 3 A+.
 
