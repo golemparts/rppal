@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0 (TBD)
+
+* DeviceInfo: Add support for Raspberry Pi 3 A+.
+
 ## 0.8.1 (October 5, 2018)
 
 * Add support for musl (contributed by @gferon).
