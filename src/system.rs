@@ -62,6 +62,7 @@ pub enum Model {
     RaspberryPi2B,
     RaspberryPi3B,
     RaspberryPi3BPlus,
+    RaspberryPi3APlus,
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
     RaspberryPiZero,
@@ -79,6 +80,7 @@ impl fmt::Display for Model {
             Model::RaspberryPi2B => write!(f, "Raspberry Pi 2 B"),
             Model::RaspberryPi3B => write!(f, "Raspberry Pi 3 B"),
             Model::RaspberryPi3BPlus => write!(f, "Raspberry Pi 3 B+"),
+            Model::RaspberryPi3APlus => write!(f, "Raspberry Pi 3 A+"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
@@ -192,6 +194,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-compute-module" => Model::RaspberryPiComputeModule3,
             "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
+            "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
             _ => continue,
         };
 
@@ -244,6 +247,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
         "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
+        "Raspberry Pi 3 Model A Plus" => Model::RaspberryPi3APlus,
         _ => return Err(Error::UnknownModel),
     };
 
@@ -297,7 +301,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi3BPlus => Ok(DeviceInfo {
+            Model::RaspberryPi3BPlus | Model::RaspberryPi3APlus => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2837B0,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
