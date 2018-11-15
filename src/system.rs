@@ -150,19 +150,16 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         }
     } else if revision.len() >= 6 {
         // Newer revisions consist of at least 6 characters
-        match &revision[revision.len() - 3..revision.len() - 1] {
-            "00" => Model::RaspberryPiA,
-            "01" => Model::RaspberryPiBRev2,
-            "02" => Model::RaspberryPiAPlus,
-            "03" => Model::RaspberryPiBPlus,
-            "04" => Model::RaspberryPi2B,
-            "06" => Model::RaspberryPiComputeModule,
-            "08" => Model::RaspberryPi3B,
-            "09" => Model::RaspberryPiZero,
-            "0a" => Model::RaspberryPiComputeModule3,
-            "0c" => Model::RaspberryPiZeroW,
-            "0d" => Model::RaspberryPi3BPlus,
-            "0e" => Model::RaspberryPi3APlus,
+        match &revision[..] {
+            "900021" => Model::RaspberryPiAPlus,
+            "900032" => Model::RaspberryPiBPlus,
+            "a01040" | "a01041" | "a21041" | "a22042" => Model::RaspberryPi2B,
+            "a02082" | "a22082" | "a32082" | "a52082" => Model::RaspberryPi3B,
+            "900092" | "920092" | "900093" | "920093" => Model::RaspberryPiZero,
+            "a020a0" => Model::RaspberryPiComputeModule3,
+            "9000c1" => Model::RaspberryPiZeroW,
+            "a020d3" => Model::RaspberryPi3BPlus,
+            "9020e0" => Model::RaspberryPi3APlus,
             _ => return Err(Error::UnknownModel),
         }
     } else {
