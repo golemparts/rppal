@@ -314,6 +314,7 @@ impl Pwm {
     /// By default, `polarity` is set to [`Normal`].
     ///
     /// [`Normal`]: enum.Polarity.html
+    /// [`Inverse`]: enum.Polarity.html
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
         sysfs::set_polarity(self.channel as u8, polarity)?;
 
