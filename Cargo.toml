@@ -12,4 +12,4 @@ keywords = ["raspberry","pi","gpio","spi","i2c"]
 
 [dependencies]
 libc = "0.2"
-quick-error = "1.1"
+quick-error = "1.2"
