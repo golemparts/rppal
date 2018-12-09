@@ -34,14 +34,6 @@ type IoctlLong = libc::c_ulong;
 #[cfg(target_env = "musl")]
 type IoctlLong = libc::c_long;
 
-fn parse_retval(retval: c_int) -> Result<i32> {
-    if retval == -1 {
-        Err(Error::Io(io::Error::last_os_error()))
-    } else {
-        Ok(retval)
-    }
-}
-
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
 const SIZEBITS: u8 = 14;
@@ -102,7 +94,7 @@ impl ChipInfo {
             lines: 0,
         };
 
-        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_CHIP_INFO, &mut chip_info) })?;
+        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_CHIP_INFO, &mut chip_info) })?;
 
         Ok(chip_info)
     }
@@ -175,7 +167,7 @@ impl HandleRequest {
             handle_request.line_offsets[idx] = u32::from(*pin);
         }
 
-        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
+        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
 
         Ok(handle_request)
     }
@@ -183,7 +175,7 @@ impl HandleRequest {
     pub fn levels(&self) -> Result<HandleData> {
         let mut handle_data = HandleData::new();
 
-        parse_retval(unsafe { ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
+        parse_retval!(unsafe { ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
 
         Ok(handle_data)
     }
@@ -200,7 +192,7 @@ impl HandleRequest {
             handle_data.values[idx] = *level as u8;
         }
 
-        parse_retval(unsafe { ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
+        parse_retval!(unsafe { ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
 
         Ok(())
     }
@@ -244,7 +236,7 @@ impl EventRequest {
             fd: 0,
         };
 
-        parse_retval(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
+        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
 
         Ok(event_request)
     }
@@ -267,7 +259,7 @@ impl EventData {
             id: 0,
         };
 
-        let bytes_read = parse_retval(unsafe {
+        let bytes_read = parse_retval!(unsafe {
             read(
                 event_fd,
                 &mut event_data as *mut EventData as *mut c_void,

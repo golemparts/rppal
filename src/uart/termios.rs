@@ -36,14 +36,6 @@ use libc::{VMIN, VTIME};
 
 use uart::{Error, Parity, Result};
 
-fn parse_retval(retval: c_int) -> Result<i32> {
-    if retval == -1 {
-        Err(Error::Io(io::Error::last_os_error()))
-    } else {
-        Ok(retval)
-    }
-}
-
 #[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {
     let mut attr = termios {
@@ -57,7 +49,7 @@ pub fn attributes(fd: c_int) -> Result<termios> {
         c_ospeed: 0,
     };
 
-    parse_retval(unsafe { tcgetattr(fd, &mut attr) })?;
+    parse_retval!(unsafe { tcgetattr(fd, &mut attr) })?;
 
     Ok(attr)
 }
@@ -75,13 +67,13 @@ pub fn attributes(fd: c_int) -> Result<termios> {
         __c_ospeed: 0,
     };
 
-    parse_retval(unsafe { tcgetattr(fd, &mut attr) })?;
+    parse_retval!(unsafe { tcgetattr(fd, &mut attr) })?;
 
     Ok(attr)
 }
 
 pub fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
-    parse_retval(unsafe { tcsetattr(fd, TCSANOW, attr) })?;
+    parse_retval!(unsafe { tcsetattr(fd, TCSANOW, attr) })?;
 
     Ok(())
 }
@@ -160,8 +152,8 @@ pub fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
     };
 
     let mut attr = attributes(fd)?;
-    parse_retval(unsafe { cfsetispeed(&mut attr, baud) })?;
-    parse_retval(unsafe { cfsetospeed(&mut attr, baud) })?;
+    parse_retval!(unsafe { cfsetispeed(&mut attr, baud) })?;
+    parse_retval!(unsafe { cfsetospeed(&mut attr, baud) })?;
     set_attributes(fd, &attr)?;
 
     Ok(())

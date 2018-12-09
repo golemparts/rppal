@@ -35,6 +35,8 @@ extern crate quick_error;
 mod user;
 
 #[macro_use]
+mod macros;
+
 pub mod gpio;
 pub mod i2c;
 pub mod pwm;
