@@ -338,8 +338,9 @@ pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
     }
 
     match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
+        0 => Ok(Level::Low),
         1 => Ok(Level::High),
-        _ => Ok(Level::Low),
+        _ => unreachable!(),
     }
 }
 
