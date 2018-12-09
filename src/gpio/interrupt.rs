@@ -40,9 +40,7 @@ impl Interrupt {
     fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
         let chip_info = ioctl::ChipInfo::new(fd)?;
 
-        if u32::from(pin) > chip_info.lines {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin as u32, chip_info.lines);
 
         let event_request = ioctl::EventRequest::new(fd, pin, trigger)?;
 
@@ -155,9 +153,7 @@ impl EventLoop {
         timeout: Option<Duration>,
     ) -> Result<Option<(u8, Level)>> {
         for pin in pins {
-            if *pin as usize >= self.trigger_status.capacity() {
-                return Err(Error::InvalidPin(*pin));
-            }
+            assert_pin!(*pin as usize, self.trigger_status.capacity());
 
             // Did we cache any trigger events during the previous poll?
             if self.trigger_status[*pin as usize].triggered {

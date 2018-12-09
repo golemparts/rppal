@@ -333,9 +333,7 @@ pub fn find_driver() -> Result<File> {
 pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
     let chip_info = ChipInfo::new(cdev_fd)?;
 
-    if u32::from(pin) > chip_info.lines {
-        return Err(Error::InvalidPin(pin));
-    }
+    assert_pin!(pin as u32, chip_info.lines);
 
     match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
         0 => Ok(Level::Low),
