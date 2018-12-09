@@ -340,19 +340,22 @@ impl Gpio {
     /// scope, but you can manually call it to handle early/abnormal termination.
     /// After calling this method, any future calls to other methods won't have any
     /// result.
-    pub fn cleanup(&mut self) {
-        if self.initialized {
-            // Use a cloned copy, because set_mode() will try to change
-            // the contents of the original vector.
-            for pin_state in &self.orig_pin_state.clone() {
-                if pin_state.changed {
-                    self.set_mode(pin_state.pin, pin_state.mode);
-                }
-            }
+    pub fn cleanup(mut self) {
+        self.cleanup_internal()
+    }
 
-            self.gpio_mem.close();
-            self.initialized = false;
+    fn cleanup_internal(&mut self) {
+        // Use a cloned copy, because set_mode() will try to change
+        // the contents of the original vector.
+        for pin_state in &self.orig_pin_state.clone() {
+            if pin_state.changed {
+                self.set_mode(pin_state.pin, pin_state.mode);
+            }
         }
+
+        self.gpio_mem.close();
+
+        self.initialized = false
     }
 
     /// Gets the current GPIO pin mode.
@@ -650,8 +653,8 @@ impl Gpio {
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        if self.clear_on_drop {
-            self.cleanup();
+        if self.clear_on_drop && self.initialized {
+            self.cleanup_internal();
         }
 
         unsafe {
