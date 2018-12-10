@@ -25,6 +25,7 @@ use std::result;
 use std::time::Duration;
 
 use libc;
+use libc::c_int;
 
 pub use libc::{epoll_event, EPOLLERR, EPOLLET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLLPRI};
 
@@ -120,14 +121,14 @@ impl Epoll {
             return Ok(0);
         }
 
-        let timeout: i32 = if let Some(duration) = timeout {
-            (duration.as_secs() * 1_000) as i32 + duration.subsec_millis() as i32
+        let timeout = if let Some(duration) = timeout {
+            (duration.as_secs() * 1_000 + duration.subsec_millis() as u64) as c_int
         } else {
             -1
         };
 
         Ok(parse_retval!(unsafe {
-            libc::epoll_wait(self.fd, events.as_mut_ptr(), events.len() as i32, timeout)
+            libc::epoll_wait(self.fd, events.as_mut_ptr(), events.len() as c_int, timeout)
         })? as usize)
     }
 }
