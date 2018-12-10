@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::gpio::{Mode, Level, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem};
+use crate::gpio::{Result, Mode, Level, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
 
 #[derive(Debug)]
 pub struct Pin {
@@ -51,6 +51,8 @@ impl Pin {
 pub struct InputPin<'a> {
     pin: &'a mut Pin,
     prev_mode: Option<Mode>,
+    sync_interrupt: Option<EventLoop>,
+    async_interrupt: Option<AsyncInterrupt>,
 }
 
 impl<'a> InputPin<'a> {
@@ -64,7 +66,7 @@ impl<'a> InputPin<'a> {
             Some(prev_mode)
         };
 
-        InputPin { pin, prev_mode }
+        InputPin { pin, prev_mode, sync_interrupt: None, async_interrupt: None }
     }
 
     pub fn read(&self) -> Level {
@@ -77,10 +79,28 @@ impl<'a> InputPin<'a> {
             Level::Low
         }
     }
+
+    pub fn set_interrupt(&mut self) -> Result<()> {
+        self.clear_async_interrupt()?;
+
+        unimplemented!();
+
+        Ok(())
+    }
+
+    pub(crate) fn clear_async_interrupt(&mut self) -> Result<()> {
+        if let Some(mut interrupt) = self.async_interrupt.take() {
+            interrupt.stop()?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<'a> Drop for InputPin<'a> {
     fn drop(&mut self) {
+        let _ = self.clear_async_interrupt();
+
         if let Some(prev_mode) = self.prev_mode {
             self.pin.set_mode(prev_mode)
         }
