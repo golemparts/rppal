@@ -11,11 +11,11 @@ pub struct Pin {
     pin: u8,
     event_loop: Arc<Mutex<EventLoop>>,
     gpio_mem: Arc<GpioMem>,
-    gpio_cdev: Arc<Mutex<File>>,
+    gpio_cdev: Arc<File>,
 }
 
 impl Pin {
-    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<GpioMem>, gpio_cdev: Arc<Mutex<File>>) -> Pin {
+    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<GpioMem>, gpio_cdev: Arc<File>) -> Pin {
         Pin { pin, event_loop, gpio_mem, gpio_cdev }
     }
 
@@ -201,7 +201,7 @@ impl<'a> InputPin<'a> {
         self.clear_async_interrupt()?;
 
         self.async_interrupt = Some(AsyncInterrupt::new(
-            (*self.pin.gpio_cdev.lock().unwrap()).as_raw_fd(),
+            (*self.pin.gpio_cdev).as_raw_fd(),
             self.pin.pin,
             trigger,
             callback,

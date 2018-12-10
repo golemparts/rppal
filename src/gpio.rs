@@ -272,7 +272,7 @@ impl Gpio {
         let cdev = ioctl::find_driver()?;
         let cdev_fd = cdev.as_raw_fd();
 
-        let cdev = Arc::new(Mutex::new(cdev));
+        let cdev = Arc::new(cdev);
         let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
         let gpio_mem = Arc::new(mem::GpioMem::open()?);
 
