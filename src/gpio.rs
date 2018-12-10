@@ -56,7 +56,6 @@ use std::io;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread::sleep;
 use std::time::Duration;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -356,41 +355,6 @@ impl Gpio {
 
     fn cleanup_internal(&mut self) -> Result<()> {
         self.initialized = false;
-
-        Ok(())
-    }
-
-    /// Configures the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) -> Result<()> {
-        assert_pin!(pin);
-
-        let gpio_mem = &*self.gpio_mem.lock().unwrap();
-
-        // Set the control signal in GPPUD, while leaving the other 30
-        // bits unchanged.
-        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
-        gpio_mem.write(
-            GPIO_OFFSET_GPPUD,
-            (reg_value & !0b11) | ((pud as u32) & 0b11),
-        );
-
-        // Set-up time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
-
-        // Select the first GPPUDCLK register for the first 32 pins, and
-        // the second register for the remaining pins.
-        let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
-
-        // Clock the control signal into the selected pin.
-        gpio_mem.write(reg_addr, 1 << (pin % 32));
-
-        // Hold time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
-
-        // Remove the control signal and clock.
-        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
-        gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
-        gpio_mem.write(reg_addr, 0 << (pin % 32));
 
         Ok(())
     }
