@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::gpio::{Result, Mode, Level, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+use crate::gpio::{Result, Mode, Level, Trigger, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
 
 #[derive(Debug)]
 pub struct Pin {
@@ -82,6 +82,22 @@ impl<'a> InputPin<'a> {
         }
     }
 
+    /// Configures a synchronous interrupt trigger.
+    ///
+    /// After configuring a synchronous interrupt trigger, you can use
+    /// [`poll_interrupt`] to wait for a trigger event.
+    ///
+    /// `set_interrupt` will remove any previously configured
+    /// (a)synchronous interrupt triggers for the same pin.
+    ///
+    /// [`poll_interrupt`]: #method.poll_interrupt
+    pub fn set_interrupt(&mut self, trigger: Trigger) -> Result<()> {
+        self.clear_async_interrupt()?;
+
+        // Each pin can only be configured for a single trigger type
+        (*self.pin.event_loop.lock().unwrap()).set_interrupt(self.pin.pin, trigger)
+    }
+
     /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
     ///
     /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
@@ -104,14 +120,6 @@ impl<'a> InputPin<'a> {
         } else {
             Ok(None)
         }
-    }
-
-    pub fn set_interrupt(&mut self) -> Result<()> {
-        self.clear_async_interrupt()?;
-
-        unimplemented!();
-
-        Ok(())
     }
 
     pub(crate) fn clear_async_interrupt(&mut self) -> Result<()> {

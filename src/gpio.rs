@@ -401,25 +401,6 @@ impl Gpio {
         Ok(())
     }
 
-    /// Configures a synchronous interrupt trigger.
-    ///
-    /// After configuring a synchronous interrupt trigger, you can use
-    /// [`poll_interrupt`] to wait for a trigger event.
-    ///
-    /// `set_interrupt` will remove any previously configured
-    /// (a)synchronous interrupt triggers for the same pin.
-    ///
-    /// [`poll_interrupt`]: #method.poll_interrupt
-    pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
-        assert_pin!(pin);
-
-        // We can't have sync and async interrupts on the same pin at the same time
-        self.clear_async_interrupt(pin)?;
-
-        // Each pin can only be configured for a single trigger type
-        (*self.sync_interrupts.lock().unwrap()).set_interrupt(pin, trigger)
-    }
-
     /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
         assert_pin!(pin);
