@@ -277,9 +277,7 @@ impl Gpio {
 
         let cdev = Arc::new(Mutex::new(cdev));
         let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
-        let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::new()));
-
-        (*gpio_mem.lock().unwrap()).open()?;
+        let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::open()?));
 
         let pins = unsafe {
             let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();
@@ -357,8 +355,6 @@ impl Gpio {
     }
 
     fn cleanup_internal(&mut self) -> Result<()> {
-        (*self.gpio_mem.lock().unwrap()).close();
-
         self.initialized = false;
 
         Ok(())

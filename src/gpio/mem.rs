@@ -34,28 +34,16 @@ const GPIO_MEM_SIZE: usize = 164;
 
 #[derive(Debug)]
 pub struct GpioMem {
-    mapped: bool,
     mem_ptr: *mut u32,
 }
 
 impl GpioMem {
-    pub fn new() -> GpioMem {
-        GpioMem {
-            mapped: false,
-            mem_ptr: ptr::null_mut(),
-        }
-    }
-
-    pub fn open(&mut self) -> Result<()> {
-        if self.mapped {
-            return Ok(());
-        }
-
+    pub fn open() -> Result<GpioMem> {
         // Try /dev/gpiomem first. If that fails, try /dev/mem instead. If neither works,
         // report back the error that's the most relevant.
-        self.mem_ptr = match self.map_devgpiomem() {
+        let mem_ptr = match Self::map_devgpiomem() {
             Ok(ptr) => ptr,
-            Err(gpiomem_err) => match self.map_devmem() {
+            Err(gpiomem_err) => match Self::map_devmem() {
                 Ok(ptr) => ptr,
                 Err(Error::Io(ref e)) if e.kind() == io::ErrorKind::PermissionDenied => {
                     return Err(Error::PermissionDenied)
@@ -65,12 +53,10 @@ impl GpioMem {
             },
         };
 
-        self.mapped = true;
-
-        Ok(())
+        Ok(GpioMem { mem_ptr })
     }
 
-    fn map_devgpiomem(&self) -> Result<*mut u32> {
+    fn map_devgpiomem() -> Result<*mut u32> {
         // Open /dev/gpiomem with read/write/sync flags. This might fail if
         // /dev/gpiomem doesn't exist (< Raspbian Jessie), or /dev/gpiomem
         // doesn't have the appropriate permissions, or the current user is
@@ -100,7 +86,7 @@ impl GpioMem {
         Ok(gpiomem_ptr as *mut u32)
     }
 
-    fn map_devmem(&self) -> Result<*mut u32> {
+    fn map_devmem() -> Result<*mut u32> {
         // Identify which SoC we're using, so we know what offset to start at
         let device_info = DeviceInfo::new().map_err(|_| Error::UnknownSoC)?;
 
@@ -129,43 +115,26 @@ impl GpioMem {
         Ok(mem_ptr as *mut u32)
     }
 
-    pub fn close(&mut self) {
-        if !self.mapped {
-            return;
-        }
-
-        unsafe {
-            libc::munmap(
-                self.mem_ptr as *mut libc::c_void,
-                GPIO_MEM_SIZE as libc::size_t,
-            );
-        }
-
-        self.mapped = false;
-    }
-
     pub fn read(&self, offset: usize) -> u32 {
-        if !self.mapped || offset >= GPIO_MEM_SIZE {
-            return 0;
-        }
+        debug_assert!(offset < GPIO_MEM_SIZE);
 
         unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
     }
 
     pub fn write(&self, offset: usize, value: u32) {
-        if !self.mapped || offset >= GPIO_MEM_SIZE {
-            return;
-        }
+        debug_assert!(offset < GPIO_MEM_SIZE);
 
         unsafe {
-            ptr::write_volatile(self.mem_ptr.add(offset), value);
+            ptr::write_volatile(self.mem_ptr.add(offset), value)
         }
     }
 }
 
 impl Drop for GpioMem {
     fn drop(&mut self) {
-        self.close();
+        unsafe {
+            libc::munmap(self.mem_ptr as *mut libc::c_void, GPIO_MEM_SIZE as libc::size_t);
+        }
     }
 }
 
