@@ -19,10 +19,12 @@
 // DEALINGS IN THE SOFTWARE.
 
 use std::fs::OpenOptions;
+use std::fmt;
 use std::io;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::ptr;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc;
 
@@ -32,9 +34,18 @@ use crate::system::DeviceInfo;
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
 const GPIO_MEM_SIZE: usize = 164;
 
-#[derive(Debug)]
 pub struct GpioMem {
     mem_ptr: *mut u32,
+    locks: [AtomicBool; GPIO_MEM_SIZE],
+}
+
+impl fmt::Debug for GpioMem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("GpioMem")
+            .field("mem_ptr", &self.mem_ptr)
+            .field("locks", &format_args!("{{ .. }}"))
+            .finish()
+    }
 }
 
 impl GpioMem {
@@ -53,7 +64,17 @@ impl GpioMem {
             },
         };
 
-        Ok(GpioMem { mem_ptr })
+        let locks = unsafe {
+            let mut locks: [AtomicBool; GPIO_MEM_SIZE] = std::mem::uninitialized();
+
+            for element in locks.iter_mut() {
+                std::ptr::write(element, AtomicBool::new(false))
+            }
+
+            locks
+        };
+
+        Ok(GpioMem { mem_ptr, locks })
     }
 
     fn map_devgpiomem() -> Result<*mut u32> {
@@ -118,15 +139,33 @@ impl GpioMem {
     pub fn read(&self, offset: usize) -> u32 {
         debug_assert!(offset < GPIO_MEM_SIZE);
 
-        unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::Relaxed) == false {
+            break;
+          }
+        }
+
+        let res = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
+
+        self.locks[offset].store(false, Ordering::Relaxed);
+
+        res
     }
 
     pub fn write(&self, offset: usize, value: u32) {
         debug_assert!(offset < GPIO_MEM_SIZE);
 
-        unsafe {
-            ptr::write_volatile(self.mem_ptr.add(offset), value)
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::Relaxed) == false {
+            break;
+          }
         }
+
+        unsafe {
+            ptr::write_volatile(self.mem_ptr.add(offset), value);
+        }
+
+        self.locks[offset].store(false, Ordering::Relaxed);
     }
 }
 
@@ -140,3 +179,4 @@ impl Drop for GpioMem {
 
 // Required because of the raw pointer to our memory-mapped file
 unsafe impl Send for GpioMem {}
+unsafe impl Sync for GpioMem {}

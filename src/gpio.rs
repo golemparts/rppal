@@ -246,7 +246,7 @@ impl fmt::Display for Trigger {
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
     clear_on_drop: bool,
-    pub(crate) gpio_mem: Arc<Mutex<mem::GpioMem>>,
+    pub(crate) gpio_mem: Arc<mem::GpioMem>,
     pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
 }
@@ -274,7 +274,7 @@ impl Gpio {
 
         let cdev = Arc::new(Mutex::new(cdev));
         let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
-        let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::open()?));
+        let gpio_mem = Arc::new(mem::GpioMem::open()?);
 
         let pins = unsafe {
             let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();

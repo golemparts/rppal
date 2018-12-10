@@ -10,12 +10,12 @@ use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, GPIO_OFFSET_GPLEV, G
 pub struct Pin {
     pin: u8,
     event_loop: Arc<Mutex<EventLoop>>,
-    gpio_mem: Arc<Mutex<GpioMem>>,
+    gpio_mem: Arc<GpioMem>,
     gpio_cdev: Arc<Mutex<File>>,
 }
 
 impl Pin {
-    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<Mutex<GpioMem>>, gpio_cdev: Arc<Mutex<File>>) -> Pin {
+    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<GpioMem>, gpio_cdev: Arc<Mutex<File>>) -> Pin {
         Pin { pin, event_loop, gpio_mem, gpio_cdev }
     }
 
@@ -34,8 +34,8 @@ impl Pin {
     pub(crate) fn set_mode(&mut self, mode: Mode) {
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (self.pin / 10) as usize;
 
-        let reg_value = (*self.gpio_mem.lock().unwrap()).read(reg_addr);
-        (*self.gpio_mem.lock().unwrap()).write(
+        let reg_value = (*self.gpio_mem).read(reg_addr);
+        (*self.gpio_mem).write(
             reg_addr,
             (reg_value & !(0b111 << ((self.pin % 10) * 3)))
                 | ((mode as u32 & 0b111) << ((self.pin % 10) * 3)),
@@ -46,7 +46,7 @@ impl Pin {
     /// Returns the current GPIO pin mode.
     pub fn mode(&self) -> Mode {
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (self.pin / 10) as usize;
-        let reg_value = (*self.gpio_mem.lock().unwrap()).read(reg_addr);
+        let reg_value = (*self.gpio_mem).read(reg_addr);
         let mode_value = ((reg_value >> ((self.pin % 10) * 3)) & 0b111) as u8;
 
         mode_value.into()
@@ -54,7 +54,7 @@ impl Pin {
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
     pub fn set_pullupdown(&self, pud: PullUpDown) -> Result<()> {
-        let gpio_mem = &*self.gpio_mem.lock().unwrap();
+        let gpio_mem = &*self.gpio_mem;
 
         // Set the control signal in GPPUD, while leaving the other 30
         // bits unchanged.
@@ -130,7 +130,7 @@ impl<'a> InputPin<'a> {
 
     pub fn read(&self) -> Level {
         let reg_addr: usize = GPIO_OFFSET_GPLEV + (self.pin.pin / 32) as usize;
-        let reg_value = (*self.pin.gpio_mem.lock().unwrap()).read(reg_addr);
+        let reg_value = (*self.pin.gpio_mem).read(reg_addr);
 
         if (reg_value & (1 << (self.pin.pin % 32))) > 0 {
             Level::High
@@ -289,7 +289,7 @@ impl<'a> OutputPin<'a> {
             Level::High => GPIO_OFFSET_GPSET + (self.pin.pin / 32) as usize,
         };
 
-        (*self.pin.gpio_mem.lock().unwrap()).write(reg_addr, 1 << (self.pin.pin % 32));
+        (*self.pin.gpio_mem).write(reg_addr, 1 << (self.pin.pin % 32));
     }
 }
 
