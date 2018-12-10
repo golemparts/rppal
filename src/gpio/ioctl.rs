@@ -264,10 +264,10 @@ impl EventData {
                 event_fd,
                 &mut event_data as *mut EventData as *mut c_void,
                 size_of::<EventData>(),
-            ) as i32
+            )
         })?;
 
-        if bytes_read != size_of::<EventData>() as i32 {
+        if bytes_read != size_of::<EventData>() as isize {
             Ok(None)
         } else {
             Ok(Some(event_data))
