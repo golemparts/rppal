@@ -284,10 +284,10 @@ pub struct Event {
 impl Event {
     fn from_event_data(event_data: EventData) -> Event {
         Event {
-            trigger: if event_data.id == EVENT_TYPE_RISING_EDGE {
-                Trigger::RisingEdge
-            } else {
-                Trigger::FallingEdge
+            trigger: match event_data.id {
+                EVENT_TYPE_RISING_EDGE => Trigger::RisingEdge,
+                EVENT_TYPE_FALLING_EDGE => Trigger::FallingEdge,
+                _ => unreachable!(),
             },
             timestamp: Duration::from_nanos(event_data.timestamp),
         }
