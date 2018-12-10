@@ -143,7 +143,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         // Older revisions are 4 characters long, or 8 if they've been over-volted
         match &revision[revision.len() - 4..] {
             "0007" | "0008" | "0009" | "0015" => Model::RaspberryPiA,
-            "Beta" | "0002" | "0003" => Model::RaspberryPiBRev1,
+            "beta" | "0002" | "0003" => Model::RaspberryPiBRev1,
             "0004" | "0005" | "0006" | "000d" | "000e" | "000f" => Model::RaspberryPiBRev2,
             "0012" => Model::RaspberryPiAPlus,
             "0010" | "0013" => Model::RaspberryPiBPlus,
