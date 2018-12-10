@@ -1,16 +1,18 @@
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use crate::gpio::{Result, Mode, Level, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
 
 #[derive(Debug)]
 pub struct Pin {
     pin: u8,
+    event_loop: Arc<Mutex<EventLoop>>,
     gpio_mem: Arc<Mutex<GpioMem>>,
 }
 
 impl Pin {
-    pub(crate) fn new(pin: u8, gpio_mem: Arc<Mutex<GpioMem>>) -> Pin {
-        Pin { pin, gpio_mem }
+    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<Mutex<GpioMem>>) -> Pin {
+        Pin { pin, event_loop, gpio_mem }
     }
 
     pub fn as_input(&mut self) -> InputPin {
@@ -77,6 +79,30 @@ impl<'a> InputPin<'a> {
             Level::High
         } else {
             Level::Low
+        }
+    }
+
+    /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
+    ///
+    /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
+    /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
+    ///
+    /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
+    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
+    /// Setting `reset` to `true` clears any cached trigger events for the pin.
+    ///
+    /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
+    /// for interrupt trigger events, after which an `Ok(None))` is returned.
+    /// `timeout` can be set to `None` to wait indefinitely.
+    ///
+    /// [`set_interrupt`]: #method.set_interrupt
+    pub fn poll_interrupt(&mut self, reset: bool, timeout: Option<Duration>) -> Result<Option<Level>> {
+        let opt = (*self.pin.event_loop.lock().unwrap()).poll(&[self.pin.pin], reset, timeout)?;
+
+        if let Some(trigger) = opt {
+            Ok(Some(trigger.1))
+        } else {
+            Ok(None)
         }
     }
 

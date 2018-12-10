@@ -252,7 +252,7 @@ pub struct Gpio {
     pub(crate) gpio_mem: Arc<Mutex<mem::GpioMem>>,
     pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
     gpio_cdev: File,
-    sync_interrupts: interrupt::EventLoop,
+    sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
     async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
 
@@ -277,6 +277,7 @@ impl Gpio {
         let cdev = ioctl::find_driver()?;
         let cdev_fd = cdev.as_raw_fd();
 
+        let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
         let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::new()));
 
         (*gpio_mem.lock().unwrap()).open()?;
@@ -285,7 +286,7 @@ impl Gpio {
             let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();
 
             for (i, element) in pins.iter_mut().enumerate() {
-                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, gpio_mem.clone())));
+                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, event_loop.clone(), gpio_mem.clone())));
                 std::ptr::write(element, pin)
             }
 
@@ -298,7 +299,7 @@ impl Gpio {
             gpio_mem: gpio_mem,
             pins: pins,
             gpio_cdev: cdev,
-            sync_interrupts: interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?,
+            sync_interrupts: event_loop,
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
 
@@ -416,43 +417,14 @@ impl Gpio {
         self.clear_async_interrupt(pin)?;
 
         // Each pin can only be configured for a single trigger type
-        self.sync_interrupts.set_interrupt(pin, trigger)
+        (*self.sync_interrupts.lock().unwrap()).set_interrupt(pin, trigger)
     }
 
     /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
         assert_pin!(pin);
 
-        self.sync_interrupts.clear_interrupt(pin)
-    }
-
-    /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
-    ///
-    /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
-    /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
-    ///
-    /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
-    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
-    /// Setting `reset` to `true` clears any cached trigger events for the pin.
-    ///
-    /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
-    /// for interrupt trigger events, after which an `Ok(None))` is returned.
-    /// `timeout` can be set to `None` to wait indefinitely.
-    ///
-    /// [`set_interrupt`]: #method.set_interrupt
-    pub fn poll_interrupt(
-        &mut self,
-        pin: u8,
-        reset: bool,
-        timeout: Option<Duration>,
-    ) -> Result<Option<Level>> {
-        let opt = self.poll_interrupts(&[pin], reset, timeout)?;
-
-        if let Some(trigger) = opt {
-            Ok(Some(trigger.1))
-        } else {
-            Ok(None)
-        }
+        (*self.sync_interrupts.lock().unwrap()).clear_interrupt(pin)
     }
 
     /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
@@ -484,7 +456,7 @@ impl Gpio {
             assert_pin!(*pin);
         }
 
-        self.sync_interrupts.poll(pins, reset, timeout)
+        (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
 
     /// Configures an asynchronous interrupt trigger, which will execute the callback on a
