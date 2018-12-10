@@ -245,12 +245,10 @@ impl fmt::Display for Trigger {
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
-    initialized: bool,
     clear_on_drop: bool,
     pub(crate) gpio_mem: Arc<Mutex<mem::GpioMem>>,
     pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
-    async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
 
 impl Gpio {
@@ -289,19 +287,12 @@ impl Gpio {
             pins
         };
 
-        let mut gpio = Gpio {
-            initialized: true,
+        let gpio = Gpio {
             clear_on_drop: true,
             gpio_mem: gpio_mem,
             pins: pins,
             sync_interrupts: event_loop,
-            async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
-
-        // Initialize sync_interrupts while circumventing the Copy/Clone requirement
-        for _ in 0..gpio.async_interrupts.capacity() {
-            gpio.async_interrupts.push(None);
-        }
 
         unsafe {
             // Returns true if GPIO_INSTANCED was set to true on a different thread
@@ -343,22 +334,6 @@ impl Gpio {
         self.clear_on_drop = clear_on_drop;
     }
 
-    /// Resets all pins to their original state.
-    ///
-    /// Normally, this method is automatically called when `Gpio` goes out of
-    /// scope, but you can manually call it to handle early/abnormal termination.
-    /// After calling this method, any future calls to other methods won't have any
-    /// result.
-    pub fn cleanup(mut self) -> Result<()> {
-        self.cleanup_internal()
-    }
-
-    fn cleanup_internal(&mut self) -> Result<()> {
-        self.initialized = false;
-
-        Ok(())
-    }
-
     /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
     ///
     /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
@@ -390,26 +365,10 @@ impl Gpio {
 
         (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
-
-    /// Removes a previously configured asynchronous interrupt trigger.
-    pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
-        assert_pin!(pin);
-
-        if let Some(mut interrupt) = self.async_interrupts[pin as usize].take() {
-            // stop() blocks until the poll thread exits
-            interrupt.stop()?;
-        }
-
-        Ok(())
-    }
-}
+  }
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        if self.clear_on_drop && self.initialized {
-            let _ = self.cleanup_internal();
-        }
-
         unsafe {
             GPIO_INSTANCED.store(false, Ordering::SeqCst);
         }
@@ -419,11 +378,9 @@ impl Drop for Gpio {
 impl fmt::Debug for Gpio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Gpio")
-            .field("initialized", &self.initialized)
             .field("clear_on_drop", &self.clear_on_drop)
             .field("gpio_mem", &*self.gpio_mem)
             .field("sync_interrupts", &format_args!("{{ .. }}"))
-            .field("async_interrupts", &format_args!("{{ .. }}"))
             .finish()
     }
 }
