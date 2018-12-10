@@ -52,7 +52,6 @@
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
 use std::fmt;
-use std::fs::File;
 use std::io;
 use std::os::unix::io::AsRawFd;
 use std::result;
@@ -251,7 +250,6 @@ pub struct Gpio {
     clear_on_drop: bool,
     pub(crate) gpio_mem: Arc<Mutex<mem::GpioMem>>,
     pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
-    gpio_cdev: File,
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
     async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
 }
@@ -277,6 +275,7 @@ impl Gpio {
         let cdev = ioctl::find_driver()?;
         let cdev_fd = cdev.as_raw_fd();
 
+        let cdev = Arc::new(Mutex::new(cdev));
         let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
         let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::new()));
 
@@ -286,7 +285,7 @@ impl Gpio {
             let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();
 
             for (i, element) in pins.iter_mut().enumerate() {
-                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, event_loop.clone(), gpio_mem.clone())));
+                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, event_loop.clone(), gpio_mem.clone(), cdev.clone())));
                 std::ptr::write(element, pin)
             }
 
@@ -298,7 +297,6 @@ impl Gpio {
             clear_on_drop: true,
             gpio_mem: gpio_mem,
             pins: pins,
-            gpio_cdev: cdev,
             sync_interrupts: event_loop,
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
@@ -401,13 +399,6 @@ impl Gpio {
         Ok(())
     }
 
-    /// Removes a previously configured synchronous interrupt trigger.
-    pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
-        assert_pin!(pin);
-
-        (*self.sync_interrupts.lock().unwrap()).clear_interrupt(pin)
-    }
-
     /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
     ///
     /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
@@ -438,37 +429,6 @@ impl Gpio {
         }
 
         (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
-    }
-
-    /// Configures an asynchronous interrupt trigger, which will execute the callback on a
-    /// separate thread when the interrupt is triggered.
-    ///
-    /// The callback closure or function pointer is called with a single [`Level`] argument.
-    ///
-    /// `set_async_interrupt` will remove any previously configured
-    /// (a)synchronous interrupt triggers for the same pin.
-    ///
-    /// [`Level`]: enum.Level.html
-    pub fn set_async_interrupt<C>(&mut self, pin: u8, trigger: Trigger, callback: C) -> Result<()>
-    where
-        C: FnMut(Level) + Send + 'static,
-    {
-        assert_pin!(pin);
-
-        // We can't have sync and async interrupts on the same pin at the same time
-        self.clear_interrupt(pin)?;
-
-        // Stop and remove existing interrupt trigger on this pin
-        self.clear_async_interrupt(pin)?;
-
-        self.async_interrupts[pin as usize] = Some(interrupt::AsyncInterrupt::new(
-            self.gpio_cdev.as_raw_fd(),
-            pin,
-            trigger,
-            callback,
-        )?);
-
-        Ok(())
     }
 
     /// Removes a previously configured asynchronous interrupt trigger.

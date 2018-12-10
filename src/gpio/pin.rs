@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -8,11 +10,12 @@ pub struct Pin {
     pin: u8,
     event_loop: Arc<Mutex<EventLoop>>,
     gpio_mem: Arc<Mutex<GpioMem>>,
+    gpio_cdev: Arc<Mutex<File>>,
 }
 
 impl Pin {
-    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<Mutex<GpioMem>>) -> Pin {
-        Pin { pin, event_loop, gpio_mem }
+    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<Mutex<GpioMem>>, gpio_cdev: Arc<Mutex<File>>) -> Pin {
+        Pin { pin, event_loop, gpio_mem, gpio_cdev }
     }
 
     pub fn as_input(&mut self) -> InputPin {
@@ -98,6 +101,11 @@ impl<'a> InputPin<'a> {
         (*self.pin.event_loop.lock().unwrap()).set_interrupt(self.pin.pin, trigger)
     }
 
+    /// Removes a previously configured synchronous interrupt trigger.
+    pub fn clear_interrupt(&mut self) -> Result<()> {
+        (*self.pin.event_loop.lock().unwrap()).clear_interrupt(self.pin.pin)
+    }
+
     /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
     ///
     /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
@@ -120,6 +128,32 @@ impl<'a> InputPin<'a> {
         } else {
             Ok(None)
         }
+    }
+
+    /// Configures an asynchronous interrupt trigger, which will execute the callback on a
+    /// separate thread when the interrupt is triggered.
+    ///
+    /// The callback closure or function pointer is called with a single [`Level`] argument.
+    ///
+    /// `set_async_interrupt` will remove any previously configured
+    /// (a)synchronous interrupt triggers for the same pin.
+    ///
+    /// [`Level`]: enum.Level.html
+    pub fn set_async_interrupt<C>(&mut self, trigger: Trigger, callback: C) -> Result<()>
+    where
+        C: FnMut(Level) + Send + 'static,
+    {
+        self.clear_interrupt()?;
+        self.clear_async_interrupt()?;
+
+        self.async_interrupt = Some(AsyncInterrupt::new(
+            (*self.pin.gpio_cdev.lock().unwrap()).as_raw_fd(),
+            self.pin.pin,
+            trigger,
+            callback,
+        )?);
+
+        Ok(())
     }
 
     pub(crate) fn clear_async_interrupt(&mut self) -> Result<()> {
