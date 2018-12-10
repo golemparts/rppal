@@ -59,6 +59,7 @@ use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use quick_error::quick_error;
 
@@ -77,6 +78,9 @@ mod epoll;
 mod interrupt;
 mod ioctl;
 mod mem;
+mod pin;
+
+pub use self::pin::{InputPin, OutputPin};
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
 // depends on the model.
@@ -148,12 +152,28 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Mode {
     Input = 0b000,
     Output = 0b001,
-    Alt0 = 0b100,
-    Alt1 = 0b101,
-    Alt2 = 0b110,
-    Alt3 = 0b111,
-    Alt4 = 0b011,
-    Alt5 = 0b010,
+    Alt5   = 0b010, // PWM
+    Alt4   = 0b011, // SPI
+    Alt0   = 0b100, // PCM
+    Alt1   = 0b101, // SMI
+    Alt2   = 0b110, // ---
+    Alt3   = 0b111, // BSC-SPI
+}
+
+impl From<u8> for Mode {
+    fn from(mode: u8) -> Mode {
+        match mode {
+            0b000 => Mode::Input,
+            0b001 => Mode::Output,
+            0b010 => Mode::Alt5,
+            0b011 => Mode::Alt4,
+            0b100 => Mode::Alt0,
+            0b101 => Mode::Alt1,
+            0b110 => Mode::Alt2,
+            0b111 => Mode::Alt3,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl fmt::Display for Mode {
@@ -225,25 +245,12 @@ impl fmt::Display for Trigger {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-struct PinState {
-    pin: u8,
-    mode: Mode,
-    changed: bool,
-}
-
-impl PinState {
-    fn new(pin: u8, mode: Mode, changed: bool) -> PinState {
-        PinState { pin, mode, changed }
-    }
-}
-
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
     initialized: bool,
     clear_on_drop: bool,
-    gpio_mem: mem::GpioMem,
-    orig_pin_state: Vec<PinState>,
+    pub(crate) gpio_mem: Arc<Mutex<mem::GpioMem>>,
+    pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
     gpio_cdev: File,
     sync_interrupts: interrupt::EventLoop,
     async_interrupts: Vec<Option<interrupt::AsyncInterrupt>>,
@@ -270,25 +277,30 @@ impl Gpio {
         let cdev = ioctl::find_driver()?;
         let cdev_fd = cdev.as_raw_fd();
 
+        let gpio_mem = Arc::new(Mutex::new(mem::GpioMem::new()));
+
+        (*gpio_mem.lock().unwrap()).open()?;
+
+        let pins = unsafe {
+            let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();
+
+            for (i, element) in pins.iter_mut().enumerate() {
+                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, gpio_mem.clone())));
+                std::ptr::write(element, pin)
+            }
+
+            pins
+        };
+
         let mut gpio = Gpio {
             initialized: true,
             clear_on_drop: true,
-            gpio_mem: mem::GpioMem::new(),
-            orig_pin_state: Vec::with_capacity(GPIO_MAX_PINS as usize),
+            gpio_mem: gpio_mem,
+            pins: pins,
             gpio_cdev: cdev,
             sync_interrupts: interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?,
             async_interrupts: Vec::with_capacity(GPIO_MAX_PINS as usize),
         };
-
-        gpio.gpio_mem.open()?;
-
-        // Save the original pin states, so we can reset them with cleanup()
-        for n in 0..GPIO_MAX_PINS {
-            match gpio.mode(n) {
-                Ok(mode) => gpio.orig_pin_state.push(PinState::new(n, mode, false)),
-                Err(e) => return Err(e),
-            }
-        }
 
         // Initialize sync_interrupts while circumventing the Copy/Clone requirement
         for _ in 0..gpio.async_interrupts.capacity() {
@@ -305,6 +317,14 @@ impl Gpio {
         }
 
         Ok(gpio)
+    }
+
+    pub fn get_pin(&self, pin: u8) -> Option<MutexGuard<pin::Pin>> {
+        if pin >= GPIO_MAX_PINS {
+            None
+        } else {
+            Some(self.pins[pin as usize].lock().unwrap())
+        }
     }
 
     /// Returns the value of `clear_on_drop`.
@@ -338,99 +358,9 @@ impl Gpio {
     }
 
     fn cleanup_internal(&mut self) -> Result<()> {
-        // Use a cloned copy, because set_mode() will try to change
-        // the contents of the original vector.
-        for pin_state in &self.orig_pin_state.clone() {
-            if pin_state.changed {
-                self.set_mode(pin_state.pin, pin_state.mode)?;
-            }
-        }
-
-        self.gpio_mem.close();
+        (*self.gpio_mem.lock().unwrap()).close();
 
         self.initialized = false;
-
-        Ok(())
-    }
-
-    /// Gets the current GPIO pin mode.
-    pub fn mode(&self, pin: u8) -> Result<Mode> {
-        assert_pin!(pin);
-
-        let reg_addr: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
-        let reg_value = self.gpio_mem.read(reg_addr);
-        let mode_value: usize = ((reg_value >> ((pin % 10) * 3)) & 0b111) as usize;
-
-        let modes = [
-            Mode::Input,
-            Mode::Output,
-            Mode::Alt5,
-            Mode::Alt4,
-            Mode::Alt0,
-            Mode::Alt1,
-            Mode::Alt2,
-            Mode::Alt3,
-        ];
-
-        if mode_value < modes.len() {
-            Ok(modes[mode_value])
-        } else {
-            Err(Error::UnknownMode(mode_value as u8))
-        }
-    }
-
-    /// Sets the GPIO pin mode to input, output or one of the alternative functions.
-    ///
-    /// More information about the alternative functions can be found in the
-    /// [`BCM2835`] documentation.
-    ///
-    /// [`BCM2835`]: https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-    pub fn set_mode(&mut self, pin: u8, mode: Mode) -> Result<()> {
-        assert_pin!(pin);
-
-        // Keep track of our mode changes, so we can revert them in cleanup()
-        if let Some(pin_state) = self.orig_pin_state.get_mut(pin as usize) {
-            if pin_state.mode != mode {
-                pin_state.changed = true;
-            }
-        }
-
-        let reg_addr: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
-
-        let reg_value = self.gpio_mem.read(reg_addr);
-        self.gpio_mem.write(
-            reg_addr,
-            (reg_value & !(0b111 << ((pin % 10) * 3)))
-                | ((mode as u32 & 0b111) << ((pin % 10) * 3)),
-        );
-
-        Ok(())
-    }
-
-    /// Reads the current GPIO pin logic level.
-    pub fn read(&self, pin: u8) -> Result<Level> {
-        assert_pin!(pin);
-
-        let reg_addr: usize = GPIO_OFFSET_GPLEV + (pin / 32) as usize;
-        let reg_value = self.gpio_mem.read(reg_addr);
-
-        if (reg_value & (1 << (pin % 32))) > 0 {
-            Ok(Level::High)
-        } else {
-            Ok(Level::Low)
-        }
-    }
-
-    /// Changes the GPIO pin logic level to high or low.
-    pub fn write(&self, pin: u8, level: Level) -> Result<()> {
-        assert_pin!(pin);
-
-        let reg_addr: usize = match level {
-            Level::Low => GPIO_OFFSET_GPCLR + (pin / 32) as usize,
-            Level::High => GPIO_OFFSET_GPSET + (pin / 32) as usize,
-        };
-
-        self.gpio_mem.write(reg_addr, 1 << (pin % 32));
 
         Ok(())
     }
@@ -439,10 +369,12 @@ impl Gpio {
     pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) -> Result<()> {
         assert_pin!(pin);
 
+        let gpio_mem = &*self.gpio_mem.lock().unwrap();
+
         // Set the control signal in GPPUD, while leaving the other 30
         // bits unchanged.
-        let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
-        self.gpio_mem.write(
+        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
+        gpio_mem.write(
             GPIO_OFFSET_GPPUD,
             (reg_value & !0b11) | ((pud as u32) & 0b11),
         );
@@ -455,15 +387,15 @@ impl Gpio {
         let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
 
         // Clock the control signal into the selected pin.
-        self.gpio_mem.write(reg_addr, 1 << (pin % 32));
+        gpio_mem.write(reg_addr, 1 << (pin % 32));
 
         // Hold time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Remove the control signal and clock.
-        let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
-        self.gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
-        self.gpio_mem.write(reg_addr, 0 << (pin % 32));
+        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
+        gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
+        gpio_mem.write(reg_addr, 0 << (pin % 32));
 
         Ok(())
     }
@@ -616,8 +548,7 @@ impl fmt::Debug for Gpio {
         f.debug_struct("Gpio")
             .field("initialized", &self.initialized)
             .field("clear_on_drop", &self.clear_on_drop)
-            .field("gpio_mem", &self.gpio_mem)
-            .field("orig_pin_state", &format_args!("{{ .. }}"))
+            .field("gpio_mem", &*self.gpio_mem)
             .field("sync_interrupts", &format_args!("{{ .. }}"))
             .field("async_interrupts", &format_args!("{{ .. }}"))
             .finish()
