@@ -91,6 +91,7 @@ pub struct InputPin<'a> {
     pin: &'a mut Pin,
     prev_mode: Option<Mode>,
     async_interrupt: Option<AsyncInterrupt>,
+    clear_on_drop: bool,
 }
 
 impl<'a> InputPin<'a> {
@@ -104,7 +105,27 @@ impl<'a> InputPin<'a> {
             Some(prev_mode)
         };
 
-        InputPin { pin, prev_mode, async_interrupt: None }
+        InputPin { pin, prev_mode, async_interrupt: None, clear_on_drop: true }
+    }
+
+    /// Returns the value of `clear_on_drop`.
+    pub fn clear_on_drop(&self) -> bool {
+        self.clear_on_drop
+    }
+
+    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
+    ///
+    /// Drop methods aren't called when a program is abnormally terminated,
+    /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
+    /// caught. You'll either have to catch those using crates such as
+    /// [`simple_signal`], or manually call [`cleanup`].
+    ///
+    /// By default, `clear_on_drop` is set to `true`.
+    ///
+    /// [`simple_signal`]: https://crates.io/crates/simple-signal
+    /// [`cleanup`]: #method.cleanup
+    pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
+        self.clear_on_drop = clear_on_drop;
     }
 
     pub fn read(&self) -> Level {
@@ -202,6 +223,10 @@ impl<'a> Drop for InputPin<'a> {
     fn drop(&mut self) {
         let _ = self.clear_async_interrupt();
 
+        if self.clear_on_drop == false {
+          return
+        }
+
         if let Some(prev_mode) = self.prev_mode {
             self.pin.set_mode(prev_mode)
         }
@@ -213,6 +238,7 @@ pub struct OutputPin<'a> {
     pin: &'a mut Pin,
     mode: Mode,
     prev_mode: Option<Mode>,
+    clear_on_drop: bool,
 }
 
 impl<'a> OutputPin<'a> {
@@ -226,7 +252,27 @@ impl<'a> OutputPin<'a> {
             Some(prev_mode)
         };
 
-        OutputPin { pin, mode, prev_mode }
+        OutputPin { pin, mode, prev_mode, clear_on_drop: true }
+    }
+
+    /// Returns the value of `clear_on_drop`.
+    pub fn clear_on_drop(&self) -> bool {
+        self.clear_on_drop
+    }
+
+    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
+    ///
+    /// Drop methods aren't called when a program is abnormally terminated,
+    /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
+    /// caught. You'll either have to catch those using crates such as
+    /// [`simple_signal`], or manually call [`cleanup`].
+    ///
+    /// By default, `clear_on_drop` is set to `true`.
+    ///
+    /// [`simple_signal`]: https://crates.io/crates/simple-signal
+    /// [`cleanup`]: #method.cleanup
+    pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
+        self.clear_on_drop = clear_on_drop;
     }
 
     pub fn set_low(&mut self) {
@@ -249,6 +295,10 @@ impl<'a> OutputPin<'a> {
 
 impl<'a> Drop for OutputPin<'a> {
   fn drop(&mut self) {
+    if self.clear_on_drop == false {
+      return
+    }
+
     if let Some(prev_mode) = self.prev_mode {
       self.pin.set_mode(prev_mode)
     }

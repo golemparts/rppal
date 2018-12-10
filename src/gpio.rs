@@ -314,26 +314,6 @@ impl Gpio {
         }
     }
 
-    /// Returns the value of `clear_on_drop`.
-    pub fn clear_on_drop(&self) -> bool {
-        self.clear_on_drop
-    }
-
-    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
-    ///
-    /// Drop methods aren't called when a program is abnormally terminated,
-    /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
-    /// caught. You'll either have to catch those using crates such as
-    /// [`simple_signal`], or manually call [`cleanup`].
-    ///
-    /// By default, `clear_on_drop` is set to `true`.
-    ///
-    /// [`simple_signal`]: https://crates.io/crates/simple-signal
-    /// [`cleanup`]: #method.cleanup
-    pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
-        self.clear_on_drop = clear_on_drop;
-    }
-
     /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
     ///
     /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
