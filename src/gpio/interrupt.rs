@@ -153,8 +153,6 @@ impl EventLoop {
         timeout: Option<Duration>,
     ) -> Result<Option<(u8, Level)>> {
         for pin in pins {
-            assert_pin!(*pin as usize, self.trigger_status.capacity());
-
             // Did we cache any trigger events during the previous poll?
             if self.trigger_status[*pin as usize].triggered {
                 self.trigger_status[*pin as usize].triggered = false;
@@ -190,30 +188,33 @@ impl EventLoop {
 
             for event in &self.events[0..num_events] {
                 let pin = event.u64 as usize;
-                if pin < self.trigger_status.capacity() {
-                    self.trigger_status[pin].triggered = true;
-                    self.trigger_status[pin].level =
-                        if let Some(ref mut interrupt) = self.trigger_status[pin].interrupt {
-                            if let Some(trigger_event) = interrupt.event()? {
-                                match trigger_event.trigger {
-                                    Trigger::RisingEdge => Level::High,
-                                    _ => Level::Low,
-                                }
-                            } else {
-                                interrupt.level()?
+
+                let ref mut trigger_status = self.trigger_status[pin];
+
+                trigger_status.triggered = true;
+                trigger_status.level =
+                    if let Some(ref mut interrupt) = trigger_status.interrupt {
+                        if let Some(trigger_event) = interrupt.event()? {
+                            match trigger_event.trigger {
+                                Trigger::RisingEdge => Level::High,
+                                _ => Level::Low,
                             }
                         } else {
-                            Level::Low
-                        };
-                }
+                            interrupt.level()?
+                        }
+                    } else {
+                        Level::Low
+                    };
             }
 
             // Were any interrupts triggered? If so, return one. The rest
             // will be saved for the next poll.
             for pin in pins {
-                if self.trigger_status[*pin as usize].triggered {
-                    self.trigger_status[*pin as usize].triggered = false;
-                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
+                let ref mut trigger_status = self.trigger_status[*pin as usize];
+
+                if trigger_status.triggered {
+                    trigger_status.triggered = false;
+                    return Ok(Some((*pin, trigger_status.level)));
                 }
             }
 
@@ -230,10 +231,12 @@ impl EventLoop {
     }
 
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
-        self.trigger_status[pin as usize].triggered = false;
+        let ref mut trigger_status = self.trigger_status[pin as usize];
+
+        trigger_status.triggered = false;
 
         // Interrupt already exists. We just need to change the trigger.
-        if let Some(ref mut interrupt) = self.trigger_status[pin as usize].interrupt {
+        if let Some(ref mut interrupt) = trigger_status.interrupt {
             if interrupt.trigger != trigger {
                 // This requires a new event request, so the fd might change
                 self.poll.delete(interrupt.fd())?;
@@ -249,15 +252,17 @@ impl EventLoop {
         let interrupt = Interrupt::new(self.cdev_fd, pin, trigger)?;
         self.poll
             .add(interrupt.fd(), u64::from(pin), EPOLLIN | EPOLLPRI)?;
-        self.trigger_status[pin as usize].interrupt = Some(interrupt);
+        trigger_status.interrupt = Some(interrupt);
 
         Ok(())
     }
 
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
-        self.trigger_status[pin as usize].triggered = false;
+        let ref mut trigger_status = self.trigger_status[pin as usize];
 
-        if let Some(interrupt) = self.trigger_status[pin as usize].interrupt.take() {
+        trigger_status.triggered = false;
+
+        if let Some(interrupt) = trigger_status.interrupt.take() {
             self.poll.delete(interrupt.fd())?;
         }
 
