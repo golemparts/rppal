@@ -90,7 +90,6 @@ impl Pin {
 pub struct InputPin<'a> {
     pin: &'a mut Pin,
     prev_mode: Option<Mode>,
-    sync_interrupt: Option<EventLoop>,
     async_interrupt: Option<AsyncInterrupt>,
 }
 
@@ -105,7 +104,7 @@ impl<'a> InputPin<'a> {
             Some(prev_mode)
         };
 
-        InputPin { pin, prev_mode, sync_interrupt: None, async_interrupt: None }
+        InputPin { pin, prev_mode, async_interrupt: None }
     }
 
     pub fn read(&self) -> Level {
