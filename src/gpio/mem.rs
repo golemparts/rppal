@@ -75,15 +75,11 @@ impl GpioMem {
         // /dev/gpiomem doesn't exist (< Raspbian Jessie), or /dev/gpiomem
         // doesn't have the appropriate permissions, or the current user is
         // not a member of the gpio group.
-        let gpiomem_file = match OpenOptions::new()
+        let gpiomem_file = OpenOptions::new()
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/gpiomem")
-        {
-            Ok(file) => file,
-            Err(e) => return Err(Error::Io(e)),
-        };
+            .open("/dev/gpiomem")?;
 
         // Memory-map /dev/gpiomem at offset 0
         let gpiomem_ptr = unsafe {
@@ -106,20 +102,13 @@ impl GpioMem {
 
     fn map_devmem(&self) -> Result<*mut u32> {
         // Identify which SoC we're using, so we know what offset to start at
-        let device_info = match DeviceInfo::new() {
-            Ok(s) => s,
-            Err(_) => return Err(Error::UnknownSoC),
-        };
+        let device_info = DeviceInfo::new().map_err(|_| Error::UnknownSoC)?;
 
-        let mem_file = match OpenOptions::new()
+        let mem_file = OpenOptions::new()
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/mem")
-        {
-            Ok(file) => file,
-            Err(e) => return Err(Error::Io(e)),
-        };
+            .open("/dev/mem")?;
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
         let mem_ptr = unsafe {
