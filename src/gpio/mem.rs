@@ -140,14 +140,14 @@ impl GpioMem {
         debug_assert!(offset < GPIO_MEM_SIZE);
 
         loop {
-          if self.locks[offset].compare_and_swap(false, true, Ordering::Relaxed) == false {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
             break;
           }
         }
 
         let res = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
 
-        self.locks[offset].store(false, Ordering::Relaxed);
+        self.locks[offset].store(false, Ordering::SeqCst);
 
         res
     }
@@ -156,7 +156,7 @@ impl GpioMem {
         debug_assert!(offset < GPIO_MEM_SIZE);
 
         loop {
-          if self.locks[offset].compare_and_swap(false, true, Ordering::Relaxed) == false {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
             break;
           }
         }
@@ -165,7 +165,7 @@ impl GpioMem {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
 
-        self.locks[offset].store(false, Ordering::Relaxed);
+        self.locks[offset].store(false, Ordering::SeqCst);
     }
 }
 
