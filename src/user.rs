@@ -25,19 +25,19 @@ use std::ptr;
 // Find user ID for specified user
 pub fn user_to_uid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        unsafe {
-            let buf = &mut [0 as libc::c_char; 4096];
-            let mut res: *mut libc::passwd = ptr::null_mut();
-            let mut pwd = libc::passwd {
-                pw_name: ptr::null_mut(),
-                pw_passwd: ptr::null_mut(),
-                pw_uid: 0,
-                pw_gid: 0,
-                pw_gecos: ptr::null_mut(),
-                pw_dir: ptr::null_mut(),
-                pw_shell: ptr::null_mut(),
-            };
+        let buf = &mut [0 as libc::c_char; 4096];
+        let mut res: *mut libc::passwd = ptr::null_mut();
+        let mut pwd = libc::passwd {
+            pw_name: ptr::null_mut(),
+            pw_passwd: ptr::null_mut(),
+            pw_uid: 0,
+            pw_gid: 0,
+            pw_gecos: ptr::null_mut(),
+            pw_dir: ptr::null_mut(),
+            pw_shell: ptr::null_mut(),
+        };
 
+        unsafe {
             if libc::getpwnam_r(
                 name_cstr.as_ptr(),
                 &mut pwd,
@@ -58,16 +58,16 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 // Find group ID for specified group
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        unsafe {
-            let buf = &mut [0 as libc::c_char; 4096];
-            let mut res: *mut libc::group = ptr::null_mut();
-            let mut grp = libc::group {
-                gr_name: ptr::null_mut(),
-                gr_passwd: ptr::null_mut(),
-                gr_gid: 0,
-                gr_mem: ptr::null_mut(),
-            };
+        let buf = &mut [0 as libc::c_char; 4096];
+        let mut res: *mut libc::group = ptr::null_mut();
+        let mut grp = libc::group {
+            gr_name: ptr::null_mut(),
+            gr_passwd: ptr::null_mut(),
+            gr_gid: 0,
+            gr_mem: ptr::null_mut(),
+        };
 
+        unsafe {
             if libc::getgrnam_r(
                 name_cstr.as_ptr(),
                 &mut grp,
