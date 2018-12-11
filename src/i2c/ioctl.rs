@@ -172,7 +172,7 @@ impl Capabilities {
 }
 
 impl fmt::Debug for Capabilities {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Capabilities")
             .field("addr_10bit", &self.addr_10bit())
             .field("i2c_block_read", &self.i2c_block_read())

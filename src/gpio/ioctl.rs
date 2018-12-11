@@ -27,7 +27,7 @@ use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
-use gpio::{Error, Level, Result, Trigger};
+use crate::gpio::{Error, Level, Result, Trigger};
 
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;

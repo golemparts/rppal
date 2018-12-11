@@ -24,9 +24,9 @@ use std::fmt;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
-use gpio::ioctl;
-use gpio::{Error, Level, Result, Trigger};
+use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
+use crate::gpio::ioctl;
+use crate::gpio::{Error, Level, Result, Trigger};
 
 #[derive(Debug)]
 struct Interrupt {
@@ -115,7 +115,7 @@ pub struct EventLoop {
 }
 
 impl fmt::Debug for EventLoop {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("EventLoop")
             .field("poll", &self.poll)
             .field("events", &format_args!("{{ .. }}"))

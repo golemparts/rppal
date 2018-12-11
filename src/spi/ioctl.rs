@@ -299,7 +299,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
 }
 
 impl<'a, 'b> fmt::Debug for TransferSegment<'a, 'b> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransferSegment")
             .field("tx_buf", &self.tx_buf)
             .field("rx_buf", &self.rx_buf)
@@ -355,12 +355,13 @@ pub fn set_mode32(fd: c_int, value: u32) -> Result<i32> {
     parse_retval!(unsafe { ioctl(fd, REQ_WR_MODE_32, &value) })
 }
 
-pub fn transfer(fd: c_int, segments: &[TransferSegment]) -> Result<i32> {
+pub fn transfer(fd: c_int, segments: &[TransferSegment<'_, '_>]) -> Result<i32> {
     parse_retval!(unsafe {
         ioctl(
             fd,
             REQ_WR_MESSAGE
-                | (((segments.len() * size_of::<TransferSegment>()) as IoctlLong) << SIZESHIFT),
+                | (((segments.len() * size_of::<TransferSegment<'_, '_>>()) as IoctlLong)
+                    << SIZESHIFT),
             segments,
         )
     })

@@ -534,7 +534,7 @@ impl Spi {
     /// specific segment.
     ///
     /// [`TransferSegment`]: struct.TransferSegment.html
-    pub fn transfer_segments(&self, segments: &[TransferSegment]) -> Result<()> {
+    pub fn transfer_segments(&self, segments: &[TransferSegment<'_, '_>]) -> Result<()> {
         ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
 
         Ok(())
@@ -546,7 +546,7 @@ impl Spi {
 unsafe impl Send for Spi {}
 
 impl fmt::Debug for Spi {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Spi").field("spidev", &self.spidev).finish()
     }
 }

@@ -61,14 +61,14 @@ use std::thread::sleep;
 use std::time::Duration;
 
 macro_rules! assert_pin {
-  ($pin:expr) => {{
-      assert_pin!($pin, GPIO_MAX_PINS);
-  }};
-  ($pin:expr, $count:expr) => {{
-    if ($pin) >= ($count) {
-        return Err(Error::InvalidPin($pin as u8))
-    }
-  }};
+    ($pin:expr) => {{
+        assert_pin!($pin, GPIO_MAX_PINS);
+    }};
+    ($pin:expr, $count:expr) => {{
+        if ($pin) >= ($count) {
+            return Err(Error::InvalidPin($pin as u8));
+        }
+    }};
 }
 
 mod epoll;
@@ -155,7 +155,7 @@ pub enum Mode {
 }
 
 impl fmt::Display for Mode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Mode::Input => write!(f, "In"),
             Mode::Output => write!(f, "Out"),
@@ -177,7 +177,7 @@ pub enum Level {
 }
 
 impl fmt::Display for Level {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Level::Low => write!(f, "Low"),
             Level::High => write!(f, "High"),
@@ -194,7 +194,7 @@ pub enum PullUpDown {
 }
 
 impl fmt::Display for PullUpDown {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             PullUpDown::Off => write!(f, "Off"),
             PullUpDown::PullDown => write!(f, "PullDown"),
@@ -213,7 +213,7 @@ pub enum Trigger {
 }
 
 impl fmt::Display for Trigger {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Trigger::Disabled => write!(f, "Disabled"),
             Trigger::RisingEdge => write!(f, "RisingEdge"),
@@ -610,7 +610,7 @@ impl Drop for Gpio {
 }
 
 impl fmt::Debug for Gpio {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Gpio")
             .field("initialized", &self.initialized)
             .field("clear_on_drop", &self.clear_on_drop)

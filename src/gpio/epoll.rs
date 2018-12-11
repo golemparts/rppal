@@ -49,7 +49,9 @@ impl EventFd {
     pub fn notify(&self) -> Result<()> {
         let buffer: u64 = 1;
 
-        parse_retval!(unsafe { libc::write(self.fd, &buffer as *const u64 as *const libc::c_void, 8) })?;
+        parse_retval!(unsafe {
+            libc::write(self.fd, &buffer as *const u64 as *const libc::c_void, 8)
+        })?;
 
         Ok(())
     }

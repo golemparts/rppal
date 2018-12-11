@@ -30,8 +30,8 @@ use std::time::Duration;
 
 use libc;
 
-use pwm::Polarity;
-use user;
+use crate::pwm::Polarity;
+use crate::user;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;

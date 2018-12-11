@@ -93,8 +93,8 @@ use std::result;
 
 use libc::c_ulong;
 
-use system;
-use system::{DeviceInfo, Model};
+use crate::system;
+use crate::system::{DeviceInfo, Model};
 
 mod ioctl;
 
@@ -239,7 +239,8 @@ impl I2c {
         File::open(format!(
             "/sys/class/i2c-adapter/i2c-{}/of_node/clock-frequency",
             self.bus
-        ))?.read_exact(&mut buffer)?;
+        ))?
+        .read_exact(&mut buffer)?;
 
         Ok(u32::from(buffer[3])
             | (u32::from(buffer[2]) << 8)

@@ -26,8 +26,8 @@ use std::ptr;
 
 use libc;
 
-use gpio::{Error, Result};
-use system::DeviceInfo;
+use crate::gpio::{Error, Result};
+use crate::system::DeviceInfo;
 
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
 const GPIO_MEM_SIZE: usize = 164;

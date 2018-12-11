@@ -70,7 +70,7 @@ pub enum Model {
 }
 
 impl fmt::Display for Model {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Model::RaspberryPiA => write!(f, "Raspberry Pi A"),
             Model::RaspberryPiAPlus => write!(f, "Raspberry Pi A+"),
@@ -99,7 +99,7 @@ pub enum SoC {
 }
 
 impl fmt::Display for SoC {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             SoC::Bcm2835 => write!(f, "BCM2835"),
             SoC::Bcm2836 => write!(f, "BCM2836"),
@@ -205,12 +205,14 @@ fn parse_base_compatible() -> Result<Model> {
 // Identify Pi model based on /sys/firmware/devicetree/base/model
 fn parse_base_model() -> Result<Model> {
     let mut base_model = match fs::read_to_string("/sys/firmware/devicetree/base/model") {
-        Ok(mut buffer) => if let Some(idx) = buffer.find('\0') {
-            buffer.truncate(idx);
-            buffer
-        } else {
-            buffer
-        },
+        Ok(mut buffer) => {
+            if let Some(idx) = buffer.find('\0') {
+                buffer.truncate(idx);
+                buffer
+            } else {
+                buffer
+            }
+        }
         Err(_) => return Err(Error::UnknownModel),
     };
 
