@@ -2,9 +2,8 @@ use std::fs::File;
 use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::thread::sleep;
 
-use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPPUDCLK, GPIO_OFFSET_GPPUD, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
 
 #[derive(Debug)]
 pub struct Pin {
@@ -45,36 +44,8 @@ impl Pin {
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&self, pud: PullUpDown) -> Result<()> {
-        let gpio_mem = &*self.gpio_mem;
-
-        // Set the control signal in GPPUD, while leaving the other 30
-        // bits unchanged.
-        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
-        gpio_mem.write(
-            GPIO_OFFSET_GPPUD,
-            (reg_value & !0b11) | ((pud as u32) & 0b11),
-        );
-
-        // Set-up time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
-
-        // Select the first GPPUDCLK register for the first 32 pins, and
-        // the second register for the remaining pins.
-        let reg_addr: usize = GPIO_OFFSET_GPPUDCLK + (self.pin / 32) as usize;
-
-        // Clock the control signal into the selected pin.
-        gpio_mem.write(reg_addr, 1 << (self.pin % 32));
-
-        // Hold time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
-
-        // Remove the control signal and clock.
-        let reg_value = gpio_mem.read(GPIO_OFFSET_GPPUD);
-        gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
-        gpio_mem.write(reg_addr, 0 << (self.pin % 32));
-
-        Ok(())
+    pub fn set_pullupdown(&self, pud: PullUpDown) {
+        (*self.gpio_mem).set_pullupdown(self.pin, pud);
     }
 }
 

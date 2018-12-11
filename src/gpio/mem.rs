@@ -23,12 +23,14 @@ use std::fmt;
 use std::io;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
+use std::thread::sleep;
+use std::time::Duration;
 use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc;
 
-use crate::gpio::{Mode, Error, Result, GPIO_OFFSET_GPFSEL};
+use crate::gpio::{Mode, PullUpDown, Error, Result, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPPUD, GPIO_OFFSET_GPPUDCLK};
 use crate::system::DeviceInfo;
 
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
@@ -188,6 +190,48 @@ impl GpioMem {
         }
 
         self.locks[offset].store(false, Ordering::SeqCst);
+    }
+
+    /// Configures the built-in GPIO pull-up/pull-down resistors.
+    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+        // Select the first GPPUDCLK register for the first 32 pins, and
+        // the second register for the remaining pins.
+        let offset: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
+
+        loop {
+          if self.locks[GPIO_OFFSET_GPPUD].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+              break;
+            } else {
+              self.locks[GPIO_OFFSET_GPPUD].store(false, Ordering::SeqCst);
+            }
+          }
+        }
+
+        // Set the control signal in GPPUD, while leaving the other 30
+        // bits unchanged.
+        let reg_value = self.read(GPIO_OFFSET_GPPUD);
+        self.write(
+            GPIO_OFFSET_GPPUD,
+            (reg_value & !0b11) | ((pud as u32) & 0b11),
+        );
+
+        // Set-up time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
+
+        // Clock the control signal into the selected pin.
+        self.write(offset, 1 << (pin % 32));
+
+        // Hold time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
+
+        // Remove the control signal and clock.
+        let reg_value = self.read(GPIO_OFFSET_GPPUD);
+        self.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
+        self.write(offset, 0 << (pin % 32));
+
+        self.locks[offset].store(false, Ordering::SeqCst);
+        self.locks[GPIO_OFFSET_GPPUD].store(false, Ordering::SeqCst);
     }
 }
 
