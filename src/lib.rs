@@ -27,6 +27,7 @@
 #![doc(html_root_url = "https://docs.rs/rppal/0.9.0")]
 // Needed for the quick_error! macro
 #![recursion_limit = "128"]
+#![allow(clippy::new_ret_no_self)]
 
 extern crate libc;
 #[macro_use]

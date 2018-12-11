@@ -40,7 +40,7 @@ impl Interrupt {
     fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
         let chip_info = ioctl::ChipInfo::new(fd)?;
 
-        assert_pin!(pin as u32, chip_info.lines);
+        assert_pin!(u32::from(pin), chip_info.lines);
 
         let event_request = ioctl::EventRequest::new(fd, pin, trigger)?;
 
