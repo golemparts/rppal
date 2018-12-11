@@ -147,31 +147,16 @@ pub type Result<T> = result::Result<T, Error>;
 
 /// Pin modes.
 #[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(u8)]
 pub enum Mode {
     Input = 0b000,
     Output = 0b001,
-    Alt5   = 0b010, // PWM
-    Alt4   = 0b011, // SPI
-    Alt0   = 0b100, // PCM
-    Alt1   = 0b101, // SMI
-    Alt2   = 0b110, // ---
-    Alt3   = 0b111, // BSC-SPI
-}
-
-impl From<u8> for Mode {
-    fn from(mode: u8) -> Mode {
-        match mode {
-            0b000 => Mode::Input,
-            0b001 => Mode::Output,
-            0b010 => Mode::Alt5,
-            0b011 => Mode::Alt4,
-            0b100 => Mode::Alt0,
-            0b101 => Mode::Alt1,
-            0b110 => Mode::Alt2,
-            0b111 => Mode::Alt3,
-            _ => unreachable!(),
-        }
-    }
+    Alt5 = 0b010, // PWM
+    Alt4 = 0b011, // SPI
+    Alt0 = 0b100, // PCM
+    Alt1 = 0b101, // SMI
+    Alt2 = 0b110, // ---
+    Alt3 = 0b111, // BSC-SPI
 }
 
 impl fmt::Display for Mode {

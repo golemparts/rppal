@@ -39,9 +39,9 @@ impl Pin {
     pub fn mode(&self) -> Mode {
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (self.pin / 10) as usize;
         let reg_value = (*self.gpio_mem).read(reg_addr);
-        let mode_value = ((reg_value >> ((self.pin % 10) * 3)) & 0b111) as u8;
+        let mode_value = reg_value >> ((self.pin % 10) * 3);
 
-        mode_value.into()
+        unsafe { std::mem::transmute((mode_value as u8) & 0b111) }
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
