@@ -28,7 +28,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc;
 
-use crate::gpio::{Error, Result};
+use crate::gpio::{Mode, Error, Result, GPIO_OFFSET_GPFSEL};
 use crate::system::DeviceInfo;
 
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
@@ -163,6 +163,28 @@ impl GpioMem {
 
         unsafe {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
+        }
+
+        self.locks[offset].store(false, Ordering::SeqCst);
+    }
+
+    pub fn set_mode(&self, pin: u8, mode: Mode) {
+        let offset: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
+
+        debug_assert!(offset < GPIO_MEM_SIZE);
+
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            break;
+          }
+        }
+
+        let shift = (pin % 10) * 3;
+
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          let value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, (value & !(0b111 << shift)) | ((mode as u32) << shift));
         }
 
         self.locks[offset].store(false, Ordering::SeqCst);

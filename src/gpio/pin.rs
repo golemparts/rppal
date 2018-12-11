@@ -32,15 +32,7 @@ impl Pin {
     }
 
     pub(crate) fn set_mode(&mut self, mode: Mode) {
-        let reg_addr: usize = GPIO_OFFSET_GPFSEL + (self.pin / 10) as usize;
-
-        let reg_value = (*self.gpio_mem).read(reg_addr);
-        (*self.gpio_mem).write(
-            reg_addr,
-            (reg_value & !(0b111 << ((self.pin % 10) * 3)))
-                | ((mode as u32 & 0b111) << ((self.pin % 10) * 3)),
-        );
-
+        (*self.gpio_mem).set_mode(self.pin, mode);
     }
 
     /// Returns the current GPIO pin mode.
