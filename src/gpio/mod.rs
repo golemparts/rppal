@@ -60,6 +60,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
+macro_rules! assert_pin {
+  ($pin:expr) => {{
+      assert_pin!($pin, GPIO_MAX_PINS);
+  }};
+  ($pin:expr, $count:expr) => {{
+    if ($pin) >= ($count) {
+        return Err(Error::InvalidPin($pin as u8))
+    }
+  }};
+}
+
 mod epoll;
 mod interrupt;
 mod ioctl;
@@ -120,14 +131,6 @@ quick_error! {
 ///
 /// [`Gpio`]: struct.Gpio.html
         InstanceExists { description("an instance of Gpio already exists") }
-/// [`Gpio`] isn't initialized.
-///
-/// You should normally only see this error when you call a method after
-/// running [`cleanup`].
-///
-/// [`cleanup`]: struct.Gpio.html#method.cleanup
-/// [`Gpio`]: struct.Gpio.html
-        NotInitialized { description("not initialized") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
 /// Interrupt polling thread panicked.
@@ -328,30 +331,29 @@ impl Gpio {
     /// scope, but you can manually call it to handle early/abnormal termination.
     /// After calling this method, any future calls to other methods won't have any
     /// result.
-    pub fn cleanup(&mut self) {
-        if self.initialized {
-            // Use a cloned copy, because set_mode() will try to change
-            // the contents of the original vector.
-            for pin_state in &self.orig_pin_state.clone() {
-                if pin_state.changed {
-                    self.set_mode(pin_state.pin, pin_state.mode);
-                }
-            }
+    pub fn cleanup(mut self) -> Result<()> {
+        self.cleanup_internal()
+    }
 
-            self.gpio_mem.close();
-            self.initialized = false;
+    fn cleanup_internal(&mut self) -> Result<()> {
+        // Use a cloned copy, because set_mode() will try to change
+        // the contents of the original vector.
+        for pin_state in &self.orig_pin_state.clone() {
+            if pin_state.changed {
+                self.set_mode(pin_state.pin, pin_state.mode)?;
+            }
         }
+
+        self.gpio_mem.close();
+
+        self.initialized = false;
+
+        Ok(())
     }
 
     /// Gets the current GPIO pin mode.
     pub fn mode(&self, pin: u8) -> Result<Mode> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin);
 
         let reg_addr: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
         let reg_value = self.gpio_mem.read(reg_addr);
@@ -381,10 +383,8 @@ impl Gpio {
     /// [`BCM2835`] documentation.
     ///
     /// [`BCM2835`]: https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-    pub fn set_mode(&mut self, pin: u8, mode: Mode) {
-        if !self.initialized || (pin >= GPIO_MAX_PINS) {
-            return;
-        }
+    pub fn set_mode(&mut self, pin: u8, mode: Mode) -> Result<()> {
+        assert_pin!(pin);
 
         // Keep track of our mode changes, so we can revert them in cleanup()
         if let Some(pin_state) = self.orig_pin_state.get_mut(pin as usize) {
@@ -401,17 +401,13 @@ impl Gpio {
             (reg_value & !(0b111 << ((pin % 10) * 3)))
                 | ((mode as u32 & 0b111) << ((pin % 10) * 3)),
         );
+
+        Ok(())
     }
 
     /// Reads the current GPIO pin logic level.
     pub fn read(&self, pin: u8) -> Result<Level> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin);
 
         let reg_addr: usize = GPIO_OFFSET_GPLEV + (pin / 32) as usize;
         let reg_value = self.gpio_mem.read(reg_addr);
@@ -424,10 +420,8 @@ impl Gpio {
     }
 
     /// Changes the GPIO pin logic level to high or low.
-    pub fn write(&self, pin: u8, level: Level) {
-        if !self.initialized || (pin >= GPIO_MAX_PINS) {
-            return;
-        }
+    pub fn write(&self, pin: u8, level: Level) -> Result<()> {
+        assert_pin!(pin);
 
         let reg_addr: usize = match level {
             Level::Low => GPIO_OFFSET_GPCLR + (pin / 32) as usize,
@@ -435,13 +429,13 @@ impl Gpio {
         };
 
         self.gpio_mem.write(reg_addr, 1 << (pin % 32));
+
+        Ok(())
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
-        if !self.initialized || (pin >= GPIO_MAX_PINS) {
-            return;
-        }
+    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) -> Result<()> {
+        assert_pin!(pin);
 
         // Set the control signal in GPPUD, while leaving the other 30
         // bits unchanged.
@@ -468,6 +462,8 @@ impl Gpio {
         let reg_value = self.gpio_mem.read(GPIO_OFFSET_GPPUD);
         self.gpio_mem.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
         self.gpio_mem.write(reg_addr, 0 << (pin % 32));
+
+        Ok(())
     }
 
     /// Configures a synchronous interrupt trigger.
@@ -480,36 +476,20 @@ impl Gpio {
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin);
 
         // We can't have sync and async interrupts on the same pin at the same time
         self.clear_async_interrupt(pin)?;
 
         // Each pin can only be configured for a single trigger type
-        self.sync_interrupts.set_interrupt(pin, trigger)?;
-
-        Ok(())
+        self.sync_interrupts.set_interrupt(pin, trigger)
     }
 
     /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
+        assert_pin!(pin);
 
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
-
-        self.sync_interrupts.clear_interrupt(pin)?;
-
-        Ok(())
+        self.sync_interrupts.clear_interrupt(pin)
     }
 
     /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
@@ -532,13 +512,12 @@ impl Gpio {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<Level>> {
-        match self.poll_interrupts(&[pin], reset, timeout) {
-            Ok(opt) => if let Some(trigger) = opt {
-                Ok(Some(trigger.1))
-            } else {
-                Ok(None)
-            },
-            Err(e) => Err(e),
+        let opt = self.poll_interrupts(&[pin], reset, timeout)?;
+
+        if let Some(trigger) = opt {
+            Ok(Some(trigger.1))
+        } else {
+            Ok(None)
         }
     }
 
@@ -567,17 +546,11 @@ impl Gpio {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<(u8, Level)>> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
         for pin in pins {
-            if *pin >= GPIO_MAX_PINS {
-                return Err(Error::InvalidPin(*pin));
-            }
+            assert_pin!(*pin);
         }
 
-        Ok(self.sync_interrupts.poll(pins, reset, timeout)?)
+        self.sync_interrupts.poll(pins, reset, timeout)
     }
 
     /// Configures an asynchronous interrupt trigger, which will execute the callback on a
@@ -593,13 +566,7 @@ impl Gpio {
     where
         C: FnMut(Level) + Send + 'static,
     {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin);
 
         // We can't have sync and async interrupts on the same pin at the same time
         self.clear_interrupt(pin)?;
@@ -619,13 +586,7 @@ impl Gpio {
 
     /// Removes a previously configured asynchronous interrupt trigger.
     pub fn clear_async_interrupt(&mut self, pin: u8) -> Result<()> {
-        if !self.initialized {
-            return Err(Error::NotInitialized);
-        }
-
-        if pin >= GPIO_MAX_PINS {
-            return Err(Error::InvalidPin(pin));
-        }
+        assert_pin!(pin);
 
         if let Some(mut interrupt) = self.async_interrupts[pin as usize].take() {
             // stop() blocks until the poll thread exits
@@ -638,8 +599,8 @@ impl Gpio {
 
 impl Drop for Gpio {
     fn drop(&mut self) {
-        if self.clear_on_drop {
-            self.cleanup();
+        if self.clear_on_drop && self.initialized {
+            let _ = self.cleanup_internal();
         }
 
         unsafe {

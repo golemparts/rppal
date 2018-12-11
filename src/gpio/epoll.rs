@@ -30,14 +30,6 @@ pub use libc::{epoll_event, EPOLLERR, EPOLLET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, 
 
 pub type Result<T> = result::Result<T, io::Error>;
 
-fn parse_retval(retval: libc::c_int) -> Result<i32> {
-    if retval == -1 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(retval)
-    }
-}
-
 // We're using EventFd to wake up another thread
 // that's waiting for epoll_wait() to return.
 #[derive(Debug)]
@@ -48,7 +40,7 @@ pub struct EventFd {
 impl EventFd {
     pub fn new() -> Result<EventFd> {
         Ok(EventFd {
-            fd: parse_retval(unsafe {
+            fd: parse_retval!(unsafe {
                 libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE)
             })?,
         })
@@ -57,11 +49,9 @@ impl EventFd {
     pub fn notify(&self) -> Result<()> {
         let buffer: u64 = 1;
 
-        if unsafe { libc::write(self.fd, &buffer as *const u64 as *const libc::c_void, 8) } == -1 {
-            Err(io::Error::last_os_error())
-        } else {
-            Ok(())
-        }
+        parse_retval!(unsafe { libc::write(self.fd, &buffer as *const u64 as *const libc::c_void, 8) })?;
+
+        Ok(())
     }
 
     pub fn fd(&self) -> i32 {
@@ -85,7 +75,7 @@ pub struct Epoll {
 impl Epoll {
     pub fn new() -> Result<Epoll> {
         Ok(Epoll {
-            fd: parse_retval(unsafe { libc::epoll_create1(0) })?,
+            fd: parse_retval!(unsafe { libc::epoll_create1(0) })?,
         })
     }
 
@@ -95,7 +85,7 @@ impl Epoll {
             u64: id as u64,
         };
 
-        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_ADD, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_ADD, fd, &mut event) })?;
 
         Ok(())
     }
@@ -106,7 +96,7 @@ impl Epoll {
             u64: id as u64,
         };
 
-        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_MOD, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_MOD, fd, &mut event) })?;
 
         Ok(())
     }
@@ -114,7 +104,7 @@ impl Epoll {
     pub fn delete(&self, fd: i32) -> Result<()> {
         let mut event = libc::epoll_event { events: 0, u64: 0 };
 
-        parse_retval(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_DEL, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_DEL, fd, &mut event) })?;
 
         Ok(())
     }
@@ -134,7 +124,7 @@ impl Epoll {
             -1
         };
 
-        Ok(parse_retval(unsafe {
+        Ok(parse_retval!(unsafe {
             libc::epoll_wait(self.fd, events.as_mut_ptr(), events.len() as i32, timeout)
         })? as usize)
     }

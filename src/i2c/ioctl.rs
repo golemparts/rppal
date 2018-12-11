@@ -32,14 +32,6 @@ type IoctlLong = libc::c_long;
 
 pub type Result<T> = result::Result<T, io::Error>;
 
-fn parse_retval(retval: c_int) -> Result<i32> {
-    if retval == -1 {
-        Err(io::Error::last_os_error())
-    } else {
-        Ok(retval)
-    }
-}
-
 // Based on i2c.h, i2c-dev.c, i2c-dev.h and the documentation at https://www.kernel.org/doc/Documentation/i2c
 // and http://smbus.org/specs/SMBus_3_1_20180319.pdf
 
@@ -327,7 +319,7 @@ fn smbus_request(
         },
     };
 
-    parse_retval(unsafe { ioctl(fd, REQ_SMBUS, &mut request) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_SMBUS, &mut request) })?;
 
     Ok(())
 }
@@ -559,25 +551,25 @@ pub fn i2c_write_read(
         nmsgs: 2,
     };
 
-    parse_retval(unsafe { ioctl(fd, REQ_RDWR, &mut request) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_RDWR, &mut request) })?;
 
     Ok(())
 }
 
 pub fn set_slave_address(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(unsafe { ioctl(fd, REQ_SLAVE, value) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_SLAVE, value) })?;
 
     Ok(())
 }
 
 pub fn set_addr_10bit(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(unsafe { ioctl(fd, REQ_TENBIT, value) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_TENBIT, value) })?;
 
     Ok(())
 }
 
 pub fn set_pec(fd: c_int, value: c_ulong) -> Result<()> {
-    parse_retval(unsafe { ioctl(fd, REQ_PEC, value) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_PEC, value) })?;
 
     Ok(())
 }
@@ -590,14 +582,14 @@ pub fn set_timeout(fd: c_int, value: c_ulong) -> Result<()> {
         value / 10
     };
 
-    parse_retval(unsafe { ioctl(fd, REQ_TIMEOUT, timeout) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_TIMEOUT, timeout) })?;
 
     Ok(())
 }
 
 pub fn set_retries(fd: c_int, value: c_ulong) -> Result<()> {
     // Number of retries on arbitration loss
-    parse_retval(unsafe { ioctl(fd, REQ_RETRIES, value) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_RETRIES, value) })?;
 
     Ok(())
 }
@@ -605,7 +597,7 @@ pub fn set_retries(fd: c_int, value: c_ulong) -> Result<()> {
 pub fn funcs(fd: c_int) -> Result<Capabilities> {
     let mut funcs: c_ulong = 0;
 
-    parse_retval(unsafe { ioctl(fd, REQ_FUNCS, &mut funcs) })?;
+    parse_retval!(unsafe { ioctl(fd, REQ_FUNCS, &mut funcs) })?;
 
     Ok(Capabilities::new(funcs))
 }
