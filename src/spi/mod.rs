@@ -109,6 +109,8 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
+use quick_error::quick_error;
+
 mod ioctl;
 
 pub use self::ioctl::TransferSegment;

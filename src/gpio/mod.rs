@@ -60,6 +60,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
+use quick_error::quick_error;
+
 macro_rules! assert_pin {
     ($pin:expr) => {{
         assert_pin!($pin, GPIO_MAX_PINS);

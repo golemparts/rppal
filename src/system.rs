@@ -31,6 +31,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
+use quick_error::quick_error;
+
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
 const GPIO_OFFSET: u32 = 0x20_0000;

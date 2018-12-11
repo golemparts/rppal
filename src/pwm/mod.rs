@@ -83,6 +83,8 @@ use std::io;
 use std::result;
 use std::time::Duration;
 
+use quick_error::quick_error;
+
 mod sysfs;
 
 quick_error! {

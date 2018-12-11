@@ -29,10 +29,6 @@
 #![recursion_limit = "128"]
 #![allow(clippy::new_ret_no_self)]
 
-extern crate libc;
-#[macro_use]
-extern crate quick_error;
-
 mod user;
 
 #[macro_use]

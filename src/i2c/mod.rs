@@ -92,6 +92,7 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 
 use libc::c_ulong;
+use quick_error::quick_error;
 
 use crate::system;
 use crate::system::{DeviceInfo, Model};
