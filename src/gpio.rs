@@ -63,7 +63,7 @@ use quick_error::quick_error;
 
 macro_rules! assert_pin {
     ($pin:expr) => {{
-        assert_pin!($pin, GPIO_MAX_PINS);
+        assert_pin!($pin as usize, pin::MAX);
     }};
     ($pin:expr, $count:expr) => {{
         if ($pin) >= ($count) {
@@ -79,17 +79,6 @@ mod mem;
 mod pin;
 
 pub use self::pin::{InputPin, OutputPin};
-
-// Maximum GPIO pins on the BCM2835. The actual number of pins exposed through the Pi's GPIO header
-// depends on the model.
-const GPIO_MAX_PINS: u8 = 54;
-// Offset in 32-bit units
-const GPIO_OFFSET_GPFSEL: usize = 0;
-const GPIO_OFFSET_GPSET: usize = 7;
-const GPIO_OFFSET_GPCLR: usize = 10;
-const GPIO_OFFSET_GPLEV: usize = 13;
-const GPIO_OFFSET_GPPUD: usize = 37;
-const GPIO_OFFSET_GPPUDCLK: usize = 38;
 
 // Used to limit Gpio to a single instance
 static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
@@ -233,7 +222,7 @@ impl fmt::Display for Trigger {
 pub struct Gpio {
     clear_on_drop: bool,
     pub(crate) gpio_mem: Arc<mem::GpioMem>,
-    pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize],
+    pins: [Arc<Mutex<pin::Pin>>; pin::MAX],
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
 }
 
@@ -259,11 +248,11 @@ impl Gpio {
         let cdev_fd = cdev.as_raw_fd();
 
         let cdev = Arc::new(cdev);
-        let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, GPIO_MAX_PINS as usize)?));
+        let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, pin::MAX)?));
         let gpio_mem = Arc::new(mem::GpioMem::open()?);
 
         let pins = unsafe {
-            let mut pins: [Arc<Mutex<pin::Pin>>; GPIO_MAX_PINS as usize] = std::mem::uninitialized();
+            let mut pins: [Arc<Mutex<pin::Pin>>; pin::MAX] = std::mem::uninitialized();
 
             for (i, element) in pins.iter_mut().enumerate() {
                 let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, event_loop.clone(), gpio_mem.clone(), cdev.clone())));
@@ -293,7 +282,7 @@ impl Gpio {
     }
 
     pub fn get_pin(&self, pin: u8) -> Option<MutexGuard<pin::Pin>> {
-        if pin >= GPIO_MAX_PINS {
+        if pin as usize >= pin::MAX {
             None
         } else {
             Some(self.pins[pin as usize].lock().unwrap())

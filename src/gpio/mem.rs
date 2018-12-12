@@ -30,15 +30,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc;
 
-use crate::gpio::{Mode, PullUpDown, Error, Result, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPPUD, GPIO_OFFSET_GPPUDCLK};
+use crate::gpio::{Level, Mode, PullUpDown, Error, Result};
 use crate::system::DeviceInfo;
 
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
-const GPIO_MEM_SIZE: usize = 164;
+const GPIO_MEM_REGISTERS: usize = 41;
+const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
+
+const GPFSEL0:   usize = 0x00 / std::mem::size_of::<u32>();
+const GPSET0:    usize = 0x1c / std::mem::size_of::<u32>();
+const GPCLR0:    usize = 0x28 / std::mem::size_of::<u32>();
+const GPLEV0:    usize = 0x34 / std::mem::size_of::<u32>();
+const GPPUD:     usize = 0x94 / std::mem::size_of::<u32>();
+const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
 
 pub struct GpioMem {
     mem_ptr: *mut u32,
-    locks: [AtomicBool; GPIO_MEM_SIZE],
+    locks: [AtomicBool; GPIO_MEM_REGISTERS],
 }
 
 impl fmt::Debug for GpioMem {
@@ -67,7 +75,7 @@ impl GpioMem {
         };
 
         let locks = unsafe {
-            let mut locks: [AtomicBool; GPIO_MEM_SIZE] = std::mem::uninitialized();
+            let mut locks: [AtomicBool; GPIO_MEM_REGISTERS] = std::mem::uninitialized();
 
             for element in locks.iter_mut() {
                 std::ptr::write(element, AtomicBool::new(false))
@@ -138,25 +146,21 @@ impl GpioMem {
         Ok(mem_ptr as *mut u32)
     }
 
-    pub fn read(&self, offset: usize) -> u32 {
-        debug_assert!(offset < GPIO_MEM_SIZE);
-
+    fn read(&self, offset: usize) -> u32 {
         loop {
           if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
             break;
           }
         }
 
-        let res = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
+        let reg_value = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
 
         self.locks[offset].store(false, Ordering::SeqCst);
 
-        res
+        reg_value
     }
 
-    pub fn write(&self, offset: usize, value: u32) {
-        debug_assert!(offset < GPIO_MEM_SIZE);
-
+    fn write(&self, offset: usize, value: u32) {
         loop {
           if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
             break;
@@ -170,10 +174,39 @@ impl GpioMem {
         self.locks[offset].store(false, Ordering::SeqCst);
     }
 
-    pub fn set_mode(&self, pin: u8, mode: Mode) {
-        let offset: usize = GPIO_OFFSET_GPFSEL + (pin / 10) as usize;
+    pub fn set_high(&self, pin: u8) {
+        let offset = GPSET0 + pin as usize / 32;
+        let shift = pin % 32;
+        self.write(offset, 1 << shift);
+    }
 
-        debug_assert!(offset < GPIO_MEM_SIZE);
+    pub fn set_low(&self, pin: u8) {
+        let offset = GPCLR0 + pin as usize / 32;
+        let shift = pin % 32;
+        self.write(offset, 1 << shift);
+    }
+
+    pub fn level(&self, pin: u8) -> Level {
+        let offset = GPLEV0 + pin as usize / 32;
+        let shift = pin % 32;
+
+        let reg_value = self.read(offset);
+
+        unsafe { std::mem::transmute((reg_value & (1 << shift)) as u8) }
+    }
+
+    pub fn mode(&self, pin: u8) -> Mode {
+        let offset = GPFSEL0 + pin as usize / 10;
+        let shift = (pin % 10) * 3;
+
+        let reg_value = self.read(offset);
+
+        unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b111) }
+    }
+
+    pub fn set_mode(&self, pin: u8, mode: Mode) {
+        let offset = GPFSEL0 + pin as usize / 10;
+        let shift = (pin % 10) * 3;
 
         loop {
           if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
@@ -181,12 +214,10 @@ impl GpioMem {
           }
         }
 
-        let shift = (pin % 10) * 3;
-
         unsafe {
           let mem_ptr = self.mem_ptr.add(offset);
-          let value = ptr::read_volatile(mem_ptr);
-          ptr::write_volatile(mem_ptr, (value & !(0b111 << shift)) | ((mode as u32) << shift));
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, (reg_value & !(0b111 << shift)) | ((mode as u32) << shift));
         }
 
         self.locks[offset].store(false, Ordering::SeqCst);
@@ -194,44 +225,40 @@ impl GpioMem {
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
     pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
-        // Select the first GPPUDCLK register for the first 32 pins, and
-        // the second register for the remaining pins.
-        let offset: usize = GPIO_OFFSET_GPPUDCLK + (pin / 32) as usize;
+        let offset = GPPUDCLK0 + pin as usize / 32;
+        let shift = pin % 32;
 
         loop {
-          if self.locks[GPIO_OFFSET_GPPUD].compare_and_swap(false, true, Ordering::SeqCst) == false {
+          if self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) == false {
             if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
               break;
             } else {
-              self.locks[GPIO_OFFSET_GPPUD].store(false, Ordering::SeqCst);
+              self.locks[GPPUD].store(false, Ordering::SeqCst);
             }
           }
         }
 
         // Set the control signal in GPPUD, while leaving the other 30
         // bits unchanged.
-        let reg_value = self.read(GPIO_OFFSET_GPPUD);
-        self.write(
-            GPIO_OFFSET_GPPUD,
-            (reg_value & !0b11) | ((pud as u32) & 0b11),
-        );
+        let reg_value = self.read(GPPUD);
+        self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
 
         // Set-up time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Clock the control signal into the selected pin.
-        self.write(offset, 1 << (pin % 32));
+        self.write(offset, 1 << shift);
 
         // Hold time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Remove the control signal and clock.
-        let reg_value = self.read(GPIO_OFFSET_GPPUD);
-        self.write(GPIO_OFFSET_GPPUD, reg_value & !0b11);
-        self.write(offset, 0 << (pin % 32));
+        let reg_value = self.read(GPPUD);
+        self.write(GPPUD, reg_value & !0b11);
+        self.write(offset, 0 << shift);
 
         self.locks[offset].store(false, Ordering::SeqCst);
-        self.locks[GPIO_OFFSET_GPPUD].store(false, Ordering::SeqCst);
+        self.locks[GPPUD].store(false, Ordering::SeqCst);
     }
 }
 

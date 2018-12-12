@@ -3,7 +3,11 @@ use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, GPIO_OFFSET_GPLEV, GPIO_OFFSET_GPFSEL, GPIO_OFFSET_GPCLR, GPIO_OFFSET_GPSET, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+
+// Maximum GPIO pins on the BCM2835. The actual number of pins
+// exposed through the Pi's GPIO header depends on the model.
+pub const MAX: usize = 54;
 
 #[derive(Debug)]
 pub struct Pin {
@@ -36,11 +40,7 @@ impl Pin {
 
     /// Returns the current GPIO pin mode.
     pub fn mode(&self) -> Mode {
-        let reg_addr: usize = GPIO_OFFSET_GPFSEL + (self.pin / 10) as usize;
-        let reg_value = (*self.gpio_mem).read(reg_addr);
-        let mode_value = reg_value >> ((self.pin % 10) * 3);
-
-        unsafe { std::mem::transmute((mode_value as u8) & 0b111) }
+        (*self.gpio_mem).mode(self.pin)
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
@@ -92,14 +92,7 @@ impl<'a> InputPin<'a> {
     }
 
     pub fn read(&self) -> Level {
-        let reg_addr: usize = GPIO_OFFSET_GPLEV + (self.pin.pin / 32) as usize;
-        let reg_value = (*self.pin.gpio_mem).read(reg_addr);
-
-        if (reg_value & (1 << (self.pin.pin % 32))) > 0 {
-            Level::High
-        } else {
-            Level::Low
-        }
+        (*self.pin.gpio_mem).level(self.pin.pin)
     }
 
     /// Configures a synchronous interrupt trigger.
@@ -239,20 +232,18 @@ impl<'a> OutputPin<'a> {
     }
 
     pub fn set_low(&mut self) {
-        self.write(Level::Low)
+        (*self.pin.gpio_mem).set_low(self.pin.pin);
     }
 
     pub fn set_high(&mut self) {
-        self.write(Level::High)
+        (*self.pin.gpio_mem).set_high(self.pin.pin);
     }
 
     pub fn write(&mut self, level: Level) {
-        let reg_addr: usize = match level {
-            Level::Low => GPIO_OFFSET_GPCLR + (self.pin.pin / 32) as usize,
-            Level::High => GPIO_OFFSET_GPSET + (self.pin.pin / 32) as usize,
+        match level {
+            Level::Low => self.set_low(),
+            Level::High => self.set_high(),
         };
-
-        (*self.pin.gpio_mem).write(reg_addr, 1 << (self.pin.pin % 32));
     }
 }
 
