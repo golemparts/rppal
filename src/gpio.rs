@@ -299,25 +299,11 @@ impl Gpio {
     /// [`set_interrupt`]: #method.set_interrupt
     pub fn poll_interrupts<'a>(
       &self,
-      pins: &'a[&'a InputPin<'a>],
+      pins: &[&'a InputPin<'a>],
       reset: bool,
       timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
-      let pin_ids: Vec<u8> = pins.iter().map(|pin| pin.pin.pin).collect();
-
-      match (*self.sync_interrupts.lock().unwrap()).poll(&pin_ids, reset, timeout) {
-        Ok(Some((pin_id, level))) => {
-          for pin in pins {
-            if pin.pin.pin == pin_id {
-              return Ok(Some((pin, level)))
-            }
-          }
-
-          unsafe { std::hint::unreachable_unchecked() }
-        },
-        Ok(None) => Ok(None),
-        Err(err) => Err(err),
-      }
+      (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
   }
 

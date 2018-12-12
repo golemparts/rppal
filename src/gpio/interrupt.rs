@@ -27,6 +27,7 @@ use std::time::{Duration, Instant};
 use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use crate::gpio::ioctl;
 use crate::gpio::{Error, Level, Result, Trigger};
+use crate::gpio::pin::InputPin;
 
 #[derive(Debug)]
 struct Interrupt {
@@ -142,24 +143,26 @@ impl EventLoop {
         })
     }
 
-    pub fn poll(
+    pub fn poll<'a>(
         &mut self,
-        pins: &[u8],
+        pins: &[&'a InputPin<'a>],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(u8, Level)>> {
+    ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
         for pin in pins {
+            let ref mut trigger_status = self.trigger_status[pin.pin.pin as usize];
+
             // Did we cache any trigger events during the previous poll?
-            if self.trigger_status[*pin as usize].triggered {
-                self.trigger_status[*pin as usize].triggered = false;
+            if trigger_status.triggered {
+                trigger_status.triggered = false;
 
                 if !reset {
-                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
+                    return Ok(Some((pin, trigger_status.level)));
                 }
             }
 
             // Reset any pending trigger events
-            if let Some(ref mut interrupt) = self.trigger_status[*pin as usize].interrupt {
+            if let Some(ref mut interrupt) = trigger_status.interrupt {
                 if reset {
                     self.poll.delete(interrupt.fd())?;
                     interrupt.reset()?;
@@ -206,11 +209,11 @@ impl EventLoop {
             // Were any interrupts triggered? If so, return one. The rest
             // will be saved for the next poll.
             for pin in pins {
-                let ref mut trigger_status = self.trigger_status[*pin as usize];
+                let ref mut trigger_status = self.trigger_status[pin.pin.pin as usize];
 
                 if trigger_status.triggered {
                     trigger_status.triggered = false;
-                    return Ok(Some((*pin, trigger_status.level)));
+                    return Ok(Some((pin, trigger_status.level)));
                 }
             }
 

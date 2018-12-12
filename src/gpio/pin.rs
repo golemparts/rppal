@@ -131,7 +131,7 @@ impl<'a> InputPin<'a> {
     ///
     /// [`set_interrupt`]: #method.set_interrupt
     pub fn poll_interrupt(&mut self, reset: bool, timeout: Option<Duration>) -> Result<Option<Level>> {
-        let opt = (*self.pin.event_loop.lock().unwrap()).poll(&[self.pin.pin], reset, timeout)?;
+        let opt = (*self.pin.event_loop.lock().unwrap()).poll(&[self], reset, timeout)?;
 
         if let Some(trigger) = opt {
             Ok(Some(trigger.1))
