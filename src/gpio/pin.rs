@@ -11,7 +11,7 @@ pub const MAX: usize = 54;
 
 #[derive(Debug)]
 pub struct Pin {
-    pin: u8,
+    pub(crate) pin: u8,
     event_loop: Arc<Mutex<EventLoop>>,
     gpio_mem: Arc<GpioMem>,
     gpio_cdev: Arc<File>,
@@ -51,7 +51,7 @@ impl Pin {
 
 #[derive(Debug)]
 pub struct InputPin<'a> {
-    pin: &'a mut Pin,
+    pub(crate) pin: &'a mut Pin,
     prev_mode: Option<Mode>,
     async_interrupt: Option<AsyncInterrupt>,
     clear_on_drop: bool,

@@ -61,17 +61,6 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use quick_error::quick_error;
 
-macro_rules! assert_pin {
-    ($pin:expr) => {{
-        assert_pin!($pin as usize, pin::MAX);
-    }};
-    ($pin:expr, $count:expr) => {{
-        if ($pin) >= ($count) {
-            return Err(Error::InvalidPin($pin as u8));
-        }
-    }};
-}
-
 mod epoll;
 mod interrupt;
 mod ioctl;
@@ -308,17 +297,27 @@ impl Gpio {
     /// the next time `poll_interrupts` is called.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    pub fn poll_interrupts(
-        &mut self,
-        pins: &[u8],
-        reset: bool,
-        timeout: Option<Duration>,
-    ) -> Result<Option<(u8, Level)>> {
-        for pin in pins {
-            assert_pin!(*pin);
-        }
+    pub fn poll_interrupts<'a>(
+      &self,
+      pins: &'a[&'a InputPin<'a>],
+      reset: bool,
+      timeout: Option<Duration>,
+    ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
+      let pin_ids: Vec<u8> = pins.iter().map(|pin| pin.pin.pin).collect();
 
-        (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
+      match (*self.sync_interrupts.lock().unwrap()).poll(&pin_ids, reset, timeout) {
+        Ok(Some((pin_id, level))) => {
+          for pin in pins {
+            if pin.pin.pin == pin_id {
+              return Ok(Some((pin, level)))
+            }
+          }
+
+          unsafe { std::hint::unreachable_unchecked() }
+        },
+        Ok(None) => Ok(None),
+        Err(err) => Err(err),
+      }
     }
   }
 
