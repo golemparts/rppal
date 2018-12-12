@@ -27,25 +27,122 @@ impl Pin {
     }
 
     pub fn as_output(&mut self) -> OutputPin {
-        OutputPin::new(self, Mode::Output)
+        OutputPin::new(self)
     }
 
-    pub fn as_output_with_mode(&mut self, mode: Mode) -> OutputPin {
-        OutputPin::new(self, mode)
+    pub fn as_alt(&mut self, mode: Mode) -> AltPin {
+        AltPin::new(self, mode)
     }
 
+    #[inline]
     pub(crate) fn set_mode(&mut self, mode: Mode) {
         (*self.gpio_mem).set_mode(self.pin, mode);
     }
 
     /// Returns the current GPIO pin mode.
+    #[inline]
     pub fn mode(&self) -> Mode {
         (*self.gpio_mem).mode(self.pin)
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&self, pud: PullUpDown) {
+    #[inline]
+    pub(crate) fn set_pullupdown(&self, pud: PullUpDown) {
         (*self.gpio_mem).set_pullupdown(self.pin, pud);
+    }
+
+    #[inline]
+    pub(crate) fn read(&self) -> Level {
+        (*self.gpio_mem).level(self.pin)
+    }
+
+    #[inline]
+    pub(crate) fn set_low(&mut self) {
+        (*self.gpio_mem).set_low(self.pin);
+    }
+
+    #[inline]
+    pub(crate) fn set_high(&mut self) {
+        (*self.gpio_mem).set_high(self.pin);
+    }
+
+    #[inline]
+    pub(crate) fn write(&mut self, level: Level) {
+        match level {
+            Level::Low => self.set_low(),
+            Level::High => self.set_high(),
+        };
+    }
+}
+
+macro_rules! impl_input {
+    () => {
+        /// Reads the pin's current logic level.
+        #[inline]
+        pub fn read(&self) -> Level {
+            self.pin.read()
+        }
+    }
+}
+
+macro_rules! impl_output {
+    () => {
+        /// Sets pin's logic level to low.
+        #[inline]
+        pub fn set_low(&mut self) {
+            self.pin.set_low()
+        }
+
+        /// Sets pin's logic level to high.
+        #[inline]
+        pub fn set_high(&mut self) {
+            self.pin.set_high()
+        }
+
+        /// Sets pin's logic level.
+        #[inline]
+        pub fn write(&mut self, level: Level) {
+            self.pin.write(level)
+        }
+    }
+}
+
+macro_rules! impl_drop {
+    ($struct:ident) => {
+        impl<'a> $struct<'a> {
+            /// Returns the value of `clear_on_drop`.
+            pub fn clear_on_drop(&self) -> bool {
+                self.clear_on_drop
+            }
+
+            /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
+            ///
+            /// Drop methods aren't called when a program is abnormally terminated,
+            /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
+            /// caught. You'll either have to catch those using crates such as
+            /// [`simple_signal`], or manually call [`cleanup`].
+            ///
+            /// By default, `clear_on_drop` is set to `true`.
+            ///
+            /// [`simple_signal`]: https://crates.io/crates/simple-signal
+            /// [`cleanup`]: #method.cleanup
+            pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
+                self.clear_on_drop = clear_on_drop;
+            }
+        }
+
+        impl<'a> Drop for $struct<'a> {
+            fn drop(&mut self) {
+                if self.clear_on_drop == false {
+                    return
+                }
+
+                if let Some(prev_mode) = self.prev_mode {
+                    self.pin.set_mode(prev_mode)
+                }
+            }
+        }
+
     }
 }
 
@@ -71,29 +168,7 @@ impl<'a> InputPin<'a> {
         InputPin { pin, prev_mode, async_interrupt: None, clear_on_drop: true }
     }
 
-    /// Returns the value of `clear_on_drop`.
-    pub fn clear_on_drop(&self) -> bool {
-        self.clear_on_drop
-    }
-
-    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
-    ///
-    /// Drop methods aren't called when a program is abnormally terminated,
-    /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
-    /// caught. You'll either have to catch those using crates such as
-    /// [`simple_signal`], or manually call [`cleanup`].
-    ///
-    /// By default, `clear_on_drop` is set to `true`.
-    ///
-    /// [`simple_signal`]: https://crates.io/crates/simple-signal
-    /// [`cleanup`]: #method.cleanup
-    pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
-        self.clear_on_drop = clear_on_drop;
-    }
-
-    pub fn read(&self) -> Level {
-        (*self.pin.gpio_mem).level(self.pin.pin)
-    }
+    impl_input!();
 
     /// Configures a synchronous interrupt trigger.
     ///
@@ -175,30 +250,44 @@ impl<'a> InputPin<'a> {
     }
 }
 
-impl<'a> Drop for InputPin<'a> {
-    fn drop(&mut self) {
-        let _ = self.clear_async_interrupt();
-
-        if self.clear_on_drop == false {
-          return
-        }
-
-        if let Some(prev_mode) = self.prev_mode {
-            self.pin.set_mode(prev_mode)
-        }
-    }
-}
+impl_drop!(InputPin);
 
 #[derive(Debug)]
 pub struct OutputPin<'a> {
+    pin: &'a mut Pin,
+    prev_mode: Option<Mode>,
+    clear_on_drop: bool,
+}
+
+impl<'a> OutputPin<'a> {
+    pub(crate) fn new(pin: &'a mut Pin) -> OutputPin<'a> {
+        let prev_mode = pin.mode();
+
+        let prev_mode = if prev_mode == Mode::Output {
+            None
+        } else {
+            pin.set_mode(Mode::Output);
+            Some(prev_mode)
+        };
+
+        OutputPin { pin, prev_mode, clear_on_drop: true }
+    }
+
+    impl_output!();
+}
+
+impl_drop!(OutputPin);
+
+#[derive(Debug)]
+pub struct AltPin<'a> {
     pin: &'a mut Pin,
     mode: Mode,
     prev_mode: Option<Mode>,
     clear_on_drop: bool,
 }
 
-impl<'a> OutputPin<'a> {
-    pub(crate) fn new(pin: &'a mut Pin, mode: Mode) -> OutputPin<'a> {
+impl<'a> AltPin<'a> {
+    pub(crate) fn new(pin: &'a mut Pin, mode: Mode) -> AltPin<'a> {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == mode {
@@ -208,53 +297,10 @@ impl<'a> OutputPin<'a> {
             Some(prev_mode)
         };
 
-        OutputPin { pin, mode, prev_mode, clear_on_drop: true }
+        AltPin { pin, mode, prev_mode, clear_on_drop: true }
     }
 
-    /// Returns the value of `clear_on_drop`.
-    pub fn clear_on_drop(&self) -> bool {
-        self.clear_on_drop
-    }
-
-    /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
-    ///
-    /// Drop methods aren't called when a program is abnormally terminated,
-    /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
-    /// caught. You'll either have to catch those using crates such as
-    /// [`simple_signal`], or manually call [`cleanup`].
-    ///
-    /// By default, `clear_on_drop` is set to `true`.
-    ///
-    /// [`simple_signal`]: https://crates.io/crates/simple-signal
-    /// [`cleanup`]: #method.cleanup
-    pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
-        self.clear_on_drop = clear_on_drop;
-    }
-
-    pub fn set_low(&mut self) {
-        (*self.pin.gpio_mem).set_low(self.pin.pin);
-    }
-
-    pub fn set_high(&mut self) {
-        (*self.pin.gpio_mem).set_high(self.pin.pin);
-    }
-
-    pub fn write(&mut self, level: Level) {
-        match level {
-            Level::Low => self.set_low(),
-            Level::High => self.set_high(),
-        };
-    }
+    impl_input!();
+    impl_output!();
 }
-
-impl<'a> Drop for OutputPin<'a> {
-  fn drop(&mut self) {
-    if self.clear_on_drop == false {
-      return
-    }
-
-    if let Some(prev_mode) = self.prev_mode {
-      self.pin.set_mode(prev_mode)
-    }
-  }
-}
+impl_drop!(AltPin);
