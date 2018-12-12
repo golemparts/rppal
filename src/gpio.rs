@@ -76,14 +76,6 @@ quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
     #[derive(Debug)]
     pub enum Error {
-/// Invalid GPIO pin number.
-///
-/// The GPIO pin number is not available on this Raspberry Pi model.
-        InvalidPin(pin: u8) { description("invalid GPIO pin number") }
-/// Unknown GPIO pin mode.
-///
-/// The GPIO pin is set to an unknown mode.
-        UnknownMode(mode: u8) { description("unknown mode") }
 /// Unknown SoC.
 ///
 /// It wasn't possible to automatically identify the Raspberry Pi's SoC.
