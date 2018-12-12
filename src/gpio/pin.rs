@@ -3,7 +3,7 @@ use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown::{self, *}, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
 // exposed through the Pi's GPIO header depends on the model.
@@ -18,18 +18,32 @@ pub struct Pin {
 }
 
 impl Pin {
+    #[inline]
     pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<GpioMem>, gpio_cdev: Arc<File>) -> Pin {
         Pin { pin, event_loop, gpio_mem, gpio_cdev }
     }
 
+    #[inline]
     pub fn as_input(&mut self) -> InputPin {
-        InputPin::new(self)
+        InputPin::new(self, Off)
     }
 
+    #[inline]
+    pub fn as_input_pullup(&mut self) -> InputPin {
+        InputPin::new(self, PullUp)
+    }
+
+    #[inline]
+    pub fn as_input_pulldown(&mut self) -> InputPin {
+        InputPin::new(self, PullDown)
+    }
+
+    #[inline]
     pub fn as_output(&mut self) -> OutputPin {
         OutputPin::new(self)
     }
 
+    #[inline]
     pub fn as_alt(&mut self, mode: Mode) -> AltPin {
         AltPin::new(self, mode)
     }
@@ -155,7 +169,7 @@ pub struct InputPin<'a> {
 }
 
 impl<'a> InputPin<'a> {
-    pub(crate) fn new(pin: &'a mut Pin) -> InputPin<'a> {
+    pub(crate) fn new(pin: &'a mut Pin, pud_mode: PullUpDown) -> InputPin<'a> {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == Mode::Input {
@@ -164,6 +178,8 @@ impl<'a> InputPin<'a> {
             pin.set_mode(Mode::Input);
             Some(prev_mode)
         };
+
+        pin.set_pullupdown(pud_mode);
 
         InputPin { pin, prev_mode, async_interrupt: None, clear_on_drop: true }
     }
