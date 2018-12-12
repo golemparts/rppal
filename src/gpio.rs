@@ -67,7 +67,7 @@ mod ioctl;
 mod mem;
 mod pin;
 
-pub use self::pin::{InputPin, OutputPin};
+pub use self::pin::{Pin, InputPin, OutputPin, AltPin};
 
 // Used to limit Gpio to a single instance
 static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
