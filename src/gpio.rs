@@ -176,6 +176,7 @@ impl fmt::Display for Mode {
 
 /// Pin logic levels.
 #[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(u8)]
 pub enum Level {
     Low = 0,
     High = 1,
