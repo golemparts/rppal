@@ -190,16 +190,17 @@ impl EventLoop {
 
                 let ref mut trigger_status = self.trigger_status[pin];
 
-                trigger_status.triggered = true;
-                trigger_status.level =
-                    if let Some(ref mut interrupt) = trigger_status.interrupt {
-                        match interrupt.event()?.trigger {
-                            Trigger::RisingEdge => Level::High,
-                            _ => Level::Low,
-                        }
-                    } else {
-                        Level::Low
+                debug_assert!(trigger_status.interrupt.is_some(), format!("No interrupt set for pin {}", pin));
+
+                if let Some(ref mut interrupt) = trigger_status.interrupt {
+                    trigger_status.level = match interrupt.event()?.trigger {
+                        Trigger::RisingEdge => Level::High,
+                        Trigger::FallingEdge => Level::Low,
+                        _ => unsafe { std::hint::unreachable_unchecked() }
                     };
+
+                    trigger_status.triggered = true;
+                };
             }
 
             // Were any interrupts triggered? If so, return one. The rest
