@@ -65,45 +65,39 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 rppal = "0.9"
 ```
 
-Link and import `rppal` from your crate root.
-
-```rust
-extern crate rppal;
-```
-
 Call `Gpio::new()` to create a new Gpio instance with the default settings. In production code, you'll want to parse the result rather than unwrap it.
 
 ```rust
 use rppal::gpio::Gpio;
 
-let mut gpio = Gpio::new().unwrap();
+let gpio = Gpio::new().unwrap();
 ```
 
 ## Example
 
 ```rust
-extern crate rppal;
-
-use std::thread;
+use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::gpio::{Gpio, Mode, Level};
+use rppal::gpio::Gpio;
 use rppal::system::DeviceInfo;
 
-// The GPIO module uses BCM pin numbering. BCM GPIO 18 is tied to physical pin 12.
+// The `Gpio` module uses BCM pin numbering. BCM GPIO 18 is tied to physical pin 12.
 const GPIO_LED: u8 = 18;
 
 fn main() {
     let device_info = DeviceInfo::new().unwrap();
     println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
 
-    let mut gpio = Gpio::new().unwrap();
-    gpio.set_mode(GPIO_LED, Mode::Output);
+    let gpio = Gpio::new().unwrap();
+    
+    let mut pin = gpio.get_pin(GPIO_LED).unwrap();
+    let mut output_pin = pin.as_output();
 
-    // Blink an LED attached to the pin on and off
-    gpio.write(GPIO_LED, Level::High);
-    thread::sleep(Duration::from_millis(500));
-    gpio.write(GPIO_LED, Level::Low);
+    // Blink an LED attached to the pin.
+    output_pin.set_high();
+    sleep(Duration::from_millis(500));
+    output_pin.set_low();
 }
 ```
 
