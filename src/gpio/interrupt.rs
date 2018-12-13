@@ -68,7 +68,7 @@ impl Interrupt {
     }
 
     // This might block if there are no events waiting
-    fn event(&mut self) -> Result<Option<ioctl::Event>> {
+    fn event(&mut self) -> Result<ioctl::Event> {
         ioctl::get_event(self.event_fd)
     }
 
@@ -193,13 +193,9 @@ impl EventLoop {
                 trigger_status.triggered = true;
                 trigger_status.level =
                     if let Some(ref mut interrupt) = trigger_status.interrupt {
-                        if let Some(trigger_event) = interrupt.event()? {
-                            match trigger_event.trigger {
-                                Trigger::RisingEdge => Level::High,
-                                _ => Level::Low,
-                            }
-                        } else {
-                            interrupt.level()?
+                        match interrupt.event()?.trigger {
+                            Trigger::RisingEdge => Level::High,
+                            _ => Level::Low,
                         }
                     } else {
                         Level::Low
@@ -301,13 +297,9 @@ impl AsyncInterrupt {
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
                         } else if fd == interrupt.fd() {
-                            let level = if let Some(trigger_event) = interrupt.event()? {
-                                match trigger_event.trigger {
-                                    Trigger::RisingEdge => Level::High,
-                                    _ => Level::Low,
-                                }
-                            } else {
-                                interrupt.level()?
+                            let level = match interrupt.event()?.trigger {
+                                Trigger::RisingEdge => Level::High,
+                                _ => Level::Low,
                             };
 
                             callback(level);
