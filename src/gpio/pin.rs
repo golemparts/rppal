@@ -305,6 +305,7 @@ impl<'a> OutputPin<'a> {
         OutputPin { pin, prev_mode, clear_on_drop: true }
     }
 
+    impl_input!();
     impl_output!();
 }
 
