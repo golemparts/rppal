@@ -91,7 +91,7 @@ fn main() {
 
     let gpio = Gpio::new().unwrap();
     
-    let mut pin = gpio.get_pin(GPIO_LED).unwrap();
+    let mut pin = gpio.get(GPIO_LED).unwrap();
     let mut output_pin = pin.as_output();
 
     // Blink an LED attached to the pin.

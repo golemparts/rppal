@@ -61,7 +61,7 @@
 //! ```
 //! # use std::{time::Duration, thread::sleep};
 //! let gpio = Gpio::new()?;
-//! let mut pin = *gpio.get_pin(23);
+//! let mut pin = *gpio.get(23);
 //! let mut output_pin = pin.as_output();
 //!
 //! output_pin.set_high();
@@ -282,7 +282,7 @@ impl Gpio {
         Ok(gpio)
     }
 
-    pub fn get_pin(&self, pin: u8) -> Option<MutexGuard<pin::Pin>> {
+    pub fn get(&self, pin: u8) -> Option<MutexGuard<pin::Pin>> {
         if pin as usize >= pin::MAX {
             None
         } else {
