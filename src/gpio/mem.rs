@@ -240,22 +240,35 @@ impl GpioMem {
 
         // Set the control signal in GPPUD, while leaving the other 30
         // bits unchanged.
-        let reg_value = self.read(GPPUD);
-        self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(GPPUD);
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, (reg_value & !0b11) | ((pud as u32) & 0b11));
+        }
 
         // Set-up time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Clock the control signal into the selected pin.
-        self.write(offset, 1 << shift);
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          ptr::write_volatile(mem_ptr, 1 << shift);
+        }
 
         // Hold time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Remove the control signal and clock.
-        let reg_value = self.read(GPPUD);
-        self.write(GPPUD, reg_value & !0b11);
-        self.write(offset, 0 << shift);
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(GPPUD);
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, reg_value & !0b11);
+        }
+
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          ptr::write_volatile(mem_ptr, 0 << shift);
+        }
 
         self.locks[offset].store(false, Ordering::SeqCst);
         self.locks[GPPUD].store(false, Ordering::SeqCst);
