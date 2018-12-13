@@ -28,19 +28,20 @@
 //! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
 //! superuser privileges.
 //!
-//! Pins are addressed by their BCM GPIO pin numbers, rather than their
+//! Pins are addressed by their BCM numbers, rather than their
 //! physical location.
 //!
-//! By default, all pins are reset to their original state when [`Gpio`] goes out
-//! of scope. Use [`set_clear_on_drop(false)`] to disable this behavior. Note that
-//! drop methods aren't called when a program is abnormally terminated (for
+//! By default, pins are reset to their original state when they go out of scope.
+//! Use [`InputPin::set_clear_on_drop(false)`], [`OutputPin::set_clear_on_drop(false)`]
+//! or [`AltPin::set_clear_on_drop(false)`], respecively, to disable this behavior.
+//! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
 //!
-//! Only a single instance of [`Gpio`] can exist at any time. Multiple instances of [`Gpio`]
-//! can cause race conditions or pin configuration issues when several threads write to
+//! Only a single [`Gpio`] instance can exist at any time. Multiple instances could
+//! cause race conditions or pin configuration issues when several threads write to
 //! the same register simultaneously. While other applications can't be prevented from
 //! writing to the GPIO registers at the same time, limiting [`Gpio`] to a single instance
-//! will at least make the Rust interface less error-prone.
+//! will at least make the Rust interface thread-safe.
 //!
 //! Constructing another instance before the existing one goes out of scope will return
 //! an [`Error::InstanceExists`]. You can share a [`Gpio`] instance with other
@@ -48,8 +49,27 @@
 //! a `Mutex<Gpio>`.
 //!
 //! [`Gpio`]: struct.Gpio.html
-//! [`set_clear_on_drop(false)`]: struct.Gpio.html#method.set_clear_on_drop
+//! [`InputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
+//! [`OutputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
+//! [`AltPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
+//!
+//! # Examples
+//!
+//! Basic example:
+//!
+//! ```
+//! # use std::{time::Duration, thread::sleep};
+//! let gpio = Gpio::new()?;
+//! let mut pin = *gpio.get_pin(23);
+//! let mut output_pin = pin.as_output();
+//!
+//! output_pin.set_high();
+//!
+//! sleep(Duration::from_secs(1));
+//!
+//! output_pin.set_high();
+//! ```
 
 use std::fmt;
 use std::io;
@@ -270,25 +290,28 @@ impl Gpio {
         }
     }
 
-    /// Blocks until a synchronous interrupt is triggered on any of the specified pins, or a timeout occurs.
+    /// Blocks until an interrupt is triggered on any of the specified pins, or until a timeout occurs.
     ///
-    /// `poll_interrupts` only works for pins that have been configured for synchronous interrupts using
-    /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
+    /// This only works for pins that have been configured for synchronous interrupts using
+    /// [`InputPin::set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
-    /// Setting `reset` to `false` causes `poll_interrupts` to return immediately if any of the interrupts
-    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupts`.
-    /// Setting `reset` to `true` clears any cached trigger events for the pins.
+    /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
+    /// previous call to [`InputPin::poll_interrupt`] or `poll_interrupts`.
+    /// If `reset` is set too `true`, clears any cached interrupt trigger events before polling.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
     /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// When an interrupt event is triggered, `poll_interrupts` returns
-    /// `Ok((u8, Level))` containing the corresponding pin number and logic level. If multiple events trigger
+    /// `Ok((&`[`InputPin`]`, `[`Level`]`))` containing the corresponding pin and logic level. If multiple events trigger
     /// at the same time, only the first one is returned. The remaining events are cached and will be returned
-    /// the next time `poll_interrupts` is called.
+    /// the next time [`InputPin::poll_interrupt`] or `poll_interrupts` is called.
     ///
-    /// [`set_interrupt`]: #method.set_interrupt
+    /// [`InputPin::set_interrupt`]: struct.InputPin#method.set_interrupt
+    /// [`InputPin::poll_interrupt`]: struct.InputPin#method.poll_interrupt
+    /// [`InputPin`]: struct.InputPin
+    /// [`Level`]: struct.Level
     pub fn poll_interrupts<'a>(
       &self,
       pins: &[&'a InputPin<'a>],

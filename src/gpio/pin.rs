@@ -9,6 +9,7 @@ use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown::{self, *}, mem::Gpio
 // exposed through the Pi's GPIO header depends on the model.
 pub const MAX: usize = 54;
 
+/// Unconfigured GPIO pin.
 #[derive(Debug)]
 pub struct Pin {
     pub(crate) pin: u8,
@@ -23,26 +24,40 @@ impl Pin {
         Pin { pin, event_loop, gpio_mem, gpio_cdev }
     }
 
+    /// Mutably borrows the pin as an [`InputPin`] and sets its mode to [`Mode::Input`].
+    ///
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`Mode::Input`]: enum.Mode.html#variant.Input
     #[inline]
     pub fn as_input(&mut self) -> InputPin {
         InputPin::new(self, Off)
     }
 
+    /// Additionally to `as_input`, activates the pin's pull-up resistor.
     #[inline]
     pub fn as_input_pullup(&mut self) -> InputPin {
         InputPin::new(self, PullUp)
     }
 
+    /// Additionally to `as_input`, activates the pin's pull-down resistor.
     #[inline]
     pub fn as_input_pulldown(&mut self) -> InputPin {
         InputPin::new(self, PullDown)
     }
 
+    /// Mutably borrows the pin as an [`OutputPin`] and sets its mode to [`Mode::Output`].
+    ///
+    /// [`OutputPin`]: struct.OutputPin.html
+    /// [`Mode::Output`]: enum.Mode.html#variant.Output
     #[inline]
     pub fn as_output(&mut self) -> OutputPin {
         OutputPin::new(self)
     }
 
+    /// Mutably borrows the pin as an [`AltPin`] and sets its mode to the given mode.
+    ///
+    /// [`AltPin`]: struct.AltPin.html
+    /// [`Mode`]: enum.Mode.html
     #[inline]
     pub fn as_alt(&mut self, mode: Mode) -> AltPin {
         AltPin::new(self, mode)
@@ -129,14 +144,14 @@ macro_rules! impl_drop {
                 self.clear_on_drop
             }
 
-            /// When enabled, resets all pins to their original state when `Gpio` goes out of scope.
+            /// When enabled, resets pin's mode to its original state when it goes out of scope.
+            /// By default, this is set to `true`.
             ///
-            /// Drop methods aren't called when a program is abnormally terminated,
-            /// for instance when a user presses Ctrl-C, and the SIGINT signal isn't
-            /// caught. You'll either have to catch those using crates such as
-            /// [`simple_signal`], or manually call [`cleanup`].
+            /// # Note
             ///
-            /// By default, `clear_on_drop` is set to `true`.
+            /// Drop methods aren't called when a program is abnormally terminated, for
+            /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
+            /// isn't caught. You catch those using crates such as [`simple_signal`].
             ///
             /// [`simple_signal`]: https://crates.io/crates/simple-signal
             /// [`cleanup`]: #method.cleanup
@@ -146,6 +161,7 @@ macro_rules! impl_drop {
         }
 
         impl<'a> Drop for $struct<'a> {
+            /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
                 if self.clear_on_drop == false {
                     return
@@ -160,6 +176,7 @@ macro_rules! impl_drop {
     }
 }
 
+/// GPIO pin configured as input.
 #[derive(Debug)]
 pub struct InputPin<'a> {
     pub(crate) pin: &'a mut Pin,
@@ -191,8 +208,7 @@ impl<'a> InputPin<'a> {
     /// After configuring a synchronous interrupt trigger, you can use
     /// [`poll_interrupt`] to wait for a trigger event.
     ///
-    /// `set_interrupt` will remove any previously configured
-    /// (a)synchronous interrupt triggers for the same pin.
+    /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
     pub fn set_interrupt(&mut self, trigger: Trigger) -> Result<()> {
@@ -207,16 +223,16 @@ impl<'a> InputPin<'a> {
         (*self.pin.event_loop.lock().unwrap()).clear_interrupt(self.pin.pin)
     }
 
-    /// Blocks until an interrupt is triggered on the specified pin, or a timeout occurs.
+    /// Blocks until an interrupt is triggered on the pin, or until a timeout occurs.
     ///
-    /// `poll_interrupt` only works for pins that have been configured for synchronous interrupts using
+    /// This only works after the pin has been configured for synchronous interrupts using
     /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
-    /// Setting `reset` to `false` causes `poll_interrupt` to return immediately if the interrupt
-    /// has been triggered since the previous call to [`set_interrupt`] or `poll_interrupt`.
-    /// Setting `reset` to `true` clears any cached trigger events for the pin.
+    /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
+    /// previous call to `poll_interrupt`.
+    /// If `reset` is set too `true`, clears any cached interrupt trigger events before polling.
     ///
-    /// The `timeout` duration indicates how long the call to `poll_interrupt` will block while waiting
+    /// The `timeout` duration indicates how long the call will block while waiting
     /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
@@ -236,8 +252,7 @@ impl<'a> InputPin<'a> {
     ///
     /// The callback closure or function pointer is called with a single [`Level`] argument.
     ///
-    /// `set_async_interrupt` will remove any previously configured
-    /// (a)synchronous interrupt triggers for the same pin.
+    /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
     /// [`Level`]: enum.Level.html
     pub fn set_async_interrupt<C>(&mut self, trigger: Trigger, callback: C) -> Result<()>
@@ -257,7 +272,7 @@ impl<'a> InputPin<'a> {
         Ok(())
     }
 
-    pub(crate) fn clear_async_interrupt(&mut self) -> Result<()> {
+    pub fn clear_async_interrupt(&mut self) -> Result<()> {
         if let Some(mut interrupt) = self.async_interrupt.take() {
             interrupt.stop()?;
         }
@@ -268,6 +283,7 @@ impl<'a> InputPin<'a> {
 
 impl_drop!(InputPin);
 
+/// GPIO pin configured as output.
 #[derive(Debug)]
 pub struct OutputPin<'a> {
     pin: &'a mut Pin,
@@ -294,6 +310,7 @@ impl<'a> OutputPin<'a> {
 
 impl_drop!(OutputPin);
 
+/// GPIO pin configured with an alternate function.
 #[derive(Debug)]
 pub struct AltPin<'a> {
     pin: &'a mut Pin,
