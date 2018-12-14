@@ -192,7 +192,7 @@ impl GpioMem {
 
         let reg_value = self.read(offset);
 
-        unsafe { std::mem::transmute((reg_value & (1 << shift)) as u8) }
+        unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b1) }
     }
 
     pub fn mode(&self, pin: u8) -> Mode {
