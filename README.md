@@ -3,6 +3,8 @@
 [![Build Status](https://travis-ci.org/golemparts/rppal.svg?branch=master)](https://travis-ci.org/golemparts/rppal)
 [![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
+
 
 RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, Compute, Compute 3, Zero and Zero W.
 
@@ -90,7 +92,7 @@ fn main() {
     println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
 
     let gpio = Gpio::new().unwrap();
-    
+
     let mut pin = gpio.get(GPIO_LED).unwrap();
     let mut output_pin = pin.as_output();
 
