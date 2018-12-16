@@ -5,7 +5,7 @@
 * Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
 * Gpio: (Breaking change) Move pin-specific methods to new InputPin/OutputPin/AltPin structs, accessed through Gpio::get() (contributed by @reitermarkus).
 * Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input and return type from u8 to &InputPin (contributed by @reitermarkus).
-* Gpio: (Breaking change) Remove Error::NotInitialized and Error::InvalidPin (contributed by @reitermarkus).
+* Gpio: (Breaking change) Remove Error::NotInitialized, Error::UnknownMode and Error::InvalidPin (contributed by @reitermarkus).
 * Gpio: (Breaking change) Change Gpio::cleanup() to consume self, and return Result (contributed by @reitermarkus).
 
 ## 0.9.0 (November 15, 2018)
