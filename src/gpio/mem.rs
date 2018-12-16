@@ -19,43 +19,52 @@
 // DEALINGS IN THE SOFTWARE.
 
 use std::fs::OpenOptions;
+use std::fmt;
 use std::io;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
+use std::thread::sleep;
+use std::time::Duration;
 use std::ptr;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc;
 
-use crate::gpio::{Error, Result};
+use crate::gpio::{Level, Mode, PullUpDown, Error, Result};
 use crate::system::DeviceInfo;
 
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
-const GPIO_MEM_SIZE: usize = 164;
+const GPIO_MEM_REGISTERS: usize = 41;
+const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
 
-#[derive(Debug)]
+const GPFSEL0:   usize = 0x00 / std::mem::size_of::<u32>();
+const GPSET0:    usize = 0x1c / std::mem::size_of::<u32>();
+const GPCLR0:    usize = 0x28 / std::mem::size_of::<u32>();
+const GPLEV0:    usize = 0x34 / std::mem::size_of::<u32>();
+const GPPUD:     usize = 0x94 / std::mem::size_of::<u32>();
+const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
+
 pub struct GpioMem {
-    mapped: bool,
     mem_ptr: *mut u32,
+    locks: [AtomicBool; GPIO_MEM_REGISTERS],
+}
+
+impl fmt::Debug for GpioMem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("GpioMem")
+            .field("mem_ptr", &self.mem_ptr)
+            .field("locks", &format_args!("{{ .. }}"))
+            .finish()
+    }
 }
 
 impl GpioMem {
-    pub fn new() -> GpioMem {
-        GpioMem {
-            mapped: false,
-            mem_ptr: ptr::null_mut(),
-        }
-    }
-
-    pub fn open(&mut self) -> Result<()> {
-        if self.mapped {
-            return Ok(());
-        }
-
+    pub fn open() -> Result<GpioMem> {
         // Try /dev/gpiomem first. If that fails, try /dev/mem instead. If neither works,
         // report back the error that's the most relevant.
-        self.mem_ptr = match self.map_devgpiomem() {
+        let mem_ptr = match Self::map_devgpiomem() {
             Ok(ptr) => ptr,
-            Err(gpiomem_err) => match self.map_devmem() {
+            Err(gpiomem_err) => match Self::map_devmem() {
                 Ok(ptr) => ptr,
                 Err(Error::Io(ref e)) if e.kind() == io::ErrorKind::PermissionDenied => {
                     return Err(Error::PermissionDenied)
@@ -65,25 +74,29 @@ impl GpioMem {
             },
         };
 
-        self.mapped = true;
+        let locks = unsafe {
+            let mut locks: [AtomicBool; GPIO_MEM_REGISTERS] = std::mem::uninitialized();
 
-        Ok(())
+            for element in locks.iter_mut() {
+                std::ptr::write(element, AtomicBool::new(false))
+            }
+
+            locks
+        };
+
+        Ok(GpioMem { mem_ptr, locks })
     }
 
-    fn map_devgpiomem(&self) -> Result<*mut u32> {
+    fn map_devgpiomem() -> Result<*mut u32> {
         // Open /dev/gpiomem with read/write/sync flags. This might fail if
         // /dev/gpiomem doesn't exist (< Raspbian Jessie), or /dev/gpiomem
         // doesn't have the appropriate permissions, or the current user is
         // not a member of the gpio group.
-        let gpiomem_file = match OpenOptions::new()
+        let gpiomem_file = OpenOptions::new()
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/gpiomem")
-        {
-            Ok(file) => file,
-            Err(e) => return Err(Error::Io(e)),
-        };
+            .open("/dev/gpiomem")?;
 
         // Memory-map /dev/gpiomem at offset 0
         let gpiomem_ptr = unsafe {
@@ -104,22 +117,15 @@ impl GpioMem {
         Ok(gpiomem_ptr as *mut u32)
     }
 
-    fn map_devmem(&self) -> Result<*mut u32> {
+    fn map_devmem() -> Result<*mut u32> {
         // Identify which SoC we're using, so we know what offset to start at
-        let device_info = match DeviceInfo::new() {
-            Ok(s) => s,
-            Err(_) => return Err(Error::UnknownSoC),
-        };
+        let device_info = DeviceInfo::new().map_err(|_| Error::UnknownSoC)?;
 
-        let mem_file = match OpenOptions::new()
+        let mem_file = OpenOptions::new()
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/mem")
-        {
-            Ok(file) => file,
-            Err(e) => return Err(Error::Io(e)),
-        };
+            .open("/dev/mem")?;
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
         let mem_ptr = unsafe {
@@ -140,45 +146,143 @@ impl GpioMem {
         Ok(mem_ptr as *mut u32)
     }
 
-    pub fn close(&mut self) {
-        if !self.mapped {
-            return;
+    fn read(&self, offset: usize) -> u32 {
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            break;
+          }
         }
 
-        unsafe {
-            libc::munmap(
-                self.mem_ptr as *mut libc::c_void,
-                GPIO_MEM_SIZE as libc::size_t,
-            );
-        }
+        let reg_value = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
 
-        self.mapped = false;
+        self.locks[offset].store(false, Ordering::SeqCst);
+
+        reg_value
     }
 
-    pub fn read(&self, offset: usize) -> u32 {
-        if !self.mapped || offset >= GPIO_MEM_SIZE {
-            return 0;
-        }
-
-        unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
-    }
-
-    pub fn write(&self, offset: usize, value: u32) {
-        if !self.mapped || offset >= GPIO_MEM_SIZE {
-            return;
+    fn write(&self, offset: usize, value: u32) {
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            break;
+          }
         }
 
         unsafe {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
+
+        self.locks[offset].store(false, Ordering::SeqCst);
+    }
+
+    pub fn set_high(&self, pin: u8) {
+        let offset = GPSET0 + pin as usize / 32;
+        let shift = pin % 32;
+        self.write(offset, 1 << shift);
+    }
+
+    pub fn set_low(&self, pin: u8) {
+        let offset = GPCLR0 + pin as usize / 32;
+        let shift = pin % 32;
+        self.write(offset, 1 << shift);
+    }
+
+    pub fn level(&self, pin: u8) -> Level {
+        let offset = GPLEV0 + pin as usize / 32;
+        let shift = pin % 32;
+
+        let reg_value = self.read(offset);
+
+        unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b1) }
+    }
+
+    pub fn mode(&self, pin: u8) -> Mode {
+        let offset = GPFSEL0 + pin as usize / 10;
+        let shift = (pin % 10) * 3;
+
+        let reg_value = self.read(offset);
+
+        unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b111) }
+    }
+
+    pub fn set_mode(&self, pin: u8, mode: Mode) {
+        let offset = GPFSEL0 + pin as usize / 10;
+        let shift = (pin % 10) * 3;
+
+        loop {
+          if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            break;
+          }
+        }
+
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, (reg_value & !(0b111 << shift)) | ((mode as u32) << shift));
+        }
+
+        self.locks[offset].store(false, Ordering::SeqCst);
+    }
+
+    /// Configures the built-in GPIO pull-up/pull-down resistors.
+    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+        let offset = GPPUDCLK0 + pin as usize / 32;
+        let shift = pin % 32;
+
+        loop {
+          if self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+              break;
+            } else {
+              self.locks[GPPUD].store(false, Ordering::SeqCst);
+            }
+          }
+        }
+
+        // Set the control signal in GPPUD, while leaving the other 30
+        // bits unchanged.
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(GPPUD);
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, (reg_value & !0b11) | ((pud as u32) & 0b11));
+        }
+
+        // Set-up time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
+
+        // Clock the control signal into the selected pin.
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          ptr::write_volatile(mem_ptr, 1 << shift);
+        }
+
+        // Hold time for the control signal.
+        sleep(Duration::new(0, 20000)); // >= 20µs
+
+        // Remove the control signal and clock.
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(GPPUD);
+          let reg_value = ptr::read_volatile(mem_ptr);
+          ptr::write_volatile(mem_ptr, reg_value & !0b11);
+        }
+
+        unsafe {
+          let mem_ptr = self.mem_ptr.add(offset);
+          ptr::write_volatile(mem_ptr, 0 << shift);
+        }
+
+        self.locks[offset].store(false, Ordering::SeqCst);
+        self.locks[GPPUD].store(false, Ordering::SeqCst);
     }
 }
 
 impl Drop for GpioMem {
     fn drop(&mut self) {
-        self.close();
+        unsafe {
+            libc::munmap(self.mem_ptr as *mut libc::c_void, GPIO_MEM_SIZE as libc::size_t);
+        }
     }
 }
 
 // Required because of the raw pointer to our memory-mapped file
 unsafe impl Send for GpioMem {}
+unsafe impl Sync for GpioMem {}

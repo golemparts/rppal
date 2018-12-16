@@ -27,6 +27,7 @@ use std::time::{Duration, Instant};
 use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use crate::gpio::ioctl;
 use crate::gpio::{Error, Level, Result, Trigger};
+use crate::gpio::pin::InputPin;
 
 #[derive(Debug)]
 struct Interrupt {
@@ -38,10 +39,6 @@ struct Interrupt {
 
 impl Interrupt {
     fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
-        let chip_info = ioctl::ChipInfo::new(fd)?;
-
-        assert_pin!(u32::from(pin), chip_info.lines);
-
         let event_request = ioctl::EventRequest::new(fd, pin, trigger)?;
 
         Ok(Interrupt {
@@ -71,7 +68,7 @@ impl Interrupt {
     }
 
     // This might block if there are no events waiting
-    fn event(&mut self) -> Result<Option<ioctl::Event>> {
+    fn event(&mut self) -> Result<ioctl::Event> {
         ioctl::get_event(self.event_fd)
     }
 
@@ -146,26 +143,26 @@ impl EventLoop {
         })
     }
 
-    pub fn poll(
+    pub fn poll<'a>(
         &mut self,
-        pins: &[u8],
+        pins: &[&'a InputPin<'a>],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(u8, Level)>> {
+    ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
         for pin in pins {
-            assert_pin!(*pin as usize, self.trigger_status.capacity());
+            let ref mut trigger_status = self.trigger_status[pin.pin.pin as usize];
 
             // Did we cache any trigger events during the previous poll?
-            if self.trigger_status[*pin as usize].triggered {
-                self.trigger_status[*pin as usize].triggered = false;
+            if trigger_status.triggered {
+                trigger_status.triggered = false;
 
                 if !reset {
-                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
+                    return Ok(Some((pin, trigger_status.level)));
                 }
             }
 
             // Reset any pending trigger events
-            if let Some(ref mut interrupt) = self.trigger_status[*pin as usize].interrupt {
+            if let Some(ref mut interrupt) = trigger_status.interrupt {
                 if reset {
                     self.poll.delete(interrupt.fd())?;
                     interrupt.reset()?;
@@ -190,30 +187,30 @@ impl EventLoop {
 
             for event in &self.events[0..num_events] {
                 let pin = event.u64 as usize;
-                if pin < self.trigger_status.capacity() {
-                    self.trigger_status[pin].triggered = true;
-                    self.trigger_status[pin].level =
-                        if let Some(ref mut interrupt) = self.trigger_status[pin].interrupt {
-                            if let Some(trigger_event) = interrupt.event()? {
-                                match trigger_event.trigger {
-                                    Trigger::RisingEdge => Level::High,
-                                    _ => Level::Low,
-                                }
-                            } else {
-                                interrupt.level()?
-                            }
-                        } else {
-                            Level::Low
-                        };
-                }
+
+                let ref mut trigger_status = self.trigger_status[pin];
+
+                debug_assert!(trigger_status.interrupt.is_some(), format!("No interrupt set for pin {}", pin));
+
+                if let Some(ref mut interrupt) = trigger_status.interrupt {
+                    trigger_status.level = match interrupt.event()?.trigger {
+                        Trigger::RisingEdge => Level::High,
+                        Trigger::FallingEdge => Level::Low,
+                        _ => unsafe { std::hint::unreachable_unchecked() }
+                    };
+
+                    trigger_status.triggered = true;
+                };
             }
 
             // Were any interrupts triggered? If so, return one. The rest
             // will be saved for the next poll.
             for pin in pins {
-                if self.trigger_status[*pin as usize].triggered {
-                    self.trigger_status[*pin as usize].triggered = false;
-                    return Ok(Some((*pin, self.trigger_status[*pin as usize].level)));
+                let ref mut trigger_status = self.trigger_status[pin.pin.pin as usize];
+
+                if trigger_status.triggered {
+                    trigger_status.triggered = false;
+                    return Ok(Some((pin, trigger_status.level)));
                 }
             }
 
@@ -230,10 +227,12 @@ impl EventLoop {
     }
 
     pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
-        self.trigger_status[pin as usize].triggered = false;
+        let ref mut trigger_status = self.trigger_status[pin as usize];
+
+        trigger_status.triggered = false;
 
         // Interrupt already exists. We just need to change the trigger.
-        if let Some(ref mut interrupt) = self.trigger_status[pin as usize].interrupt {
+        if let Some(ref mut interrupt) = trigger_status.interrupt {
             if interrupt.trigger != trigger {
                 // This requires a new event request, so the fd might change
                 self.poll.delete(interrupt.fd())?;
@@ -249,15 +248,17 @@ impl EventLoop {
         let interrupt = Interrupt::new(self.cdev_fd, pin, trigger)?;
         self.poll
             .add(interrupt.fd(), u64::from(pin), EPOLLIN | EPOLLPRI)?;
-        self.trigger_status[pin as usize].interrupt = Some(interrupt);
+        trigger_status.interrupt = Some(interrupt);
 
         Ok(())
     }
 
     pub fn clear_interrupt(&mut self, pin: u8) -> Result<()> {
-        self.trigger_status[pin as usize].triggered = false;
+        let ref mut trigger_status = self.trigger_status[pin as usize];
 
-        if let Some(interrupt) = self.trigger_status[pin as usize].interrupt.take() {
+        trigger_status.triggered = false;
+
+        if let Some(interrupt) = trigger_status.interrupt.take() {
             self.poll.delete(interrupt.fd())?;
         }
 
@@ -297,13 +298,9 @@ impl AsyncInterrupt {
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
                         } else if fd == interrupt.fd() {
-                            let level = if let Some(trigger_event) = interrupt.event()? {
-                                match trigger_event.trigger {
-                                    Trigger::RisingEdge => Level::High,
-                                    _ => Level::Low,
-                                }
-                            } else {
-                                interrupt.level()?
+                            let level = match interrupt.event()?.trigger {
+                                Trigger::RisingEdge => Level::High,
+                                _ => Level::Low,
                             };
 
                             callback(level);

@@ -20,7 +20,7 @@
 
 #![allow(dead_code)]
 
-use libc::{self, c_int, c_ulong, c_void, ioctl, read};
+use libc::{self, c_int, c_ulong, ioctl, c_void, read};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -245,7 +245,7 @@ impl EventRequest {
 const EVENT_TYPE_RISING_EDGE: u32 = 0x01;
 const EVENT_TYPE_FALLING_EDGE: u32 = 0x02;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct EventData {
     timestamp: u64,
@@ -253,7 +253,7 @@ struct EventData {
 }
 
 impl EventData {
-    fn new(event_fd: c_int) -> Result<Option<EventData>> {
+    fn new(event_fd: c_int) -> Result<EventData> {
         let mut event_data = EventData {
             timestamp: 0,
             id: 0,
@@ -264,13 +264,13 @@ impl EventData {
                 event_fd,
                 &mut event_data as *mut EventData as *mut c_void,
                 size_of::<EventData>(),
-            ) as i32
+            )
         })?;
 
-        if bytes_read != size_of::<EventData>() as i32 {
-            Ok(None)
+        if bytes_read < size_of::<EventData>() as isize {
+            Err(std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "failed to fill whole buffer").into())
         } else {
-            Ok(Some(event_data))
+            Ok(event_data)
         }
     }
 }
@@ -284,10 +284,10 @@ pub struct Event {
 impl Event {
     fn from_event_data(event_data: EventData) -> Event {
         Event {
-            trigger: if event_data.id == EVENT_TYPE_RISING_EDGE {
-                Trigger::RisingEdge
-            } else {
-                Trigger::FallingEdge
+            trigger: match event_data.id {
+                EVENT_TYPE_RISING_EDGE => Trigger::RisingEdge,
+                EVENT_TYPE_FALLING_EDGE => Trigger::FallingEdge,
+                _ => unreachable!(),
             },
             timestamp: Duration::from_nanos(event_data.timestamp),
         }
@@ -295,12 +295,9 @@ impl Event {
 }
 
 // Read interrupt event
-pub fn get_event(event_fd: c_int) -> Result<Option<Event>> {
-    if let Some(event_data) = EventData::new(event_fd)? {
-        Ok(Some(Event::from_event_data(event_data)))
-    } else {
-        Ok(None)
-    }
+pub fn get_event(event_fd: c_int) -> Result<Event> {
+    let event_data = EventData::new(event_fd)?;
+    Ok(Event::from_event_data(event_data))
 }
 
 // Find the correct gpiochip device based on its label
@@ -323,10 +320,6 @@ pub fn find_driver() -> Result<File> {
 }
 
 pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
-    let chip_info = ChipInfo::new(cdev_fd)?;
-
-    assert_pin!(u32::from(pin), chip_info.lines);
-
     match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
         0 => Ok(Level::Low),
         1 => Ok(Level::High),
