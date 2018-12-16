@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.10 (TBD)
+## 0.10.0 (TBD)
 
 * Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
 * Gpio: (Breaking change) Move pin-specific methods to new InputPin/OutputPin/AltPin structs, accessed through Gpio::get() (contributed by @reitermarkus).
