@@ -122,7 +122,7 @@ impl Epoll {
         }
 
         let timeout = if let Some(duration) = timeout {
-            (duration.as_secs() * 1_000 + duration.subsec_millis() as u64) as c_int
+            (duration.as_secs() * 1_000 + u64::from(duration.subsec_millis())) as c_int
         } else {
             -1
         };

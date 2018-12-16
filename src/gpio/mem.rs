@@ -37,7 +37,7 @@ use crate::system::DeviceInfo;
 const GPIO_MEM_REGISTERS: usize = 41;
 const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
 
-const GPFSEL0: usize = 0x00 / std::mem::size_of::<u32>();
+const GPFSEL0: usize = 0x00;
 const GPSET0: usize = 0x1c / std::mem::size_of::<u32>();
 const GPCLR0: usize = 0x28 / std::mem::size_of::<u32>();
 const GPLEV0: usize = 0x34 / std::mem::size_of::<u32>();
@@ -148,7 +148,7 @@ impl GpioMem {
 
     fn read(&self, offset: usize) -> u32 {
         loop {
-            if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
@@ -162,7 +162,7 @@ impl GpioMem {
 
     fn write(&self, offset: usize, value: u32) {
         loop {
-            if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
@@ -209,7 +209,7 @@ impl GpioMem {
         let shift = (pin % 10) * 3;
 
         loop {
-            if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
@@ -232,8 +232,8 @@ impl GpioMem {
         let shift = pin % 32;
 
         loop {
-            if self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) == false {
-                if self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) == false {
+            if !self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
+                if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                     break;
                 } else {
                     self.locks[GPPUD].store(false, Ordering::SeqCst);

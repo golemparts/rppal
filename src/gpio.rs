@@ -270,8 +270,8 @@ impl Gpio {
 
         let gpio = Gpio {
             clear_on_drop: true,
-            gpio_mem: gpio_mem,
-            pins: pins,
+            gpio_mem,
+            pins,
             sync_interrupts: event_loop,
         };
 

@@ -179,7 +179,7 @@ macro_rules! impl_drop {
         impl<'a> Drop for $struct<'a> {
             /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
-                if self.clear_on_drop == false {
+                if !self.clear_on_drop {
                     return;
                 }
 
