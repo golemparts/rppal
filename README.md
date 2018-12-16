@@ -64,7 +64,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.9"
+rppal = "0.10"
 ```
 
 Call `Gpio::new()` to create a new Gpio instance with the default settings. In production code, you'll want to parse the result rather than unwrap it.
