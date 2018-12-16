@@ -3,7 +3,13 @@ use std::os::unix::io::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::gpio::{Result, Mode, Level, Trigger, PullUpDown::{self, *}, mem::GpioMem, interrupt::{AsyncInterrupt, EventLoop}};
+use crate::gpio::{
+    interrupt::{AsyncInterrupt, EventLoop},
+    mem::GpioMem,
+    Level, Mode,
+    PullUpDown::{self, *},
+    Result, Trigger,
+};
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
 // exposed through the Pi's GPIO header depends on the model.
@@ -20,8 +26,18 @@ pub struct Pin {
 
 impl Pin {
     #[inline]
-    pub(crate) fn new(pin: u8, event_loop: Arc<Mutex<EventLoop>>, gpio_mem: Arc<GpioMem>, gpio_cdev: Arc<File>) -> Pin {
-        Pin { pin, event_loop, gpio_mem, gpio_cdev }
+    pub(crate) fn new(
+        pin: u8,
+        event_loop: Arc<Mutex<EventLoop>>,
+        gpio_mem: Arc<GpioMem>,
+        gpio_cdev: Arc<File>,
+    ) -> Pin {
+        Pin {
+            pin,
+            event_loop,
+            gpio_mem,
+            gpio_cdev,
+        }
     }
 
     /// Mutably borrows the pin as an [`InputPin`] and sets its mode to [`Mode::Input`].
@@ -164,7 +180,7 @@ macro_rules! impl_drop {
             /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
                 if self.clear_on_drop == false {
-                    return
+                    return;
                 }
 
                 if let Some(prev_mode) = self.prev_mode {
@@ -172,8 +188,7 @@ macro_rules! impl_drop {
                 }
             }
         }
-
-    }
+    };
 }
 
 /// GPIO pin configured as input.
@@ -198,7 +213,12 @@ impl<'a> InputPin<'a> {
 
         pin.set_pullupdown(pud_mode);
 
-        InputPin { pin, prev_mode, async_interrupt: None, clear_on_drop: true }
+        InputPin {
+            pin,
+            prev_mode,
+            async_interrupt: None,
+            clear_on_drop: true,
+        }
     }
 
     impl_input!();
@@ -237,7 +257,11 @@ impl<'a> InputPin<'a> {
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    pub fn poll_interrupt(&mut self, reset: bool, timeout: Option<Duration>) -> Result<Option<Level>> {
+    pub fn poll_interrupt(
+        &mut self,
+        reset: bool,
+        timeout: Option<Duration>,
+    ) -> Result<Option<Level>> {
         let opt = (*self.pin.event_loop.lock().unwrap()).poll(&[self], reset, timeout)?;
 
         if let Some(trigger) = opt {
@@ -302,7 +326,11 @@ impl<'a> OutputPin<'a> {
             Some(prev_mode)
         };
 
-        OutputPin { pin, prev_mode, clear_on_drop: true }
+        OutputPin {
+            pin,
+            prev_mode,
+            clear_on_drop: true,
+        }
     }
 
     impl_input!();
@@ -331,7 +359,12 @@ impl<'a> AltPin<'a> {
             Some(prev_mode)
         };
 
-        AltPin { pin, mode, prev_mode, clear_on_drop: true }
+        AltPin {
+            pin,
+            mode,
+            prev_mode,
+            clear_on_drop: true,
+        }
     }
 
     impl_input!();

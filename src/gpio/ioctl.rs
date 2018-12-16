@@ -20,7 +20,7 @@
 
 #![allow(dead_code)]
 
-use libc::{self, c_int, c_ulong, ioctl, c_void, read};
+use libc::{self, c_int, c_ulong, c_void, ioctl, read};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -268,7 +268,11 @@ impl EventData {
         })?;
 
         if bytes_read < size_of::<EventData>() as isize {
-            Err(std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "failed to fill whole buffer").into())
+            Err(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "failed to fill whole buffer",
+            )
+            .into())
         } else {
             Ok(event_data)
         }

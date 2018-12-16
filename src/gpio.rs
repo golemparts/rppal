@@ -76,8 +76,8 @@ use std::io;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Duration;
 
 use quick_error::quick_error;
 
@@ -87,7 +87,7 @@ mod ioctl;
 mod mem;
 mod pin;
 
-pub use self::pin::{Pin, InputPin, OutputPin, AltPin};
+pub use self::pin::{AltPin, InputPin, OutputPin, Pin};
 
 // Used to limit Gpio to a single instance
 static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
@@ -256,7 +256,12 @@ impl Gpio {
             let mut pins: [Arc<Mutex<pin::Pin>>; pin::MAX] = std::mem::uninitialized();
 
             for (i, element) in pins.iter_mut().enumerate() {
-                let pin = Arc::new(Mutex::new(pin::Pin::new(i as u8, event_loop.clone(), gpio_mem.clone(), cdev.clone())));
+                let pin = Arc::new(Mutex::new(pin::Pin::new(
+                    i as u8,
+                    event_loop.clone(),
+                    gpio_mem.clone(),
+                    cdev.clone(),
+                )));
                 std::ptr::write(element, pin)
             }
 
@@ -313,14 +318,14 @@ impl Gpio {
     /// [`InputPin`]: struct.InputPin
     /// [`Level`]: struct.Level
     pub fn poll_interrupts<'a>(
-      &self,
-      pins: &[&'a InputPin<'a>],
-      reset: bool,
-      timeout: Option<Duration>,
+        &self,
+        pins: &[&'a InputPin<'a>],
+        reset: bool,
+        timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
-      (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
+        (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
-  }
+}
 
 impl Drop for Gpio {
     fn drop(&mut self) {

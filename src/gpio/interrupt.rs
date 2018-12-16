@@ -26,8 +26,8 @@ use std::time::{Duration, Instant};
 
 use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use crate::gpio::ioctl;
-use crate::gpio::{Error, Level, Result, Trigger};
 use crate::gpio::pin::InputPin;
+use crate::gpio::{Error, Level, Result, Trigger};
 
 #[derive(Debug)]
 struct Interrupt {
@@ -190,13 +190,16 @@ impl EventLoop {
 
                 let ref mut trigger_status = self.trigger_status[pin];
 
-                debug_assert!(trigger_status.interrupt.is_some(), format!("No interrupt set for pin {}", pin));
+                debug_assert!(
+                    trigger_status.interrupt.is_some(),
+                    format!("No interrupt set for pin {}", pin)
+                );
 
                 if let Some(ref mut interrupt) = trigger_status.interrupt {
                     trigger_status.level = match interrupt.event()?.trigger {
                         Trigger::RisingEdge => Level::High,
                         Trigger::FallingEdge => Level::Low,
-                        _ => unsafe { std::hint::unreachable_unchecked() }
+                        _ => unsafe { std::hint::unreachable_unchecked() },
                     };
 
                     trigger_status.triggered = true;
