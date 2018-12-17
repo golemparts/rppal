@@ -116,8 +116,9 @@ impl Pin {
         (*self.gpio_mem).set_pullupdown(self.pin, pud);
     }
 
+    /// Reads the pin's current logic level.
     #[inline]
-    pub(crate) fn read(&self) -> Level {
+    pub fn read(&self) -> Level {
         (*self.gpio_mem).level(self.pin)
     }
 
