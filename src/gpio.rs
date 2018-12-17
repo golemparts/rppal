@@ -221,7 +221,6 @@ impl fmt::Display for Trigger {
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
-    clear_on_drop: bool,
     pub(crate) gpio_mem: Arc<mem::GpioMem>,
     pins: [Arc<Mutex<pin::Pin>>; pin::MAX],
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
@@ -269,7 +268,6 @@ impl Gpio {
         };
 
         let gpio = Gpio {
-            clear_on_drop: true,
             gpio_mem,
             pins,
             sync_interrupts: event_loop,
@@ -338,7 +336,6 @@ impl Drop for Gpio {
 impl fmt::Debug for Gpio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Gpio")
-            .field("clear_on_drop", &self.clear_on_drop)
             .field("gpio_mem", &*self.gpio_mem)
             .field("sync_interrupts", &format_args!("{{ .. }}"))
             .finish()
