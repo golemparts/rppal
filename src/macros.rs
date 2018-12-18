@@ -29,3 +29,16 @@ macro_rules! parse_retval {
         }
     }};
 }
+
+// Initialize an array with a type that doesn't implement Copy
+macro_rules! init_array {
+    ($val:expr; $len:expr) => {{
+        let mut array: [_; $len] = unsafe { std::mem::uninitialized() };
+        for elem in array.iter_mut() {
+            unsafe {
+                std::ptr::write(elem, $val);
+            }
+        }
+        array
+    }};
+}
