@@ -61,42 +61,42 @@ impl Pin {
         }
     }
 
-    /// Mutably borrows the pin as an [`InputPin`] and sets its mode to [`Mode::Input`].
+    /// Consumes the pin, returns an [`InputPin`] and sets its mode to [`Mode::Input`].
     ///
     /// [`InputPin`]: struct.InputPin.html
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
     #[inline]
-    pub fn as_input(&mut self) -> InputPin {
+    pub fn into_input(self) -> InputPin {
         InputPin::new(self, Off)
     }
 
-    /// Additionally to `as_input`, activates the pin's pull-up resistor.
+    /// Additionally to `into_input`, activates the pin's pull-up resistor.
     #[inline]
-    pub fn as_input_pullup(&mut self) -> InputPin {
+    pub fn into_input_pullup(self) -> InputPin {
         InputPin::new(self, PullUp)
     }
 
-    /// Additionally to `as_input`, activates the pin's pull-down resistor.
+    /// Additionally to `into_input`, activates the pin's pull-down resistor.
     #[inline]
-    pub fn as_input_pulldown(&mut self) -> InputPin {
+    pub fn into_input_pulldown(self) -> InputPin {
         InputPin::new(self, PullDown)
     }
 
-    /// Mutably borrows the pin as an [`OutputPin`] and sets its mode to [`Mode::Output`].
+    /// Consumes the pin, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
     ///
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`Mode::Output`]: enum.Mode.html#variant.Output
     #[inline]
-    pub fn as_output(&mut self) -> OutputPin {
+    pub fn into_output(self) -> OutputPin {
         OutputPin::new(self)
     }
 
-    /// Mutably borrows the pin as an [`AltPin`] and sets its mode to the given mode.
+    /// Consumes the pin, returns an [`AltPin`] and sets its mode to the given mode.
     ///
     /// [`AltPin`]: struct.AltPin.html
     /// [`Mode`]: enum.Mode.html
     #[inline]
-    pub fn as_alt(&mut self, mode: Mode) -> AltPin {
+    pub fn into_alt(self, mode: Mode) -> AltPin {
         AltPin::new(self, mode)
     }
 
@@ -183,7 +183,7 @@ macro_rules! impl_output {
 
 macro_rules! impl_drop {
     ($struct:ident) => {
-        impl<'a> $struct<'a> {
+        impl $struct {
             /// Returns the value of `clear_on_drop`.
             pub fn clear_on_drop(&self) -> bool {
                 self.clear_on_drop
@@ -205,7 +205,7 @@ macro_rules! impl_drop {
             }
         }
 
-        impl<'a> Drop for $struct<'a> {
+        impl Drop for $struct {
             /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
                 if !self.clear_on_drop {
@@ -222,15 +222,15 @@ macro_rules! impl_drop {
 
 /// GPIO pin configured as input.
 #[derive(Debug)]
-pub struct InputPin<'a> {
-    pub(crate) pin: &'a mut Pin,
+pub struct InputPin {
+    pub(crate) pin: Pin,
     prev_mode: Option<Mode>,
     async_interrupt: Option<AsyncInterrupt>,
     clear_on_drop: bool,
 }
 
-impl<'a> InputPin<'a> {
-    pub(crate) fn new(pin: &'a mut Pin, pud_mode: PullUpDown) -> InputPin<'a> {
+impl InputPin {
+    pub(crate) fn new(mut pin: Pin, pud_mode: PullUpDown) -> InputPin {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == Mode::Input {
@@ -338,14 +338,14 @@ impl_drop!(InputPin);
 
 /// GPIO pin configured as output.
 #[derive(Debug)]
-pub struct OutputPin<'a> {
-    pin: &'a mut Pin,
+pub struct OutputPin {
+    pin: Pin,
     prev_mode: Option<Mode>,
     clear_on_drop: bool,
 }
 
-impl<'a> OutputPin<'a> {
-    pub(crate) fn new(pin: &'a mut Pin) -> OutputPin<'a> {
+impl OutputPin {
+    pub(crate) fn new(mut pin: Pin) -> OutputPin {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == Mode::Output {
@@ -370,15 +370,15 @@ impl_drop!(OutputPin);
 
 /// GPIO pin configured with an alternate function.
 #[derive(Debug)]
-pub struct AltPin<'a> {
-    pin: &'a mut Pin,
+pub struct AltPin {
+    pin: Pin,
     mode: Mode,
     prev_mode: Option<Mode>,
     clear_on_drop: bool,
 }
 
-impl<'a> AltPin<'a> {
-    pub(crate) fn new(pin: &'a mut Pin, mode: Mode) -> AltPin<'a> {
+impl AltPin {
+    pub(crate) fn new(mut pin: Pin, mode: Mode) -> AltPin {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == mode {

@@ -145,10 +145,10 @@ impl EventLoop {
 
     pub fn poll<'a>(
         &mut self,
-        pins: &[&'a InputPin<'a>],
+        pins: &[&'a InputPin],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
+    ) -> Result<Option<(&'a InputPin, Level)>> {
         for pin in pins {
             let trigger_status = &mut self.trigger_status[pin.pin.pin as usize];
 

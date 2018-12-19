@@ -328,10 +328,10 @@ impl Gpio {
     /// [`Level`]: struct.Level
     pub fn poll_interrupts<'a>(
         &self,
-        pins: &[&'a InputPin<'a>],
+        pins: &[&'a InputPin],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(&'a InputPin<'a>, Level)>> {
+    ) -> Result<Option<(&'a InputPin, Level)>> {
         (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
 }
