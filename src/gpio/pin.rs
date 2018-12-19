@@ -325,6 +325,7 @@ impl InputPin {
         Ok(())
     }
 
+    /// Removes a previously configured asynchronous interrupt trigger.
     pub fn clear_async_interrupt(&mut self) -> Result<()> {
         if let Some(mut interrupt) = self.async_interrupt.take() {
             interrupt.stop()?;
