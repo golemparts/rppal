@@ -92,14 +92,12 @@ fn main() {
     println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
 
     let gpio = Gpio::new().unwrap();
-
-    let mut pin = gpio.get(GPIO_LED).unwrap();
-    let mut output_pin = pin.as_output();
+    let mut pin = gpio.get(GPIO_LED).unwrap().into_output();
 
     // Blink an LED attached to the pin.
-    output_pin.set_high();
+    pin.set_high();
     sleep(Duration::from_millis(500));
-    output_pin.set_low();
+    pin.set_low();
 }
 ```
 
