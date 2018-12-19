@@ -14,3 +14,4 @@ keywords = ["raspberry","pi","gpio","spi","i2c"]
 [dependencies]
 libc = "0.2"
 quick-error = "1.2"
+lazy_static = "1.2"

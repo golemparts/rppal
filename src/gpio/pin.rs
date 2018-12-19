@@ -20,6 +20,7 @@
 
 use std::fs::File;
 use std::os::unix::io::AsRawFd;
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -28,7 +29,7 @@ use crate::gpio::{
     mem::GpioMem,
     Level, Mode,
     PullUpDown::{self, *},
-    Result, Trigger,
+    Result, Trigger, PINS_TAKEN,
 };
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
@@ -138,6 +139,13 @@ impl Pin {
             Level::Low => self.set_low(),
             Level::High => self.set_high(),
         };
+    }
+}
+
+impl Drop for Pin {
+    fn drop(&mut self) {
+        // Release taken pin
+        PINS_TAKEN[self.pin as usize].store(false, Ordering::SeqCst);
     }
 }
 

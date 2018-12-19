@@ -76,9 +76,10 @@ use std::io;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use lazy_static::lazy_static;
 use quick_error::quick_error;
 
 mod epoll;
@@ -89,8 +90,13 @@ mod pin;
 
 pub use self::pin::{AltPin, InputPin, OutputPin, Pin};
 
-// Used to limit Gpio to a single instance
+// Limit Gpio to a single instance
 static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
+
+// Continue to keep track of taken pins when Gpio goes out of scope
+lazy_static! {
+    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false); pin::MAX);
+}
 
 quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
@@ -222,7 +228,7 @@ impl fmt::Display for Trigger {
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 pub struct Gpio {
     pub(crate) gpio_mem: Arc<mem::GpioMem>,
-    pins: [Arc<Mutex<pin::Pin>>; pin::MAX],
+    cdev: Arc<std::fs::File>,
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
 }
 
@@ -251,25 +257,9 @@ impl Gpio {
         let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, pin::MAX)?));
         let gpio_mem = Arc::new(mem::GpioMem::open()?);
 
-        let pins = unsafe {
-            let mut pins: [Arc<Mutex<pin::Pin>>; pin::MAX] = std::mem::uninitialized();
-
-            for (i, element) in pins.iter_mut().enumerate() {
-                let pin = Arc::new(Mutex::new(pin::Pin::new(
-                    i as u8,
-                    event_loop.clone(),
-                    gpio_mem.clone(),
-                    cdev.clone(),
-                )));
-                std::ptr::write(element, pin)
-            }
-
-            pins
-        };
-
         let gpio = Gpio {
             gpio_mem,
-            pins,
+            cdev,
             sync_interrupts: event_loop,
         };
 
@@ -285,11 +275,32 @@ impl Gpio {
         Ok(gpio)
     }
 
-    pub fn get(&self, pin: u8) -> Option<MutexGuard<pin::Pin>> {
+    /// Returns an `Option<Pin>` for the specified GPIO pin number.
+    ///
+    /// Retrieving a GPIO pin using `get` grants exclusive access to the GPIO
+    /// pin through an owned `Pin` instance. If the selected pin number is already
+    /// in use, `get` returns `None`. After a `Pin` goes out of scope, it can be retrieved
+    /// again using `get`.
+    pub fn get(&self, pin: u8) -> Option<pin::Pin> {
         if pin as usize >= pin::MAX {
+            return None;
+        }
+
+        // Returns true if the pin is currently taken, otherwise atomically sets
+        // it to true here
+        if PINS_TAKEN[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
+            // Pin is currently taken
             None
         } else {
-            Some(self.pins[pin as usize].lock().unwrap())
+            // Return an owned Pin
+            let pin_instance = pin::Pin::new(
+                pin,
+                self.sync_interrupts.clone(),
+                self.gpio_mem.clone(),
+                self.cdev.clone(),
+            );
+
+            Some(pin_instance)
         }
     }
 
