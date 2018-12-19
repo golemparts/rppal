@@ -275,12 +275,14 @@ impl Gpio {
         Ok(gpio)
     }
 
-    /// Returns an `Option<Pin>` for the specified GPIO pin number.
+    /// Returns a [`Pin`] for the specified GPIO pin number.
     ///
     /// Retrieving a GPIO pin using `get` grants exclusive access to the GPIO
-    /// pin through an owned `Pin` instance. If the selected pin number is already
-    /// in use, `get` returns `None`. After a `Pin` goes out of scope, it can be retrieved
+    /// pin through an owned [`Pin`]. If the selected pin number is already
+    /// in use, `get` returns `None`. After a [`Pin`] goes out of scope, it can be retrieved
     /// again using `get`.
+    ///
+    /// [`Pin`]: struct.Pin.html
     pub fn get(&self, pin: u8) -> Option<pin::Pin> {
         if pin as usize >= pin::MAX {
             return None;
