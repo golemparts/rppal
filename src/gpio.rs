@@ -112,7 +112,7 @@ static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
 
 // Continue to keep track of taken pins when Gpio goes out of scope
 lazy_static! {
-    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false); pin::MAX);
+    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
 }
 
 quick_error! {
