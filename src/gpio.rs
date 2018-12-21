@@ -22,11 +22,10 @@
 //!
 //! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
 //! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
-//! GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
+//! GPIO interrupts are controlled using the `/dev/gpiochipN` (where N=0, 1 and 2)
+//! character device.
 //!
-//! On a typical up-to-date Raspbian installation, any user that's a member of the
-//! `gpio` group can access `/dev/gpiomem`, while `/dev/mem` requires
-//! superuser privileges.
+//! ## Pins
 //!
 //! Pins are addressed by their BCM numbers, rather than their
 //! physical location.
@@ -36,6 +35,8 @@
 //! or [`AltPin::set_clear_on_drop(false)`], respecively, to disable this behavior.
 //! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
+//!
+//! ## Single instance
 //!
 //! Only a single [`Gpio`] instance can exist at any time. Multiple instances could
 //! cause race conditions or pin configuration issues when several threads write to
@@ -48,27 +49,43 @@
 //! threads using channels, cloning an `Arc<Mutex<Gpio>>` or globally sharing
 //! a `Mutex<Gpio>`.
 //!
+//! ## Permission denied
+//!
+//! In recent releases of Raspbian (December 2017 or later), users that are part of the
+//! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
+//! `/dev/gpiochipN` without needing additional permissions. If you encounter any
+//! Permission Denied errors when creating a new [`Gpio`] instance, either the current
+//! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
+//! up-to-date and doesn't automatically configure permissions for the above-mentioned
+//! files. Updating Raspbian to the latest release should fix any permission issues.
+//! Alternatively, although not recommended, you can run your application with superuser
+//! privileges by using `sudo`.
+//!
 //! [`Gpio`]: struct.Gpio.html
 //! [`InputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
 //! [`OutputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
 //! [`AltPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 //!
-//! # Examples
+//! ## Examples
 //!
 //! Basic example:
 //!
 //! ```
-//! # use std::{time::Duration, thread::sleep};
+//! use std::thread::sleep;
+//! use std::time::Duration;
+//!
+//! use rppal::gpio::Gpio;
+//!
+//! # fn main() -> rppal::gpio::Result<()> {
 //! let gpio = Gpio::new()?;
-//! let mut pin = *gpio.get(23);
-//! let mut output_pin = pin.as_output();
+//! let mut pin = gpio.get(23).unwrap().into_output();
 //!
-//! output_pin.set_high();
-//!
+//! pin.set_high();
 //! sleep(Duration::from_secs(1));
-//!
-//! output_pin.set_high();
+//! pin.set_low();
+//! # Ok(())
+//! # }
 //! ```
 
 use std::fmt;
