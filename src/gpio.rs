@@ -61,6 +61,13 @@
 //! Alternatively, although not recommended, you can run your application with superuser
 //! privileges by using `sudo`.
 //!
+//! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
+//! the latest available release, or updating hasn't fixed the issue, you might be able to
+//! manually update your udev rules to set the appropriate permissions. More information
+//! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
+//!
+//! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
+//! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
 //! [`InputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
 //! [`OutputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
