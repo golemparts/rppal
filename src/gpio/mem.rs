@@ -74,15 +74,7 @@ impl GpioMem {
             },
         };
 
-        let locks = unsafe {
-            let mut locks: [AtomicBool; GPIO_MEM_REGISTERS] = std::mem::uninitialized();
-
-            for element in locks.iter_mut() {
-                std::ptr::write(element, AtomicBool::new(false))
-            }
-
-            locks
-        };
+        let locks = init_array!(AtomicBool::new(false), GPIO_MEM_REGISTERS);
 
         Ok(GpioMem { mem_ptr, locks })
     }
