@@ -305,7 +305,7 @@ pub fn get_event(event_fd: c_int) -> Result<Event> {
 }
 
 // Find the correct gpiochip device based on its label
-pub fn find_driver() -> Result<File> {
+pub fn find_gpiochip() -> Result<File> {
     let driver_name = b"pinctrl-bcm2835\0";
 
     for idx in 0..=255 {

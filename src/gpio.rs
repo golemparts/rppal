@@ -274,7 +274,7 @@ impl Gpio {
             }
         }
 
-        let cdev = ioctl::find_driver()?;
+        let cdev = ioctl::find_gpiochip()?;
         let cdev_fd = cdev.as_raw_fd();
 
         let cdev = Arc::new(cdev);
