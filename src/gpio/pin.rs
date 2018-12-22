@@ -156,6 +156,22 @@ macro_rules! impl_input {
         pub fn read(&self) -> Level {
             self.pin.read()
         }
+
+        /// Returns `true` if the pin's logic level is [`Level::Low`].
+        ///
+        /// [`Level::Low`]: enum.Level.html
+        #[inline]
+        pub fn is_low(&self) -> bool {
+            self.pin.read() == Level::Low
+        }
+
+        /// Returns `true` if the pin's logic level is [`Level::High`].
+        ///
+        /// [`Level::High`]: enum.Level.html
+        #[inline]
+        pub fn is_high(&self) -> bool {
+            self.pin.read() == Level::High
+        }
     }
 }
 
