@@ -281,7 +281,7 @@ impl InputPin {
     ///
     /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
     /// previous call to `poll_interrupt`.
-    /// If `reset` is set too `true`, clears any cached interrupt trigger events before polling.
+    /// If `reset` is set to `true`, clears any cached interrupt trigger events before polling.
     ///
     /// The `timeout` duration indicates how long the call will block while waiting
     /// for interrupt trigger events, after which an `Ok(None))` is returned.
