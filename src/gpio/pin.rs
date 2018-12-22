@@ -181,30 +181,32 @@ macro_rules! impl_output {
     }
 }
 
-macro_rules! impl_drop {
-    ($struct:ident) => {
-        impl $struct {
-            /// Returns the value of `clear_on_drop`.
-            pub fn clear_on_drop(&self) -> bool {
-                self.clear_on_drop
-            }
-
-            /// When enabled, resets pin's mode to its original state when it goes out of scope.
-            /// By default, this is set to `true`.
-            ///
-            /// # Note
-            ///
-            /// Drop methods aren't called when a program is abnormally terminated, for
-            /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
-            /// isn't caught. You catch those using crates such as [`simple_signal`].
-            ///
-            /// [`simple_signal`]: https://crates.io/crates/simple-signal
-            /// [`cleanup`]: #method.cleanup
-            pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
-                self.clear_on_drop = clear_on_drop;
-            }
+macro_rules! impl_clear_on_drop {
+    () => {
+        /// Returns the value of `clear_on_drop`.
+        pub fn clear_on_drop(&self) -> bool {
+            self.clear_on_drop
         }
 
+        /// When enabled, resets pin's mode to its original state when it goes out of scope.
+        /// By default, this is set to `true`.
+        ///
+        /// # Note
+        ///
+        /// Drop methods aren't called when a program is abnormally terminated, for
+        /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
+        /// isn't caught. You catch those using crates such as [`simple_signal`].
+        ///
+        /// [`simple_signal`]: https://crates.io/crates/simple-signal
+        /// [`cleanup`]: #method.cleanup
+        pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
+            self.clear_on_drop = clear_on_drop;
+        }
+    };
+}
+
+macro_rules! impl_drop {
+    ($struct:ident) => {
         impl Drop for $struct {
             /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
@@ -333,6 +335,8 @@ impl InputPin {
 
         Ok(())
     }
+
+    impl_clear_on_drop!();
 }
 
 impl_drop!(InputPin);
@@ -365,6 +369,7 @@ impl OutputPin {
 
     impl_input!();
     impl_output!();
+    impl_clear_on_drop!();
 }
 
 impl_drop!(OutputPin);
@@ -399,5 +404,7 @@ impl AltPin {
 
     impl_input!();
     impl_output!();
+    impl_clear_on_drop!();
 }
+
 impl_drop!(AltPin);
