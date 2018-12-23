@@ -9,6 +9,8 @@
 * Gpio: (Breaking change) Change Gpio::cleanup() to consume self, and return Result (contributed by @reitermarkus).
 * Gpio: (Breaking change) Remove Error::InstanceExists. Multiple Gpio instances are now allowed to exist simultaneously.
 * Gpio: Implement Clone for Gpio.
+* Gpio: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
+* I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
 
 ## 0.9.0 (November 15, 2018)
 
