@@ -228,9 +228,24 @@ impl fmt::Display for Trigger {
     }
 }
 
-// Continue to keep track of taken pins when Gpio goes out of scope
-lazy_static! {
-    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
+// Store Gpio's state separately, so we can conveniently share it through
+// a cloned Arc.
+pub struct GpioState {
+    gpio_mem: mem::GpioMem,
+    cdev: std::fs::File,
+    sync_interrupts: Mutex<interrupt::EventLoop>,
+    pins_taken: [AtomicBool; pin::MAX],
+}
+
+impl fmt::Debug for GpioState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventLoop")
+            .field("gpio_mem", &self.gpio_mem)
+            .field("cdev", &self.cdev)
+            .field("sync_interrupts", &self.sync_interrupts)
+            .field("pins_taken", &format_args!("{{ .. }}"))
+            .finish()
+    }
 }
 
 // Share state between Gpio and Pin instances. GpioState is dropped after
@@ -238,15 +253,6 @@ lazy_static! {
 // any pins simultaneously using different EventLoop or GpioMem instances.
 lazy_static! {
     static ref GPIO_STATE: Mutex<Weak<GpioState>> = Mutex::new(Weak::new());
-}
-
-// Store Gpio's state separately, so we can conveniently share it through
-// a cloned Arc.
-#[derive(Debug)]
-pub struct GpioState {
-    gpio_mem: mem::GpioMem,
-    cdev: std::fs::File,
-    sync_interrupts: Mutex<interrupt::EventLoop>,
 }
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
@@ -269,12 +275,15 @@ impl Gpio {
         } else {
             let gpio_mem = mem::GpioMem::open()?;
             let cdev = ioctl::find_gpiochip()?;
-            let event_loop = Mutex::new(interrupt::EventLoop::new(cdev.as_raw_fd(), pin::MAX)?);
+            let sync_interrupts =
+                Mutex::new(interrupt::EventLoop::new(cdev.as_raw_fd(), pin::MAX)?);
+            let pins_taken = init_array!(AtomicBool::new(false), pin::MAX);
 
             let gpio_state = Arc::new(GpioState {
                 gpio_mem,
                 cdev,
-                sync_interrupts: event_loop,
+                sync_interrupts,
+                pins_taken,
             });
 
             // Store a weak reference to our state. This gets dropped when
@@ -300,7 +309,7 @@ impl Gpio {
 
         // Returns true if the pin is currently taken, otherwise atomically sets
         // it to true here
-        if PINS_TAKEN[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
+        if self.inner.pins_taken[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
             // Pin is currently taken
             None
         } else {

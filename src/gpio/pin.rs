@@ -27,7 +27,7 @@ use crate::gpio::{
     interrupt::AsyncInterrupt,
     GpioState, Level, Mode,
     PullUpDown::{self, *},
-    Result, Trigger, PINS_TAKEN,
+    Result, Trigger,
 };
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
@@ -38,13 +38,13 @@ pub const MAX: usize = 54;
 #[derive(Debug)]
 pub struct Pin {
     pub(crate) pin: u8,
-    gpio: Arc<GpioState>,
+    gpio_state: Arc<GpioState>,
 }
 
 impl Pin {
     #[inline]
-    pub(crate) fn new(pin: u8, gpio: Arc<GpioState>) -> Pin {
-        Pin { pin, gpio }
+    pub(crate) fn new(pin: u8, gpio_state: Arc<GpioState>) -> Pin {
+        Pin { pin, gpio_state }
     }
 
     /// Consumes the pin, returns an [`InputPin`] and sets its mode to [`Mode::Input`].
@@ -88,35 +88,35 @@ impl Pin {
 
     #[inline]
     pub(crate) fn set_mode(&mut self, mode: Mode) {
-        self.gpio.gpio_mem.set_mode(self.pin, mode);
+        self.gpio_state.gpio_mem.set_mode(self.pin, mode);
     }
 
     /// Returns the current GPIO pin mode.
     #[inline]
     pub fn mode(&self) -> Mode {
-        self.gpio.gpio_mem.mode(self.pin)
+        self.gpio_state.gpio_mem.mode(self.pin)
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
     #[inline]
     pub(crate) fn set_pullupdown(&self, pud: PullUpDown) {
-        self.gpio.gpio_mem.set_pullupdown(self.pin, pud);
+        self.gpio_state.gpio_mem.set_pullupdown(self.pin, pud);
     }
 
     /// Reads the pin's current logic level.
     #[inline]
     pub fn read(&self) -> Level {
-        self.gpio.gpio_mem.level(self.pin)
+        self.gpio_state.gpio_mem.level(self.pin)
     }
 
     #[inline]
     pub(crate) fn set_low(&mut self) {
-        self.gpio.gpio_mem.set_low(self.pin);
+        self.gpio_state.gpio_mem.set_low(self.pin);
     }
 
     #[inline]
     pub(crate) fn set_high(&mut self) {
-        self.gpio.gpio_mem.set_high(self.pin);
+        self.gpio_state.gpio_mem.set_high(self.pin);
     }
 
     #[inline]
@@ -131,7 +131,7 @@ impl Pin {
 impl Drop for Pin {
     fn drop(&mut self) {
         // Release taken pin
-        PINS_TAKEN[self.pin as usize].store(false, Ordering::SeqCst);
+        self.gpio_state.pins_taken[self.pin as usize].store(false, Ordering::SeqCst);
     }
 }
 
@@ -268,12 +268,12 @@ impl InputPin {
         self.clear_async_interrupt()?;
 
         // Each pin can only be configured for a single trigger type
-        (*self.pin.gpio.sync_interrupts.lock().unwrap()).set_interrupt(self.pin.pin, trigger)
+        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).set_interrupt(self.pin.pin, trigger)
     }
 
     /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self) -> Result<()> {
-        (*self.pin.gpio.sync_interrupts.lock().unwrap()).clear_interrupt(self.pin.pin)
+        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).clear_interrupt(self.pin.pin)
     }
 
     /// Blocks until an interrupt is triggered on the pin, or until a timeout occurs.
@@ -295,7 +295,8 @@ impl InputPin {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<Level>> {
-        let opt = (*self.pin.gpio.sync_interrupts.lock().unwrap()).poll(&[self], reset, timeout)?;
+        let opt =
+            (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(&[self], reset, timeout)?;
 
         if let Some(trigger) = opt {
             Ok(Some(trigger.1))
@@ -320,7 +321,7 @@ impl InputPin {
         self.clear_async_interrupt()?;
 
         self.async_interrupt = Some(AsyncInterrupt::new(
-            self.pin.gpio.cdev.as_raw_fd(),
+            self.pin.gpio_state.cdev.as_raw_fd(),
             self.pin.pin,
             trigger,
             callback,
