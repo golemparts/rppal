@@ -163,13 +163,17 @@ macro_rules! impl_input {
 
 macro_rules! impl_output {
     () => {
-        /// Sets pin's logic level to low.
+        /// Sets pin's logic level to [`Level::Low`].
+        ///
+        /// [`Level::Low`]: enum.Level.html
         #[inline]
         pub fn set_low(&mut self) {
             self.pin.set_low()
         }
 
-        /// Sets pin's logic level to high.
+        /// Sets pin's logic level to [`Level::High`].
+        ///
+        /// [`Level::High`]: enum.Level.html
         #[inline]
         pub fn set_high(&mut self) {
             self.pin.set_high()

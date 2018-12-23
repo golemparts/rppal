@@ -107,19 +107,21 @@ quick_error! {
     pub enum Error {
 /// Unknown SoC.
 ///
-/// It wasn't possible to automatically identify the Raspberry Pi's SoC.
+/// The Raspberry Pi model or SoC can't be identified. Support for
+/// new models is usually added shortly after they are officially
+/// announced and available to the public. Make sure you're using
+/// the latest release of RPPAL.
+///
+/// You may also encounter this error if your Linux distribution
+/// doesn't provide any of the common user-accessible system files
+/// that are used to identify the model and SoC.
         UnknownSoC { description("unknown SoC") }
-/// Permission denied when opening `/dev/gpiomem` and/or `/dev/mem` for read/write access.
+/// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
+/// read/write access.
 ///
-/// Make sure the user has read and write access to `/dev/gpiomem`.
-/// Common causes are either incorrect file permissions on `/dev/gpiomem`, or
-/// the user isn't a member of the `gpio` group. If `/dev/gpiomem` is missing, upgrade to a more
-/// recent version of Raspbian.
+/// More information on possible causes for this error can be found [here].
 ///
-/// `/dev/mem` is a fallback when `/dev/gpiomem` can't be accessed. Getting read and write
-/// access to `/dev/mem` is typically accomplished by executing the program as a
-/// privileged user through `sudo`. A better solution that doesn't require `sudo` would be
-/// to upgrade to a version of Raspbian that implements `/dev/gpiomem`.
+/// [here]: index.html##permission-denied
         PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }

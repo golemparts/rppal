@@ -46,6 +46,14 @@ quick_error! {
 /// `DeviceInfo` was unable to identify the Raspberry Pi model based on the
 /// contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
 /// and `/sys/firmware/devicetree/base/model`.
+///
+/// Support for new models is usually added shortly after they are officially
+/// announced and available to the public. Make sure you're using the latest
+/// release of RPPAL.
+///
+/// You may also encounter this error if your Linux distribution
+/// doesn't provide any of the common user-accessible system files
+/// that are used to identify the model and SoC.
         UnknownModel { description("unknown Raspberry Pi model") }
     }
 }
