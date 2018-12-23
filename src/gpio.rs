@@ -122,7 +122,7 @@ quick_error! {
 /// More information on possible causes for this error can be found [here].
 ///
 /// [here]: index.html#permission-denied
-        PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
+        PermissionDenied { description("/dev/gpiomem, /dev/mem or /dev/gpiochipN insufficient permissions") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
 /// Interrupt polling thread panicked.
