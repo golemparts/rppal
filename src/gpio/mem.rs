@@ -69,7 +69,7 @@ impl GpioMem {
                 Err(Error::Io(ref e)) if e.kind() == io::ErrorKind::PermissionDenied => {
                     return Err(Error::PermissionDenied)
                 }
-                Err(Error::UnknownSoC) => return Err(Error::UnknownSoC),
+                Err(Error::UnknownModel) => return Err(Error::UnknownModel),
                 _ => return Err(gpiomem_err),
             },
         };
@@ -111,7 +111,7 @@ impl GpioMem {
 
     fn map_devmem() -> Result<*mut u32> {
         // Identify which SoC we're using, so we know what offset to start at
-        let device_info = DeviceInfo::new().map_err(|_| Error::UnknownSoC)?;
+        let device_info = DeviceInfo::new().map_err(|_| Error::UnknownModel)?;
 
         let mem_file = OpenOptions::new()
             .read(true)

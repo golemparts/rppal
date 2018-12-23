@@ -105,7 +105,7 @@ quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
     #[derive(Debug)]
     pub enum Error {
-/// Unknown SoC.
+/// Unknown model.
 ///
 /// The Raspberry Pi model or SoC can't be identified. Support for
 /// new models is usually added shortly after they are officially
@@ -115,7 +115,7 @@ quick_error! {
 /// You may also encounter this error if your Linux distribution
 /// doesn't provide any of the common user-accessible system files
 /// that are used to identify the model and SoC.
-        UnknownSoC { description("unknown SoC") }
+        UnknownModel { description("unknown Raspberry Pi model") }
 /// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
 /// read/write access.
 ///

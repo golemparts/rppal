@@ -119,16 +119,23 @@ quick_error! {
 ///
 /// The underlying drivers don't support the selected I2C feature or SMBus protocol.
         FeatureNotSupported { description("I2C/SMBus feature not supported") }
-/// Unknown SoC.
+/// Unknown model.
 ///
-/// It wasn't possible to automatically identify the Raspberry Pi's SoC.
-        UnknownSoC { description("unknown SoC") }
+/// The Raspberry Pi model or SoC can't be identified. Support for
+/// new models is usually added shortly after they are officially
+/// announced and available to the public. Make sure you're using
+/// the latest release of RPPAL.
+///
+/// You may also encounter this error if your Linux distribution
+/// doesn't provide any of the common user-accessible system files
+/// that are used to identify the model and SoC.
+        UnknownModel { description("unknown Raspberry Pi model") }
     }
 }
 
 impl From<system::Error> for Error {
     fn from(_err: system::Error) -> Error {
-        Error::UnknownSoC
+        Error::UnknownModel
     }
 }
 
