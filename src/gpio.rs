@@ -121,7 +121,7 @@ quick_error! {
 ///
 /// More information on possible causes for this error can be found [here].
 ///
-/// [here]: index.html##permission-denied
+/// [here]: index.html#permission-denied
         PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
