@@ -217,7 +217,7 @@ impl fmt::Display for Trigger {
 
 // Store Gpio's state separately, so we can conveniently share it through
 // a cloned Arc.
-pub struct GpioState {
+pub(crate) struct GpioState {
     gpio_mem: mem::GpioMem,
     cdev: std::fs::File,
     sync_interrupts: Mutex<interrupt::EventLoop>,
