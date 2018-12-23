@@ -7,6 +7,8 @@
 * Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input and return type from u8 to &InputPin (contributed by @reitermarkus).
 * Gpio: (Breaking change) Remove Error::NotInitialized, Error::UnknownMode and Error::InvalidPin (contributed by @reitermarkus).
 * Gpio: (Breaking change) Change Gpio::cleanup() to consume self, and return Result (contributed by @reitermarkus).
+* Gpio: (Breaking change) Remove Error::InstanceExists. Multiple Gpio instances are now allowed to exist simultaneously.
+* Gpio: Implement Clone for Gpio.
 
 ## 0.9.0 (November 15, 2018)
 
