@@ -36,19 +36,6 @@
 //! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
 //!
-//! ## Single instance
-//!
-//! Only a single [`Gpio`] instance can exist at any time. Multiple instances could
-//! cause race conditions or pin configuration issues when several threads write to
-//! the same register simultaneously. While other applications can't be prevented from
-//! writing to the GPIO registers at the same time, limiting [`Gpio`] to a single instance
-//! will at least make the Rust interface thread-safe.
-//!
-//! Constructing another instance before the existing one goes out of scope will return
-//! an [`Error::InstanceExists`]. You can share a [`Gpio`] instance with other
-//! threads using channels, cloning an `Arc<Mutex<Gpio>>` or globally sharing
-//! a `Mutex<Gpio>`.
-//!
 //! ## Permission denied
 //!
 //! In recent releases of Raspbian (December 2017 or later), users that are part of the
