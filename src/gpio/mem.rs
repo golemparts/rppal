@@ -28,7 +28,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
-use lazy_static::lazy_static;
 use libc;
 
 use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
@@ -45,24 +44,16 @@ const GPLEV0: usize = 0x34 / std::mem::size_of::<u32>();
 const GPPUD: usize = 0x94 / std::mem::size_of::<u32>();
 const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
 
-// Keep track of locks across multiple GpioMem instances. This is necessary
-// in situations where a pin is kept around after Gpio goes out of scope, and
-// then another Gpio is created from which additional pins are retrieved. At
-// some point all Gpio/GpioMem static variables should probably be combined into
-// a single static struct.
-lazy_static! {
-    static ref GPIO_MEM_LOCKS: [AtomicBool; GPIO_MEM_REGISTERS] =
-        init_array!(AtomicBool::new(false), GPIO_MEM_REGISTERS);
-}
-
 pub struct GpioMem {
     mem_ptr: *mut u32,
+    locks: [AtomicBool; GPIO_MEM_REGISTERS],
 }
 
 impl fmt::Debug for GpioMem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("GpioMem")
             .field("mem_ptr", &self.mem_ptr)
+            .field("locks", &format_args!("{{ .. }}"))
             .finish()
     }
 }
@@ -83,7 +74,9 @@ impl GpioMem {
             },
         };
 
-        Ok(GpioMem { mem_ptr })
+        let locks = init_array!(AtomicBool::new(false), GPIO_MEM_REGISTERS);
+
+        Ok(GpioMem { mem_ptr, locks })
     }
 
     fn map_devgpiomem() -> Result<*mut u32> {
@@ -147,21 +140,21 @@ impl GpioMem {
 
     fn read(&self, offset: usize) -> u32 {
         loop {
-            if !GPIO_MEM_LOCKS[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
 
         let reg_value = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
 
-        GPIO_MEM_LOCKS[offset].store(false, Ordering::SeqCst);
+        self.locks[offset].store(false, Ordering::SeqCst);
 
         reg_value
     }
 
     fn write(&self, offset: usize, value: u32) {
         loop {
-            if !GPIO_MEM_LOCKS[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
@@ -170,7 +163,7 @@ impl GpioMem {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
 
-        GPIO_MEM_LOCKS[offset].store(false, Ordering::SeqCst);
+        self.locks[offset].store(false, Ordering::SeqCst);
     }
 
     pub fn set_high(&self, pin: u8) {
@@ -208,7 +201,7 @@ impl GpioMem {
         let shift = (pin % 10) * 3;
 
         loop {
-            if !GPIO_MEM_LOCKS[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                 break;
             }
         }
@@ -222,7 +215,7 @@ impl GpioMem {
             );
         }
 
-        GPIO_MEM_LOCKS[offset].store(false, Ordering::SeqCst);
+        self.locks[offset].store(false, Ordering::SeqCst);
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
@@ -231,11 +224,11 @@ impl GpioMem {
         let shift = pin % 32;
 
         loop {
-            if !GPIO_MEM_LOCKS[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
-                if !GPIO_MEM_LOCKS[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if !self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
+                if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                     break;
                 } else {
-                    GPIO_MEM_LOCKS[GPPUD].store(false, Ordering::SeqCst);
+                    self.locks[GPPUD].store(false, Ordering::SeqCst);
                 }
             }
         }
@@ -272,8 +265,8 @@ impl GpioMem {
             ptr::write_volatile(mem_ptr, 0 << shift);
         }
 
-        GPIO_MEM_LOCKS[offset].store(false, Ordering::SeqCst);
-        GPIO_MEM_LOCKS[GPPUD].store(false, Ordering::SeqCst);
+        self.locks[offset].store(false, Ordering::SeqCst);
+        self.locks[GPPUD].store(false, Ordering::SeqCst);
     }
 }
 
