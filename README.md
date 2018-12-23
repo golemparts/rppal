@@ -12,7 +12,9 @@ Backwards compatibility for minor revisions isn't guaranteed until the library r
 
 ## Documentation
 
-Documentation for the latest release can be found at [docs.golemparts.com/rppal](https://docs.golemparts.com/rppal). Documentation for earlier releases is stored at [docs.rs/rppal](https://docs.rs/rppal).
+Latest release: [docs.golemparts.com/rppal](https://docs.golemparts.com/rppal)  
+Older releases: [docs.rs/rppal](https://docs.rs/rppal)  
+In development: [docs.golemparts.com/rppal-dev](https://docs.golemparts.com/rppal-dev)
 
 ## Supported peripherals
 
