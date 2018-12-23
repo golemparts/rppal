@@ -100,7 +100,7 @@ use std::io;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 use lazy_static::lazy_static;
@@ -233,45 +233,55 @@ lazy_static! {
     static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
 }
 
-// Share state between multiple Gpio instances
+// Share state between Gpio and Pin instances. GpioState is dropped after
+// all Gpio and Pin instances go out of scope, guaranteeing we won't have
+// any pins simultaneously using different EventLoop or GpioMem instances.
 lazy_static! {
-    static ref GPIO_STATE: Mutex<Option<Gpio>> = Mutex::new(None);
+    static ref GPIO_STATE: Mutex<Weak<GpioState>> = Mutex::new(Weak::new());
+}
+
+// Store Gpio's state separately, so we can conveniently share it through
+// a cloned Arc.
+#[derive(Debug)]
+pub struct GpioState {
+    gpio_mem: mem::GpioMem,
+    cdev: std::fs::File,
+    sync_interrupts: Mutex<interrupt::EventLoop>,
 }
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Gpio {
-    gpio_mem: Arc<mem::GpioMem>,
-    cdev: Arc<std::fs::File>,
-    sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
+    inner: Arc<GpioState>,
 }
 
 impl Gpio {
     /// Constructs a new `Gpio`.
     pub fn new() -> Result<Gpio> {
-        let mut state = GPIO_STATE.lock().unwrap();
+        let mut static_state = GPIO_STATE.lock().unwrap();
 
-        // Create a clone if a Gpio instance already exists, otherwise
-        // initialize it here so we can return any relevant errors.
-        if let Some(ref state) = *state {
-            Ok(state.clone())
+        // Create a strong reference if a GpioState instance already exists,
+        // otherwise initialize it here so we can return any relevant errors.
+        if let Some(ref state) = static_state.upgrade() {
+            Ok(Gpio {
+                inner: state.clone(),
+            })
         } else {
-            let gpio_mem = Arc::new(mem::GpioMem::open()?);
-            let cdev = Arc::new(ioctl::find_gpiochip()?);
-            let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(
-                cdev.as_raw_fd(),
-                pin::MAX,
-            )?));
+            let gpio_mem = mem::GpioMem::open()?;
+            let cdev = ioctl::find_gpiochip()?;
+            let event_loop = Mutex::new(interrupt::EventLoop::new(cdev.as_raw_fd(), pin::MAX)?);
 
-            let gpio = Gpio {
+            let gpio_state = Arc::new(GpioState {
                 gpio_mem,
                 cdev,
                 sync_interrupts: event_loop,
-            };
+            });
 
-            *state = Some(gpio.clone());
+            // Store a weak reference to our state. This gets dropped when
+            // all Gpio and Pin instances go out of scope.
+            *static_state = Arc::downgrade(&gpio_state);
 
-            Ok(gpio)
+            Ok(Gpio { inner: gpio_state })
         }
     }
 
@@ -295,12 +305,7 @@ impl Gpio {
             None
         } else {
             // Return an owned Pin
-            let pin_instance = pin::Pin::new(
-                pin,
-                self.sync_interrupts.clone(),
-                self.gpio_mem.clone(),
-                self.cdev.clone(),
-            );
+            let pin_instance = pin::Pin::new(pin, self.inner.clone());
 
             Some(pin_instance)
         }
@@ -334,15 +339,6 @@ impl Gpio {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin, Level)>> {
-        (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
-    }
-}
-
-impl fmt::Debug for Gpio {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Gpio")
-            .field("gpio_mem", &*self.gpio_mem)
-            .field("sync_interrupts", &format_args!("{{ .. }}"))
-            .finish()
+        (*self.inner.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
 }
