@@ -114,11 +114,6 @@ mod pin;
 
 pub use self::pin::{AltPin, InputPin, OutputPin, Pin};
 
-// Continue to keep track of taken pins when Gpio goes out of scope
-lazy_static! {
-    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
-}
-
 quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
     #[derive(Debug)]
@@ -233,38 +228,51 @@ impl fmt::Display for Trigger {
     }
 }
 
+// Continue to keep track of taken pins when Gpio goes out of scope
+lazy_static! {
+    static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
+}
+
+// Share state between multiple Gpio instances
+lazy_static! {
+    static ref GPIO_STATE: Mutex<Option<Gpio>> = Mutex::new(None);
+}
+
 /// Provides access to the Raspberry Pi's GPIO peripheral.
+#[derive(Clone)]
 pub struct Gpio {
-    pub(crate) gpio_mem: Arc<mem::GpioMem>,
+    gpio_mem: Arc<mem::GpioMem>,
     cdev: Arc<std::fs::File>,
     sync_interrupts: Arc<Mutex<interrupt::EventLoop>>,
 }
 
 impl Gpio {
     /// Constructs a new `Gpio`.
-    ///
-    /// Only a single instance of `Gpio` can exist at any time. Constructing
-    /// another instance before the existing one goes out of scope will return
-    /// an [`Error::InstanceExists`]. You can share a `Gpio` instance with other
-    /// threads using channels, cloning an `Arc<Mutex<Gpio>>` or globally sharing
-    /// a `Mutex<Gpio>`.
-    ///
-    /// [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
     pub fn new() -> Result<Gpio> {
-        let cdev = ioctl::find_gpiochip()?;
-        let cdev_fd = cdev.as_raw_fd();
+        let mut state = GPIO_STATE.lock().unwrap();
 
-        let cdev = Arc::new(cdev);
-        let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(cdev_fd, pin::MAX)?));
-        let gpio_mem = Arc::new(mem::GpioMem::open()?);
+        // Create a clone if a Gpio instance already exists, otherwise
+        // initialize it here so we can return any relevant errors.
+        if let Some(ref state) = *state {
+            Ok(state.clone())
+        } else {
+            let gpio_mem = Arc::new(mem::GpioMem::open()?);
+            let cdev = Arc::new(ioctl::find_gpiochip()?);
+            let event_loop = Arc::new(Mutex::new(interrupt::EventLoop::new(
+                cdev.as_raw_fd(),
+                pin::MAX,
+            )?));
 
-        let gpio = Gpio {
-            gpio_mem,
-            cdev,
-            sync_interrupts: event_loop,
-        };
+            let gpio = Gpio {
+                gpio_mem,
+                cdev,
+                sync_interrupts: event_loop,
+            };
 
-        Ok(gpio)
+            *state = Some(gpio.clone());
+
+            Ok(gpio)
+        }
     }
 
     /// Returns a [`Pin`] for the specified GPIO pin number.
