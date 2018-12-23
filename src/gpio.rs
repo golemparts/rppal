@@ -114,9 +114,6 @@ mod pin;
 
 pub use self::pin::{AltPin, InputPin, OutputPin, Pin};
 
-// Limit Gpio to a single instance
-static mut GPIO_INSTANCED: AtomicBool = AtomicBool::new(false);
-
 // Continue to keep track of taken pins when Gpio goes out of scope
 lazy_static! {
     static ref PINS_TAKEN: [AtomicBool; pin::MAX] = init_array!(AtomicBool::new(false), pin::MAX);
@@ -142,19 +139,6 @@ quick_error! {
 /// privileged user through `sudo`. A better solution that doesn't require `sudo` would be
 /// to upgrade to a version of Raspbian that implements `/dev/gpiomem`.
         PermissionDenied { description("/dev/gpiomem and/or /dev/mem insufficient permissions") }
-/// An instance of [`Gpio`] already exists.
-///
-/// Multiple instances of [`Gpio`] can cause race conditions or pin configuration issues when
-/// several threads write to the same register simultaneously. While other applications
-/// can't be prevented from writing to the GPIO registers at the same time, limiting [`Gpio`]
-/// to a single instance will at least make the Rust interface less error-prone.
-///
-/// You can share a [`Gpio`] instance with other threads using channels, or cloning an
-/// `Arc<Mutex<Gpio>>`. Although discouraged, you could also share it globally
-/// wrapped in a `Mutex` using the `lazy_static` crate.
-///
-/// [`Gpio`]: struct.Gpio.html
-        InstanceExists { description("an instance of Gpio already exists") }
 /// IO error.
         Io(err: io::Error) { description(err.description()) from() }
 /// Interrupt polling thread panicked.
@@ -267,13 +251,6 @@ impl Gpio {
     ///
     /// [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
     pub fn new() -> Result<Gpio> {
-        // Check if a Gpio instance already exists before initializing everything
-        unsafe {
-            if GPIO_INSTANCED.load(Ordering::SeqCst) {
-                return Err(Error::InstanceExists);
-            }
-        }
-
         let cdev = ioctl::find_gpiochip()?;
         let cdev_fd = cdev.as_raw_fd();
 
@@ -286,15 +263,6 @@ impl Gpio {
             cdev,
             sync_interrupts: event_loop,
         };
-
-        unsafe {
-            // Returns true if GPIO_INSTANCED was set to true on a different thread
-            // while we were still initializing ourselves, otherwise atomically sets
-            // it to true here
-            if GPIO_INSTANCED.compare_and_swap(false, true, Ordering::SeqCst) {
-                return Err(Error::InstanceExists);
-            }
-        }
 
         Ok(gpio)
     }
@@ -359,14 +327,6 @@ impl Gpio {
         timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin, Level)>> {
         (*self.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
-    }
-}
-
-impl Drop for Gpio {
-    fn drop(&mut self) {
-        unsafe {
-            GPIO_INSTANCED.store(false, Ordering::SeqCst);
-        }
     }
 }
 
