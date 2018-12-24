@@ -150,7 +150,7 @@ impl EventLoop {
         timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin, Level)>> {
         for pin in pins {
-            let trigger_status = &mut self.trigger_status[pin.pin.pin as usize];
+            let trigger_status = &mut self.trigger_status[pin.pin() as usize];
 
             // Did we cache any trigger events during the previous poll?
             if trigger_status.triggered {
@@ -209,7 +209,7 @@ impl EventLoop {
             // Were any interrupts triggered? If so, return one. The rest
             // will be saved for the next poll.
             for pin in pins {
-                let trigger_status = &mut self.trigger_status[pin.pin.pin as usize];
+                let trigger_status = &mut self.trigger_status[pin.pin() as usize];
 
                 if trigger_status.triggered {
                     trigger_status.triggered = false;

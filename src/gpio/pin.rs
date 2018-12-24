@@ -51,7 +51,7 @@ impl Pin {
     ///
     /// Pins are addressed by their BCM numbers, rather than their physical location.
     #[inline]
-    pub fn pin(self) -> u8 {
+    pub fn pin(&self) -> u8 {
         self.pin
     }
 
@@ -149,7 +149,7 @@ macro_rules! impl_pin {
         ///
         /// Pins are addressed by their BCM numbers, rather than their physical location.
         #[inline]
-        pub fn pin(self) -> u8 {
+        pub fn pin(&self) -> u8 {
             self.pin.pin
         }
     }
@@ -294,12 +294,12 @@ impl InputPin {
         self.clear_async_interrupt()?;
 
         // Each pin can only be configured for a single trigger type
-        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).set_interrupt(self.pin.pin, trigger)
+        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).set_interrupt(self.pin(), trigger)
     }
 
     /// Removes a previously configured synchronous interrupt trigger.
     pub fn clear_interrupt(&mut self) -> Result<()> {
-        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).clear_interrupt(self.pin.pin)
+        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).clear_interrupt(self.pin())
     }
 
     /// Blocks until an interrupt is triggered on the pin, or a timeout occurs.
@@ -355,7 +355,7 @@ impl InputPin {
 
         self.async_interrupt = Some(AsyncInterrupt::new(
             self.pin.gpio_state.cdev.as_raw_fd(),
-            self.pin.pin,
+            self.pin(),
             trigger,
             callback,
         )?);
