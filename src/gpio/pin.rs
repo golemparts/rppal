@@ -262,8 +262,8 @@ impl InputPin {
 
     /// Configures a synchronous interrupt trigger.
     ///
-    /// After configuring a synchronous interrupt trigger, you can use
-    /// [`poll_interrupt`] or [`Gpio::poll_interrupts`] to wait for a trigger event.
+    /// After configuring a synchronous interrupt trigger, use [`poll_interrupt`] or
+    /// [`Gpio::poll_interrupts`] to block while waiting for a trigger event.
     ///
     /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
@@ -281,7 +281,7 @@ impl InputPin {
         (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).clear_interrupt(self.pin.pin)
     }
 
-    /// Blocks until an interrupt is triggered on the pin, or until a timeout occurs.
+    /// Blocks until an interrupt is triggered on the pin, or a timeout occurs.
     ///
     /// This only works after the pin has been configured for synchronous interrupts using
     /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.

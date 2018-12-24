@@ -314,7 +314,7 @@ impl Gpio {
     /// This only works for pins that have been configured for synchronous interrupts using
     /// [`InputPin::set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
-    /// Calling `poll_interrupts` blocks any other calls to [`InputPin::poll_interrupt`] or `poll_interrupts` until
+    /// Calling `poll_interrupts` blocks any other calls to `poll_interrupts` or [`InputPin::poll_interrupt`] until
     /// it returns. If you need to poll multiple pins simultaneously on different threads, use
     /// asynchronous interrupts with [`InputPin::set_async_interrupt`] instead.
     ///
