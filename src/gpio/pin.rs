@@ -263,11 +263,12 @@ impl InputPin {
     /// Configures a synchronous interrupt trigger.
     ///
     /// After configuring a synchronous interrupt trigger, you can use
-    /// [`poll_interrupt`] to wait for a trigger event.
+    /// [`poll_interrupt`] or [`Gpio::poll_interrupts`] to wait for a trigger event.
     ///
     /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
+    /// [`Gpio::poll_interrupts`]: struct.Gpio#method.poll_interrupts
     pub fn set_interrupt(&mut self, trigger: Trigger) -> Result<()> {
         self.clear_async_interrupt()?;
 
@@ -285,6 +286,11 @@ impl InputPin {
     /// This only works after the pin has been configured for synchronous interrupts using
     /// [`set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
+    /// Calling `poll_interrupt` blocks any other calls to `poll_interrupt` (including on other `InputPin`s) or
+    /// [`Gpio::poll_interrupts`] until it returns. If you need to poll multiple pins simultaneously, use
+    /// [`Gpio::poll_interrupts`] to block while waiting for any of the interrupts to trigger, or switch to
+    /// using asynchronous interrupts with [`set_async_interrupt`].
+    ///
     /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
     /// previous call to `poll_interrupt`.
     /// If `reset` is set to `true`, clears any cached interrupt trigger events before polling.
@@ -294,6 +300,8 @@ impl InputPin {
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
+    /// [`Gpio::poll_interrupts`]: struct.Gpio#method.poll_interrupts
+    /// [`set_async_interrupt`]: #method.set_async_interrupt
     pub fn poll_interrupt(
         &mut self,
         reset: bool,

@@ -314,12 +314,16 @@ impl Gpio {
     /// This only works for pins that have been configured for synchronous interrupts using
     /// [`InputPin::set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
+    /// Calling `poll_interrupts` blocks any other calls to [`InputPin::poll_interrupt`] or `poll_interrupts` until
+    /// it returns. If you need to poll multiple pins simultaneously on different threads, use
+    /// asynchronous interrupts with [`InputPin::set_async_interrupt`] instead.
+    ///
     /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
     /// previous call to [`InputPin::poll_interrupt`] or `poll_interrupts`.
     /// If `reset` is set to `true`, clears any cached interrupt trigger events before polling.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
-    /// for interrupt trigger events, after which an `Ok(None))` is returned.
+    /// for interrupt trigger events, after which an `Ok(None)` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// When an interrupt event is triggered, `poll_interrupts` returns
@@ -329,6 +333,7 @@ impl Gpio {
     ///
     /// [`InputPin::set_interrupt`]: struct.InputPin#method.set_interrupt
     /// [`InputPin::poll_interrupt`]: struct.InputPin#method.poll_interrupt
+    /// [`InputPin::set_async_interrupt`]: struct.InputPin#method.set_async_interrupt
     /// [`InputPin`]: struct.InputPin
     /// [`Level`]: struct.Level
     pub fn poll_interrupts<'a>(
