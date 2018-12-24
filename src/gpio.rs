@@ -139,12 +139,12 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Mode {
     Input = 0b000,
     Output = 0b001,
-    Alt5 = 0b010, // PWM
-    Alt4 = 0b011, // SPI
-    Alt0 = 0b100, // PCM
-    Alt1 = 0b101, // SMI
-    Alt2 = 0b110, // ---
-    Alt3 = 0b111, // BSC-SPI
+    Alt0 = 0b100,
+    Alt1 = 0b101,
+    Alt2 = 0b110,
+    Alt3 = 0b111,
+    Alt4 = 0b011,
+    Alt5 = 0b010,
 }
 
 impl fmt::Display for Mode {
