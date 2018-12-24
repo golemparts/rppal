@@ -47,6 +47,14 @@ impl Pin {
         Pin { pin, gpio_state }
     }
 
+    /// Returns the GPIO pin number.
+    ///
+    /// Pins are addressed by their BCM numbers, rather than their physical location.
+    #[inline]
+    pub fn pin(self) -> u8 {
+        self.pin
+    }
+
     /// Consumes the pin, returns an [`InputPin`] and sets its mode to [`Mode::Input`].
     ///
     /// [`InputPin`]: struct.InputPin.html
@@ -132,6 +140,18 @@ impl Drop for Pin {
     fn drop(&mut self) {
         // Release taken pin
         self.gpio_state.pins_taken[self.pin as usize].store(false, Ordering::SeqCst);
+    }
+}
+
+macro_rules! impl_pin {
+    () => {
+        /// Returns the GPIO pin number.
+        ///
+        /// Pins are addressed by their BCM numbers, rather than their physical location.
+        #[inline]
+        pub fn pin(self) -> u8 {
+            self.pin.pin
+        }
     }
 }
 
@@ -258,6 +278,7 @@ impl InputPin {
         }
     }
 
+    impl_pin!();
     impl_input!();
 
     /// Configures a synchronous interrupt trigger.
@@ -382,6 +403,7 @@ impl OutputPin {
         }
     }
 
+    impl_pin!();
     impl_input!();
     impl_output!();
     impl_clear_on_drop!();
@@ -417,6 +439,7 @@ impl AltPin {
         }
     }
 
+    impl_pin!();
     impl_input!();
     impl_output!();
     impl_clear_on_drop!();
