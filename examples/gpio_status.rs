@@ -120,7 +120,7 @@ fn print_gpio_status() {
                     println!(
                         " {:>3} | {:<5} | {:<5} | {:>4} |",
                         idx + 1,
-                        format!("{:?}", pin.read()),
+                        format!("{}", pin.read()),
                         format!("{}", pin.mode()).to_uppercase(),
                         bcm,
                     );
