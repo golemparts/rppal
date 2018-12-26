@@ -91,26 +91,22 @@ const HEADER_40: [PinType; 40] = [
 ];
 
 fn format_pin(
-    buffer: &mut impl fmt::Write,
+    buf: &mut String,
     pin: usize,
     gpio: impl fmt::Display,
     mode: impl fmt::Display,
     level: impl fmt::Display,
 ) {
     if pin % 2 != 0 {
-        write!(
-            buffer,
+        buf.push_str(&format!(
             "| {:>4} | {:<5} | {:>1} | {:>2} |",
             gpio, mode, level, pin
-        )
-        .unwrap();
+        ));
     } else {
-        writeln!(
-            buffer,
-            " {:>2} | {:>1} | {:<5} | {:>4} |",
+        buf.push_str(&format!(
+            " {:>2} | {:>1} | {:<5} | {:>4} |\n",
             pin, level, mode, gpio
-        )
-        .unwrap();
+        ));
     }
 }
 
