@@ -90,6 +90,19 @@ const HEADER_40: [PinType; 40] = [
     PinType::Gpio(21), // Physical pin 40
 ];
 
+fn print_pin(
+    pin: usize,
+    gpio: impl fmt::Display,
+    name: impl fmt::Display,
+    level: impl fmt::Display,
+) {
+    if pin % 2 != 0 {
+        print!("| {:>4} | {:<5} | {:<5} | {:>3} |", gpio, name, level, pin);
+    } else {
+        println!(" {:>3} | {:<5} | {:<5} | {:>4} |", pin, level, name, gpio);
+    }
+}
+
 fn print_gpio_status() {
     let gpio = Gpio::new().unwrap_or_else(|e| {
         println!("Error: Can't access GPIO peripheral ({})", e);
@@ -102,37 +115,20 @@ fn print_gpio_status() {
 
     for (idx, pin_type) in HEADER_40.iter().enumerate() {
         match pin_type {
-            PinType::Gpio(bcm) => {
-                let pin = gpio.get(*bcm).unwrap_or_else(|| {
-                    println!("\nError: Can't access GPIO pin {}", *bcm);;
+            PinType::Gpio(bcm_gpio) => {
+                let pin = gpio.get(*bcm_gpio).unwrap_or_else(|| {
+                    println!("\nError: Can't access GPIO pin {}", *bcm_gpio);
                     exit(1);
                 });
 
-                if idx % 2 == 0 {
-                    print!(
-                        "| {:>4} | {:<5} | {:<5} | {:>3} |",
-                        bcm,
-                        format!("{}", pin.mode()).to_uppercase(),
-                        format!("{}", pin.read()),
-                        idx + 1
-                    );
-                } else {
-                    println!(
-                        " {:>3} | {:<5} | {:<5} | {:>4} |",
-                        idx + 1,
-                        format!("{}", pin.read()),
-                        format!("{}", pin.mode()).to_uppercase(),
-                        bcm,
-                    );
-                }
+                print_pin(
+                    idx + 1,
+                    bcm_gpio,
+                    format!("{}", pin.mode()).to_uppercase(),
+                    format!("{}", pin.read()),
+                );
             }
-            _ => {
-                if idx % 2 == 0 {
-                    print!("|      | {} |       | {:>3} |", pin_type, idx + 1);
-                } else {
-                    println!(" {:>3} |       | {} |      |", idx + 1, pin_type);
-                }
-            }
+            _ => print_pin(idx + 1, "", pin_type, ""),
         };
     }
 
