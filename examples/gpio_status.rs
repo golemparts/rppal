@@ -93,13 +93,13 @@ const HEADER_40: [PinType; 40] = [
 fn print_pin(
     pin: usize,
     gpio: impl fmt::Display,
-    name: impl fmt::Display,
+    mode: impl fmt::Display,
     level: impl fmt::Display,
 ) {
     if pin % 2 != 0 {
-        print!("| {:>4} | {:<5} | {:>1} | {:>2} |", gpio, name, level, pin);
+        print!("| {:>4} | {:<5} | {:>1} | {:>2} |", gpio, mode, level, pin);
     } else {
-        println!(" {:>2} | {:>1} | {:<5} | {:>4} |", pin, level, name, gpio);
+        println!(" {:>2} | {:>1} | {:<5} | {:>4} |", pin, level, mode, gpio);
     }
 }
 
