@@ -153,6 +153,7 @@ fn main() {
         | Model::RaspberryPiZeroW => print_gpio_status(),
         model => {
             eprintln!("Error: No GPIO header information available for {}", model);
+            exit(1);
         }
     }
 }
