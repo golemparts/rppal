@@ -97,9 +97,9 @@ fn print_pin(
     level: impl fmt::Display,
 ) {
     if pin % 2 != 0 {
-        print!("| {:>4} | {:<5} | {:<5} | {:>3} |", gpio, name, level, pin);
+        print!("| {:>4} | {:<5} | {:>1} | {:>3} |", gpio, name, level, pin);
     } else {
-        println!(" {:>3} | {:<5} | {:<5} | {:>4} |", pin, level, name, gpio);
+        println!(" {:>3} | {:>1} | {:<5} | {:>4} |", pin, level, name, gpio);
     }
 }
 
@@ -109,9 +109,9 @@ fn print_gpio_status() {
         exit(1);
     });
 
-    println!("+------+-------+-------+-----------+-------+-------+------+");
-    println!("| GPIO | Mode  | Level |    Pin    | Level | Mode  | GPIO |");
-    println!("+------+-------+-------+-----+-----+-------+-------+------+");
+    println!("+------+-------+---+-----------+---+-------+------+");
+    println!("| GPIO | Mode  | L |    Pin    | L | Mode  | GPIO |");
+    println!("+------+-------+---+-----+-----+---+-------+------+");
 
     for (idx, pin_type) in HEADER_40.iter().enumerate() {
         match pin_type {
@@ -125,14 +125,14 @@ fn print_gpio_status() {
                     idx + 1,
                     bcm_gpio,
                     format!("{}", pin.mode()).to_uppercase(),
-                    format!("{}", pin.read()),
+                    pin.read() as u8,
                 );
             }
             _ => print_pin(idx + 1, "", pin_type, ""),
         };
     }
 
-    println!("+------+-------+-------+-----+-----+-------+-------+------+");
+    println!("+------+-------+---+-----+-----+---+-------+------+");
 }
 
 fn main() {
