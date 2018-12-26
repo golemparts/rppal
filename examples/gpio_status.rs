@@ -90,16 +90,27 @@ const HEADER_40: [PinType; 40] = [
     PinType::Gpio(21), // Physical pin 40
 ];
 
-fn print_pin(
+fn format_pin(
+    buffer: &mut impl fmt::Write,
     pin: usize,
     gpio: impl fmt::Display,
     mode: impl fmt::Display,
     level: impl fmt::Display,
 ) {
     if pin % 2 != 0 {
-        print!("| {:>4} | {:<5} | {:>1} | {:>2} |", gpio, mode, level, pin);
+        write!(
+            buffer,
+            "| {:>4} | {:<5} | {:>1} | {:>2} |",
+            gpio, mode, level, pin
+        )
+        .unwrap();
     } else {
-        println!(" {:>2} | {:>1} | {:<5} | {:>4} |", pin, level, mode, gpio);
+        writeln!(
+            buffer,
+            " {:>2} | {:>1} | {:<5} | {:>4} |",
+            pin, level, mode, gpio
+        )
+        .unwrap();
     }
 }
 
@@ -109,9 +120,11 @@ fn print_gpio_status() {
         exit(1);
     });
 
-    println!("+------+-------+---+---------+---+-------+------+");
-    println!("| GPIO | Mode  | L |   Pin   | L | Mode  | GPIO |");
-    println!("+------+-------+---+----+----+---+-------+------+");
+    let mut buf = String::with_capacity(1600);
+
+    buf.push_str("+------+-------+---+---------+---+-------+------+\n");
+    buf.push_str("| GPIO | Mode  | L |   Pin   | L | Mode  | GPIO |\n");
+    buf.push_str("+------+-------+---+----+----+---+-------+------+\n");
 
     for (idx, pin_type) in HEADER_40.iter().enumerate() {
         match pin_type {
@@ -121,18 +134,21 @@ fn print_gpio_status() {
                     exit(1);
                 });
 
-                print_pin(
+                format_pin(
+                    &mut buf,
                     idx + 1,
                     bcm_gpio,
                     format!("{}", pin.mode()).to_uppercase(),
                     pin.read() as u8,
                 );
             }
-            _ => print_pin(idx + 1, "", pin_type, ""),
+            _ => format_pin(&mut buf, idx + 1, "", pin_type, ""),
         };
     }
 
-    println!("+------+-------+---+----+----+---+-------+------+");
+    buf.push_str("+------+-------+---+----+----+---+-------+------+\n");
+
+    print!("{}", buf);
 }
 
 fn main() {
