@@ -105,7 +105,7 @@ fn print_pin(
 
 fn print_gpio_status() {
     let gpio = Gpio::new().unwrap_or_else(|e| {
-        println!("Error: Can't access GPIO peripheral ({})", e);
+        eprintln!("Error: Can't access GPIO peripheral ({})", e);
         exit(1);
     });
 
@@ -117,7 +117,7 @@ fn print_gpio_status() {
         match pin_type {
             PinType::Gpio(bcm_gpio) => {
                 let pin = gpio.get(*bcm_gpio).unwrap_or_else(|| {
-                    println!("\nError: Can't access GPIO pin {}", *bcm_gpio);
+                    eprintln!("Error: Can't access GPIO pin {}", *bcm_gpio);
                     exit(1);
                 });
 
@@ -138,7 +138,7 @@ fn print_gpio_status() {
 fn main() {
     match DeviceInfo::new()
         .unwrap_or_else(|e| {
-            println!("Error: Can't identify Raspberry Pi model ({})", e);
+            eprintln!("Error: Can't identify Raspberry Pi model ({})", e);
             exit(1);
         })
         .model()
@@ -152,7 +152,7 @@ fn main() {
         | Model::RaspberryPiZero
         | Model::RaspberryPiZeroW => print_gpio_status(),
         model => {
-            println!("No GPIO header information available for the {}.", model);
+            eprintln!("Error: No GPIO header information available for {}", model);
         }
     }
 }
