@@ -79,7 +79,10 @@ use rppal::gpio::Gpio;
 let gpio = Gpio::new().unwrap();
 ```
 
-## Example
+## Examples
+
+This example demonstrates how to blink an LED attached to a GPIO pin. Remember
+to add a resistor in series, and choose an appropriate value to prevent exceeding the maximum current rating of both the GPIO pin and the LED.
 
 ```rust
 use std::thread::sleep;
@@ -104,6 +107,8 @@ fn main() {
     pin.set_low();
 }
 ```
+
+Additional examples can be found in the `examples` directory.
 
 ## Caution
 
