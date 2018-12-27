@@ -47,7 +47,7 @@ impl fmt::Display for PinType {
     }
 }
 
-const HEADER_40: [PinType; 40] = [
+const HEADER: [PinType; 40] = [
     PinType::Power3v3, // Physical pin 1
     PinType::Power5v,  // Physical pin 2
     PinType::Gpio(2),  // Physical pin 3
@@ -90,6 +90,9 @@ const HEADER_40: [PinType; 40] = [
     PinType::Gpio(21), // Physical pin 40
 ];
 
+const MAX_PINS_SHORT: usize = 26;
+const MAX_PINS_LONG: usize = 40;
+
 fn format_pin(
     buf: &mut String,
     pin: usize,
@@ -110,7 +113,7 @@ fn format_pin(
     }
 }
 
-fn print_gpio_status() {
+fn print_header(max: usize) {
     let gpio = Gpio::new().unwrap_or_else(|e| {
         eprintln!("Error: Can't access GPIO peripheral ({})", e);
         exit(1);
@@ -122,7 +125,7 @@ fn print_gpio_status() {
     buf.push_str("| GPIO | Mode  | L |   Pin   | L | Mode  | GPIO |\n");
     buf.push_str("+------+-------+---+----+----+---+-------+------+\n");
 
-    for (idx, pin_type) in HEADER_40.iter().enumerate() {
+    for (idx, pin_type) in HEADER.iter().take(max).enumerate() {
         match pin_type {
             PinType::Gpio(bcm_gpio) => {
                 let pin = gpio.get(*bcm_gpio).unwrap_or_else(|| {
@@ -155,6 +158,9 @@ fn main() {
         })
         .model()
     {
+        Model::RaspberryPiA | Model::RaspberryPiBRev1 | Model::RaspberryPiBRev2 => {
+            print_header(MAX_PINS_SHORT)
+        }
         Model::RaspberryPiAPlus
         | Model::RaspberryPiBPlus
         | Model::RaspberryPi2B
@@ -162,7 +168,7 @@ fn main() {
         | Model::RaspberryPi3B
         | Model::RaspberryPi3BPlus
         | Model::RaspberryPiZero
-        | Model::RaspberryPiZeroW => print_gpio_status(),
+        | Model::RaspberryPiZeroW => print_header(MAX_PINS_LONG),
         model => {
             eprintln!("Error: No GPIO header information available for {}", model);
             exit(1);
