@@ -20,7 +20,7 @@
 
 // gpio_status.rs
 //
-// Retrieves the mode and logic level for each of the pins on the standard
+// Retrieves the mode and logic level for each of the pins on the 26-pin or
 // 40-pin GPIO header, and displays the results in an ASCII table.
 
 use std::fmt;
