@@ -231,8 +231,8 @@ macro_rules! impl_reset_on_drop {
             self.reset_on_drop
         }
 
-        /// When enabled, resets the pin's mode and built-in pull-up/pull-down resistors
-        /// to their original state when it goes out of scope.
+        /// When enabled, resets the pin's mode to its original state and disables the
+        /// built-in pull-up/pull-down resistors, when the pin goes out of scope.
         /// By default, this is set to `true`.
         ///
         /// # Note
