@@ -48,7 +48,7 @@ impl Pin {
     }
 
     /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
-    /// and disables the pin's built-in pull-down and pull-up resistors.
+    /// and disables the pin's built-in pull-up/pull-down resistors.
     ///
     /// [`InputPin`]: struct.InputPin.html
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
@@ -65,7 +65,7 @@ impl Pin {
     ///
     /// [`InputPin`]: struct.InputPin.html
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
-    /// [`clear_on_drop`]: #method.set_clear_on_drop
+    /// [`clear_on_drop`]: struct.InputPin.html#method.set_clear_on_drop
     #[inline]
     pub fn into_input_pulldown(self) -> InputPin {
         InputPin::new(self, PullDown)
@@ -79,7 +79,7 @@ impl Pin {
     ///
     /// [`InputPin`]: struct.InputPin.html
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
-    /// [`clear_on_drop`]: #method.set_clear_on_drop
+    /// [`clear_on_drop`]: struct.InputPin.html#method.set_clear_on_drop
     #[inline]
     pub fn into_input_pullup(self) -> InputPin {
         InputPin::new(self, PullUp)
