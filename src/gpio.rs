@@ -36,31 +36,6 @@
 //! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
 //!
-//! ## Permission denied
-//!
-//! In recent releases of Raspbian (December 2017 or later), users that are part of the
-//! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
-//! `/dev/gpiochipN` without needing additional permissions. If you encounter any
-//! Permission Denied errors when creating a new [`Gpio`] instance, either the current
-//! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
-//! up-to-date and doesn't automatically configure permissions for the above-mentioned
-//! files. Updating Raspbian to the latest release should fix any permission issues.
-//! Alternatively, although not recommended, you can run your application with superuser
-//! privileges by using `sudo`.
-//!
-//! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
-//! the latest available release, or updating hasn't fixed the issue, you might be able to
-//! manually update your udev rules to set the appropriate permissions. More information
-//! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
-//!
-//! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
-//! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
-//! [`Gpio`]: struct.Gpio.html
-//! [`InputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
-//! [`OutputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
-//! [`AltPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
-//! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
-//!
 //! ## Examples
 //!
 //! Basic example:
@@ -81,6 +56,36 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! Additional examples can be found in the [`examples`] directory.
+//!
+//! ## Troubleshooting
+//!
+//! ### Permission denied
+//!
+//! In recent releases of Raspbian (December 2017 or later), users that are part of the
+//! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
+//! `/dev/gpiochipN` without needing additional permissions. If you encounter any
+//! Permission Denied errors when creating a new [`Gpio`] instance, either the current
+//! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
+//! up-to-date and doesn't automatically configure permissions for the above-mentioned
+//! files. Updating Raspbian to the latest release should fix any permission issues.
+//! Alternatively, although not recommended, you can run your application with superuser
+//! privileges by using `sudo`.
+//!
+//! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
+//! the latest available release, or updating hasn't fixed the issue, you might be able to
+//! manually update your udev rules to set the appropriate permissions. More information
+//! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
+//!
+//! [`examples`]: https://github.com/golemparts/rppal/tree/master/examples
+//! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
+//! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
+//! [`Gpio`]: struct.Gpio.html
+//! [`InputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`OutputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`AltPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
 use std::fmt;
 use std::io;

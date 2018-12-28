@@ -108,7 +108,7 @@ fn main() {
 }
 ```
 
-Additional examples can be found in the `examples` directory.
+Additional examples can be found in the [`examples`](https://github.com/golemparts/rppal/tree/master/examples) directory.
 
 ## Caution
 
