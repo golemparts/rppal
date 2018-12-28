@@ -93,26 +93,33 @@ This example demonstrates how to blink an LED attached to a GPIO pin. Remember
 to add a resistor in series, with an appropriate value to prevent exceeding the maximum current rating of the GPIO pin and the LED.
 
 ```rust
+extern crate rppal;
+
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::gpio::Gpio;
+use rppal::gpio::{Gpio, Level, Mode};
 use rppal::system::DeviceInfo;
 
-// Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
-const GPIO_LED: u8 = 23;
+const GPIO_LED: u8 = 18;
 
 fn main() {
     let device_info = DeviceInfo::new().unwrap();
     println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
 
-    let gpio = Gpio::new().unwrap();
-    let mut pin = gpio.get(GPIO_LED).unwrap().into_output();
+    let mut gpio = Gpio::new().unwrap();
+    gpio.set_mode(GPIO_LED, Mode::Output);
 
-    // Blink an LED attached to the pin.
-    pin.set_high();
-    sleep(Duration::from_millis(500));
-    pin.set_low();
+    gpio.write(GPIO_LED, Level::High);
+
+    loop {
+        gpio.write(GPIO_LED, Level::High);
+        println!("led on");
+        sleep(Duration::from_millis(1000));
+        gpio.write(GPIO_LED, Level::Low);
+        println!("led off");
+        sleep(Duration::from_millis(1000));
+    }
 }
 ```
 
