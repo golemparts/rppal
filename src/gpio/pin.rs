@@ -230,7 +230,7 @@ macro_rules! impl_reset_on_drop {
         /// built-in pull-up/pull-down resistors, when the pin goes out of scope.
         /// By default, this is set to `true`.
         ///
-        /// # Note
+        /// ## Note
         ///
         /// Drop methods aren't called when a program is abnormally terminated, for
         /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
@@ -364,6 +364,11 @@ impl InputPin {
     ///
     /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
+    /// The interrupt thread will continue to wait for a trigger and execute the callback even
+    /// after `InputPin` is dropped. You must manually call [`clear_async_interrupt`] to
+    /// remove the trigger before `InputPin` goes out of scope.
+    ///
+    /// [`clear_async_interrupt`]: #method.clear_async_interrupt
     /// [`Level`]: enum.Level.html
     pub fn set_async_interrupt<C>(&mut self, trigger: Trigger, callback: C) -> Result<()>
     where
