@@ -218,19 +218,19 @@ impl GpioMem {
         let reg_value = self.read(GPPUD);
         self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
 
-        // The datasheet mentions waiting at least 150 cycles for set-up
-        // and hold, but doesn't state which clock is used. 20µs is
-        // probably too long, but it works and seems acceptable for a
-        // one-time configuration function.
+        // The datasheet mentions waiting at least 150 cycles for set-up and hold, but
+        // doesn't state which clock is used. This is likely the VPU clock (see
+        // https://www.raspberrypi.org/forums/viewtopic.php?f=72&t=163352). At either
+        // 250MHz or 400MHz, a 5µs delay + overhead is more than adequate.
 
         // Set-up time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
+        sleep(Duration::new(0, 5000)); // >= 5µs
 
         // Clock the control signal into the selected pin.
         self.write(offset, 1 << shift);
 
         // Hold time for the control signal.
-        sleep(Duration::new(0, 20000)); // >= 20µs
+        sleep(Duration::new(0, 5000)); // >= 5µs
 
         // Remove the control signal and clock.
         self.write(GPPUD, reg_value & !0b11);
