@@ -186,7 +186,7 @@ impl fmt::Display for Level {
 
 /// Built-in pull-up/pull-down resistor states.
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum PullUpDown {
+pub(crate) enum PullUpDown {
     Off = 0b00,
     PullDown = 0b01,
     PullUp = 0b10,

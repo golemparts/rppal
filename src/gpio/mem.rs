@@ -150,19 +150,19 @@ impl GpioMem {
         }
     }
 
-    pub fn set_high(&self, pin: u8) {
+    pub(crate) fn set_high(&self, pin: u8) {
         let offset = GPSET0 + pin as usize / 32;
         let shift = pin % 32;
         self.write(offset, 1 << shift);
     }
 
-    pub fn set_low(&self, pin: u8) {
+    pub(crate) fn set_low(&self, pin: u8) {
         let offset = GPCLR0 + pin as usize / 32;
         let shift = pin % 32;
         self.write(offset, 1 << shift);
     }
 
-    pub fn level(&self, pin: u8) -> Level {
+    pub(crate) fn level(&self, pin: u8) -> Level {
         let offset = GPLEV0 + pin as usize / 32;
         let shift = pin % 32;
 
@@ -171,7 +171,7 @@ impl GpioMem {
         unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b1) }
     }
 
-    pub fn mode(&self, pin: u8) -> Mode {
+    pub(crate) fn mode(&self, pin: u8) -> Mode {
         let offset = GPFSEL0 + pin as usize / 10;
         let shift = (pin % 10) * 3;
 
@@ -180,7 +180,7 @@ impl GpioMem {
         unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b111) }
     }
 
-    pub fn set_mode(&self, pin: u8, mode: Mode) {
+    pub(crate) fn set_mode(&self, pin: u8, mode: Mode) {
         let offset = GPFSEL0 + pin as usize / 10;
         let shift = (pin % 10) * 3;
 
@@ -200,7 +200,7 @@ impl GpioMem {
     }
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
-    pub fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+    pub(crate) fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
         let offset = GPPUDCLK0 + pin as usize / 32;
         let shift = pin % 32;
 

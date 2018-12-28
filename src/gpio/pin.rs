@@ -23,12 +23,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::gpio::{
-    interrupt::AsyncInterrupt,
-    GpioState, Level, Mode,
-    PullUpDown::{self, *},
-    Result, Trigger,
-};
+use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown, Result, Trigger};
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
 // exposed through the Pi's GPIO header depends on the model.
@@ -54,7 +49,7 @@ impl Pin {
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
     #[inline]
     pub fn into_input(self) -> InputPin {
-        InputPin::new(self, Off)
+        InputPin::new(self, PullUpDown::Off)
     }
 
     /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
@@ -68,7 +63,7 @@ impl Pin {
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pulldown(self) -> InputPin {
-        InputPin::new(self, PullDown)
+        InputPin::new(self, PullUpDown::PullDown)
     }
 
     /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
@@ -82,7 +77,7 @@ impl Pin {
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pullup(self) -> InputPin {
-        InputPin::new(self, PullUp)
+        InputPin::new(self, PullUpDown::PullUp)
     }
 
     /// Consumes the pin, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
@@ -262,8 +257,8 @@ macro_rules! impl_drop {
                     self.pin.set_mode(prev_mode);
                 }
 
-                if self.pud_mode != Off {
-                    self.pin.set_pullupdown(Off);
+                if self.pud_mode != PullUpDown::Off {
+                    self.pin.set_pullupdown(PullUpDown::Off);
                 }
             }
         }
@@ -425,7 +420,7 @@ impl OutputPin {
             pin,
             prev_mode,
             reset_on_drop: true,
-            pud_mode: Off,
+            pud_mode: PullUpDown::Off,
         }
     }
 
@@ -463,7 +458,7 @@ impl AltPin {
             mode,
             prev_mode,
             reset_on_drop: true,
-            pud_mode: Off,
+            pud_mode: PullUpDown::Off,
         }
     }
 
