@@ -6,11 +6,11 @@
 * Gpio: (Breaking change) Move pin-specific methods to new InputPin/OutputPin/AltPin structs, accessed through Gpio::get() (contributed by @reitermarkus).
 * Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input and return type from u8 to &InputPin (contributed by @reitermarkus).
 * Gpio: (Breaking change) Remove Error::NotInitialized, Error::UnknownMode and Error::InvalidPin (contributed by @reitermarkus).
-* Gpio: (Breaking change) Change Gpio::cleanup() to consume self, and return Result (contributed by @reitermarkus).
 * Gpio: (Breaking change) Remove Error::InstanceExists. Multiple Gpio instances are now allowed to exist simultaneously.
 * Gpio: Implement Clone for Gpio.
 * Gpio: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
-* Gpio: Reset built-in pull-up/pull-down resistors when a pin goes out of scope and reset_on_drop is set to true.
+* Gpio: (Breaking change) Rename clear_on_drop()/set_clear_on_drop() to reset_on_drop()/set_reset_on_drop().
+* Gpio: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and reset_on_drop is set to true.
 * I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
 
 ## 0.9.0 (November 15, 2018)
