@@ -50,7 +50,7 @@ pub struct GpioMem {
 }
 
 impl fmt::Debug for GpioMem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GpioMem")
             .field("mem_ptr", &self.mem_ptr)
             .field("locks", &format_args!("{{ .. }}"))
@@ -138,32 +138,16 @@ impl GpioMem {
         Ok(mem_ptr as *mut u32)
     }
 
+    #[inline]
     fn read(&self, offset: usize) -> u32 {
-        loop {
-            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
-                break;
-            }
-        }
-
-        let reg_value = unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) };
-
-        self.locks[offset].store(false, Ordering::SeqCst);
-
-        reg_value
+        unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
     }
 
+    #[inline]
     fn write(&self, offset: usize, value: u32) {
-        loop {
-            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
-                break;
-            }
-        }
-
         unsafe {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
-
-        self.locks[offset].store(false, Ordering::SeqCst);
     }
 
     pub fn set_high(&self, pin: u8) {
@@ -206,14 +190,11 @@ impl GpioMem {
             }
         }
 
-        unsafe {
-            let mem_ptr = self.mem_ptr.add(offset);
-            let reg_value = ptr::read_volatile(mem_ptr);
-            ptr::write_volatile(
-                mem_ptr,
-                (reg_value & !(0b111 << shift)) | ((mode as u32) << shift),
-            );
-        }
+        let reg_value = self.read(offset);
+        self.write(
+            offset,
+            (reg_value & !(0b111 << shift)) | ((mode as u32) << shift),
+        );
 
         self.locks[offset].store(false, Ordering::SeqCst);
     }
@@ -233,37 +214,27 @@ impl GpioMem {
             }
         }
 
-        // Set the control signal in GPPUD, while leaving the other 30
-        // bits unchanged.
-        unsafe {
-            let mem_ptr = self.mem_ptr.add(GPPUD);
-            let reg_value = ptr::read_volatile(mem_ptr);
-            ptr::write_volatile(mem_ptr, (reg_value & !0b11) | ((pud as u32) & 0b11));
-        }
+        // Set the control signal in GPPUD.
+        let reg_value = self.read(GPPUD);
+        self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
+
+        // The datasheet mentions waiting at least 150 cycles for set-up
+        // and hold, but doesn't state which clock is used. 20µs is
+        // probably too long, but it works and seems acceptable for a
+        // one-time configuration function.
 
         // Set-up time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Clock the control signal into the selected pin.
-        unsafe {
-            let mem_ptr = self.mem_ptr.add(offset);
-            ptr::write_volatile(mem_ptr, 1 << shift);
-        }
+        self.write(offset, 1 << shift);
 
         // Hold time for the control signal.
         sleep(Duration::new(0, 20000)); // >= 20µs
 
         // Remove the control signal and clock.
-        unsafe {
-            let mem_ptr = self.mem_ptr.add(GPPUD);
-            let reg_value = ptr::read_volatile(mem_ptr);
-            ptr::write_volatile(mem_ptr, reg_value & !0b11);
-        }
-
-        unsafe {
-            let mem_ptr = self.mem_ptr.add(offset);
-            ptr::write_volatile(mem_ptr, 0 << shift);
-        }
+        self.write(GPPUD, reg_value & !0b11);
+        self.write(offset, 0);
 
         self.locks[offset].store(false, Ordering::SeqCst);
         self.locks[GPPUD].store(false, Ordering::SeqCst);
