@@ -71,13 +71,21 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 rppal = "0.10"
 ```
 
-Call `Gpio::new()` to create a new Gpio instance with the default settings. In production code, you'll want to parse the result rather than unwrap it.
+Call `new()` on any of the peripherals to create a new instance. In production code, you'll want to parse the result rather than unwrap it.
 
 ```rust
 use rppal::gpio::Gpio;
+use rppal::i2c::I2c;
+use rppal::pwm::{Channel, Pwm};
+use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
 
 let gpio = Gpio::new().unwrap();
+let i2c = I2c::new().unwrap();
+let pwm = Pwm::new(Channel::Pwm0).unwrap();
+let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0).unwrap();
 ```
+
+Some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
 
 ## Examples
 
