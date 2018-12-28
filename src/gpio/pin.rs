@@ -47,15 +47,8 @@ impl Pin {
         Pin { pin, gpio_state }
     }
 
-    /// Returns the GPIO pin number.
-    ///
-    /// Pins are addressed by their BCM numbers, rather than their physical location.
-    #[inline]
-    pub fn pin(&self) -> u8 {
-        self.pin
-    }
-
-    /// Consumes the pin, returns an [`InputPin`] and sets its mode to [`Mode::Input`].
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// and disables the pin's built-in pull-down and pull-up resistors.
     ///
     /// [`InputPin`]: struct.InputPin.html
     /// [`Mode::Input`]: enum.Mode.html#variant.Input
@@ -64,16 +57,32 @@ impl Pin {
         InputPin::new(self, Off)
     }
 
-    /// Additionally to `into_input`, activates the pin's pull-up resistor.
-    #[inline]
-    pub fn into_input_pullup(self) -> InputPin {
-        InputPin::new(self, PullUp)
-    }
-
-    /// Additionally to `into_input`, activates the pin's pull-down resistor.
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// and enables the pin's built-in pull-down resistor.
+    ///
+    /// The pull-down resistor is disabled when `InputPin` goes out of scope if [`clear_on_drop`]
+    /// is set to `true` (default).
+    ///
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`Mode::Input`]: enum.Mode.html#variant.Input
+    /// [`clear_on_drop`]: #method.set_clear_on_drop
     #[inline]
     pub fn into_input_pulldown(self) -> InputPin {
         InputPin::new(self, PullDown)
+    }
+
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// and enables the pin's built-in pull-up resistor.
+    ///
+    /// The pull-up resistor is disabled when `InputPin` goes out of scope if [`clear_on_drop`]
+    /// is set to `true` (default).
+    ///
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`Mode::Input`]: enum.Mode.html#variant.Input
+    /// [`clear_on_drop`]: #method.set_clear_on_drop
+    #[inline]
+    pub fn into_input_pullup(self) -> InputPin {
+        InputPin::new(self, PullUp)
     }
 
     /// Consumes the pin, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
@@ -92,6 +101,14 @@ impl Pin {
     #[inline]
     pub fn into_alt(self, mode: Mode) -> AltPin {
         AltPin::new(self, mode)
+    }
+
+    /// Returns the GPIO pin number.
+    ///
+    /// Pins are addressed by their BCM numbers, rather than their physical location.
+    #[inline]
+    pub fn pin(&self) -> u8 {
+        self.pin
     }
 
     #[inline]
@@ -214,7 +231,8 @@ macro_rules! impl_clear_on_drop {
             self.clear_on_drop
         }
 
-        /// When enabled, resets pin's mode to its original state when it goes out of scope.
+        /// When enabled, resets the pin's mode and built-in pull-up/pull-down resistors
+        /// to their original state when it goes out of scope.
         /// By default, this is set to `true`.
         ///
         /// # Note
@@ -224,7 +242,6 @@ macro_rules! impl_clear_on_drop {
         /// isn't caught. You catch those using crates such as [`simple_signal`].
         ///
         /// [`simple_signal`]: https://crates.io/crates/simple-signal
-        /// [`cleanup`]: #method.cleanup
         pub fn set_clear_on_drop(&mut self, clear_on_drop: bool) {
             self.clear_on_drop = clear_on_drop;
         }
@@ -234,14 +251,19 @@ macro_rules! impl_clear_on_drop {
 macro_rules! impl_drop {
     ($struct:ident) => {
         impl Drop for $struct {
-            /// Resets the pin's mode if `clear_on_drop` is set to `true` (default).
+            /// Resets the pin's mode and built-in pull-up/pull-down resistors if
+            /// `clear_on_drop` is set to `true` (default).
             fn drop(&mut self) {
                 if !self.clear_on_drop {
                     return;
                 }
 
                 if let Some(prev_mode) = self.prev_mode {
-                    self.pin.set_mode(prev_mode)
+                    self.pin.set_mode(prev_mode);
+                }
+
+                if self.pud_mode != Off {
+                    self.pin.set_pullupdown(Off);
                 }
             }
         }
@@ -255,6 +277,7 @@ pub struct InputPin {
     prev_mode: Option<Mode>,
     async_interrupt: Option<AsyncInterrupt>,
     clear_on_drop: bool,
+    pud_mode: PullUpDown,
 }
 
 impl InputPin {
@@ -275,6 +298,7 @@ impl InputPin {
             prev_mode,
             async_interrupt: None,
             clear_on_drop: true,
+            pud_mode,
         }
     }
 
@@ -383,6 +407,7 @@ pub struct OutputPin {
     pin: Pin,
     prev_mode: Option<Mode>,
     clear_on_drop: bool,
+    pud_mode: PullUpDown,
 }
 
 impl OutputPin {
@@ -400,6 +425,7 @@ impl OutputPin {
             pin,
             prev_mode,
             clear_on_drop: true,
+            pud_mode: Off,
         }
     }
 
@@ -418,6 +444,7 @@ pub struct AltPin {
     mode: Mode,
     prev_mode: Option<Mode>,
     clear_on_drop: bool,
+    pud_mode: PullUpDown,
 }
 
 impl AltPin {
@@ -436,6 +463,7 @@ impl AltPin {
             mode,
             prev_mode,
             clear_on_drop: true,
+            pud_mode: Off,
         }
     }
 
