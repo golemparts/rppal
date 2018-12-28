@@ -10,6 +10,7 @@
 * Gpio: (Breaking change) Remove Error::InstanceExists. Multiple Gpio instances are now allowed to exist simultaneously.
 * Gpio: Implement Clone for Gpio.
 * Gpio: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
+* Gpio: Reset built-in pull-up/pull-down resistors when a pin goes out of scope and clear_on_drop is set to true.
 * I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
 
 ## 0.9.0 (November 15, 2018)
