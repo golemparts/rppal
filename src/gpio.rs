@@ -31,8 +31,8 @@
 //! physical location.
 //!
 //! By default, pins are reset to their original state when they go out of scope.
-//! Use [`InputPin::set_clear_on_drop(false)`], [`OutputPin::set_clear_on_drop(false)`]
-//! or [`AltPin::set_clear_on_drop(false)`], respecively, to disable this behavior.
+//! Use [`InputPin::set_reset_on_drop(false)`], [`OutputPin::set_reset_on_drop(false)`]
+//! or [`AltPin::set_reset_on_drop(false)`], respectively, to disable this behavior.
 //! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
 //!
@@ -56,9 +56,9 @@
 //! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
-//! [`InputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
-//! [`OutputPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
-//! [`AltPin::set_clear_on_drop(false)`]: struct.InputPin.html#method.set_clear_on_drop
+//! [`InputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`OutputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`AltPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 //!
 //! ## Examples
