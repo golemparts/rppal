@@ -251,8 +251,8 @@ macro_rules! impl_reset_on_drop {
 macro_rules! impl_drop {
     ($struct:ident) => {
         impl Drop for $struct {
-            /// Resets the pin's mode and built-in pull-up/pull-down resistors if
-            /// `reset_on_drop` is set to `true` (default).
+            /// Resets the pin's mode and disables the built-in pull-up/pull-down
+            /// resistors if `reset_on_drop` is set to `true` (default).
             fn drop(&mut self) {
                 if !self.reset_on_drop {
                     return;
