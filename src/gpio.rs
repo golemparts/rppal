@@ -27,14 +27,26 @@
 //!
 //! ## Pins
 //!
-//! Pins are addressed by their BCM numbers, rather than their
-//! physical location.
+//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number through
+//! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's current
+//! mode or logic level. Configuring the [`Pin`] as an [`InputPin`], [`OutputPin`] or
+//! [`AltPin`] through the various `into_` methods available on [`Pin`] sets the
+//! appropriate mode, and provides access to additional methods depending on the pin mode.
+//!
+//! Retrieving a pin with [`Gpio::get`] grants exclusive access through an owned [`Pin`]
+//! instance. If the pin is already in use, [`Gpio::get`] returns `None`. After a [`Pin`]
+//! (or a derived [`InputPin`], [`OutputPin`] or [`AltPin`]) goes out of scope, it can be
+//! retrieved again through another [`Gpio::get`] call.
 //!
 //! By default, pins are reset to their original state when they go out of scope.
 //! Use [`InputPin::set_reset_on_drop(false)`], [`OutputPin::set_reset_on_drop(false)`]
 //! or [`AltPin::set_reset_on_drop(false)`], respectively, to disable this behavior.
 //! Note that `drop` methods aren't called when a program is abnormally terminated (for
 //! instance when a SIGINT isn't caught).
+//!
+//! ## Interrupts
+//!
+//! TODO: ...
 //!
 //! ## Examples
 //!
@@ -82,8 +94,13 @@
 //! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
+//! [`Gpio::get`]: struct.Gpio.html#method.get
+//! [`Pin`]: struct.Pin.html
+//! [`InputPin`]: struct.InputPin.html
 //! [`InputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`OutputPin`]: struct.OutputPin.html
 //! [`OutputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`AltPin`]: struct.AltPin.html
 //! [`AltPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
@@ -288,14 +305,17 @@ impl Gpio {
         }
     }
 
-    /// Returns a [`Pin`] for the specified GPIO pin number.
+    /// Returns a [`Pin`] for the specified BCM GPIO pin number.
     ///
-    /// Retrieving a GPIO pin using `get` grants exclusive access to the GPIO
-    /// pin through an owned [`Pin`]. If the selected pin number is already
-    /// in use, `get` returns `None`. After a [`Pin`] goes out of scope, it can be retrieved
-    /// again using `get`.
+    /// Retrieving a pin grants exclusive access through an owned [`Pin`] instance. If the
+    /// pin is already in use, `get` returns `None`. After a [`Pin`] (or a derived
+    /// [`InputPin`], [`OutputPin`] or [`AltPin`]) goes out of scope, it can be retrieved
+    /// again through another `get` call.
     ///
     /// [`Pin`]: struct.Pin.html
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`OutputPin`]: struct.OutputPin.html
+    /// [`AltPin`]: struct.AltPin.html
     pub fn get(&self, pin: u8) -> Option<pin::Pin> {
         if pin as usize >= pin::MAX {
             return None;
