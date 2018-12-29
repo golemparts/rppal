@@ -332,3 +332,14 @@ impl AsyncInterrupt {
         Ok(())
     }
 }
+
+impl Drop for AsyncInterrupt {
+    fn drop(&mut self) {
+        // Don't wait for the poll thread to exit if the main thread is panicking,
+        // because we could potentially block indefinitely while unwinding if the
+        // poll thread is executing a callback that doesn't return.
+        if !thread::panicking() {
+            self.stop().ok();
+        }
+    }
+}

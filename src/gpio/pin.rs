@@ -362,11 +362,8 @@ impl InputPin {
     ///
     /// The callback closure or function pointer is called with a single [`Level`] argument.
     ///
-    /// Any previously configured (a)synchronous interrupt triggers will be cleared.
-    ///
-    /// The interrupt thread will continue to wait for a trigger and execute the callback even
-    /// after `InputPin` is dropped. You must manually call [`clear_async_interrupt`] to
-    /// remove the trigger before `InputPin` goes out of scope.
+    /// Any previously configured (a)synchronous interrupt triggers for this pin are cleared
+    /// when `set_async_interrupt` is called, or when `InputPin` goes out of scope.
     ///
     /// [`clear_async_interrupt`]: #method.clear_async_interrupt
     /// [`Level`]: enum.Level.html
