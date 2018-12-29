@@ -20,10 +20,9 @@
 
 //! Interface for the GPIO peripheral.
 //!
-//! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by
-//! directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`.
-//! GPIO interrupts are controlled using the `/dev/gpiochipN` (where N=0, 1 and 2)
-//! character device.
+//! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly
+//! accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts
+//! are controlled using the `/dev/gpiochipN` (N=0-2) character device.
 //!
 //! ## Pins
 //!
@@ -46,7 +45,16 @@
 //!
 //! ## Interrupts
 //!
-//! TODO: ...
+//! [`InputPin`] features support for both synchronous and asynchronous interrupts.
+//!
+//! Synchronous (blocking) interrupt triggers are configured using [`InputPin::set_interrupt`].
+//! A single trigger can be polled with [`InputPin::poll_interrupt`], which blocks the current
+//! thread until a trigger event occurs, or until the timeout period elapses.
+//! [`Gpio::poll_interrupts`] should be used when multiple synchronous interrupt triggers need
+//! to be polled simultaneously.
+//!
+//! Asynchronous interrupt triggers are configured using [`InputPin::set_async_interrupt`]. The
+//! specified callback function will get executed on a separate thread when a trigger event occurs.
 //!
 //! ## Examples
 //!
@@ -95,9 +103,13 @@
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
 //! [`Gpio::get`]: struct.Gpio.html#method.get
+//! [`Gpio::poll_interrupts`]: struct.Gpio.html#method.poll_interrupts
 //! [`Pin`]: struct.Pin.html
 //! [`InputPin`]: struct.InputPin.html
 //! [`InputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
+//! [`InputPin::set_interrupt`]: struct.InputPin.html#method.set_interrupt
+//! [`InputPin::poll_interrupt`]: struct.InputPin.html#method.poll_interrupt
+//! [`InputPin::set_async_interrupt`]: struct.InputPin.html#method.set_async_interrupt
 //! [`OutputPin`]: struct.OutputPin.html
 //! [`OutputPin::set_reset_on_drop(false)`]: struct.InputPin.html#method.set_reset_on_drop
 //! [`AltPin`]: struct.AltPin.html

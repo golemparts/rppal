@@ -434,7 +434,7 @@ impl OutputPin {
 
 impl_drop!(OutputPin);
 
-/// GPIO pin configured with an alternate function.
+/// GPIO pin configured with an alternate function mode.
 #[derive(Debug)]
 pub struct AltPin {
     pin: Pin,
