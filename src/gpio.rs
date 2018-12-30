@@ -32,7 +32,7 @@
 //! [`AltPin`] through the various `into_` methods available on [`Pin`] sets the
 //! appropriate mode, and provides access to additional methods depending on the pin mode.
 //!
-//! Retrieving a pin with [`Gpio::get`] grants exclusive access through an owned [`Pin`]
+//! Retrieving a GPIO pin with [`Gpio::get`] grants access to the pin through an owned [`Pin`]
 //! instance. If the pin is already in use, [`Gpio::get`] returns `None`. After a [`Pin`]
 //! (or a derived [`InputPin`], [`OutputPin`] or [`AltPin`]) goes out of scope, it can be
 //! retrieved again through another [`Gpio::get`] call.
@@ -319,8 +319,8 @@ impl Gpio {
 
     /// Returns a [`Pin`] for the specified BCM GPIO pin number.
     ///
-    /// Retrieving a pin grants exclusive access through an owned [`Pin`] instance. If the
-    /// pin is already in use, `get` returns `None`. After a [`Pin`] (or a derived
+    /// Retrieving a GPIO pin grants access to the pin through an owned [`Pin`] instance.
+    /// If the pin is already in use, `get` returns `None`. After a [`Pin`] (or a derived
     /// [`InputPin`], [`OutputPin`] or [`AltPin`]) goes out of scope, it can be retrieved
     /// again through another `get` call.
     ///
