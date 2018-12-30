@@ -10,6 +10,8 @@ RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PW
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
+RPPAL is currently under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` folder for the latest stable release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+
 ## Documentation
 
 Online documentation is available for the latest release, older releases, and the version currently in development.
@@ -116,7 +118,7 @@ fn main() {
 }
 ```
 
-Additional examples can be found in the [`examples`](https://github.com/golemparts/rppal/tree/master/examples) directory.
+Additional examples can be found in the `examples` directory.
 
 ## Caution
 
