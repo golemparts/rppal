@@ -20,50 +20,6 @@ Online documentation is available for the latest release, older releases, and th
 * Older releases: [docs.rs/rppal](https://docs.rs/rppal)
 * In development: [docs.golemparts.com/rppal-dev](https://docs.golemparts.com/rppal-dev)
 
-## Supported peripherals
-
-### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
-
-To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
-
-#### Features
-
-* Get/set pin modes
-* Read/write pin logic levels
-* Activate built-in pull-up/pull-down resistors
-* Configure synchronous and asynchronous interrupt handlers
-
-### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
-
-The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compliant with the I2C bus/interface. RPPAL communicates with the BSC using the `i2cdev` device interface.
-
-#### Features
-
-* Single master, 7-bit slave addresses, transfer rates up to 400kbit/s (Fast-mode)
-* I2C basic read/write, block read/write, combined write+read
-* SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
-
-### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
-
-RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
-
-#### Features
-
-* Up to two hardware PWM channels
-* Configurable frequency/period, duty cycle and polarity
-
-### [SPI](https://docs.golemparts.com/rppal/latest/spi)
-
-RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the `spidev` device interface.
-
-#### Features
-
-* SPI master, mode 0-3, Slave Select active-low/active-high, 8 bits per word, configurable clock speed
-* Half-duplex reads, writes, and multi-segment transfers
-* Full-duplex transfers and multi-segment transfers
-* Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
-* Reverse bit order helper function
-
 ## Usage
 
 Add a dependency for `rppal` to your `Cargo.toml`.
@@ -119,6 +75,51 @@ fn main() {
 ```
 
 Additional examples can be found in the `examples` directory.
+
+
+## Supported peripherals
+
+### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
+
+To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
+
+#### Features
+
+* Get/set pin modes
+* Read/write pin logic levels
+* Activate built-in pull-up/pull-down resistors
+* Configure synchronous and asynchronous interrupt handlers
+
+### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
+
+The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compliant with the I2C bus/interface. RPPAL communicates with the BSC using the `i2cdev` device interface.
+
+#### Features
+
+* Single master, 7-bit slave addresses, transfer rates up to 400kbit/s (Fast-mode)
+* I2C basic read/write, block read/write, combined write+read
+* SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
+
+### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
+
+RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
+
+#### Features
+
+* Up to two hardware PWM channels
+* Configurable frequency/period, duty cycle and polarity
+
+### [SPI](https://docs.golemparts.com/rppal/latest/spi)
+
+RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the `spidev` device interface.
+
+#### Features
+
+* SPI master, mode 0-3, Slave Select active-low/active-high, 8 bits per word, configurable clock speed
+* Half-duplex reads, writes, and multi-segment transfers
+* Full-duplex transfers and multi-segment transfers
+* Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
+* Reverse bit order helper function
 
 ## Caution
 
