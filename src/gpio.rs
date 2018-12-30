@@ -328,7 +328,7 @@ impl Gpio {
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`AltPin`]: struct.AltPin.html
-    pub fn get(&self, pin: u8) -> Option<pin::Pin> {
+    pub fn get(&self, pin: u8) -> Option<Pin> {
         if pin as usize >= pin::MAX {
             return None;
         }
