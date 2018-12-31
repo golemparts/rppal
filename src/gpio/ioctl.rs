@@ -20,7 +20,9 @@
 
 #![allow(dead_code)]
 
-use libc::{self, c_int, c_ulong, c_void, ioctl, read};
+use libc::{self, c_int, c_ulong, c_void, ioctl, read, ENOENT};
+use std::ffi::CString;
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::mem::size_of;
@@ -33,6 +35,9 @@ use crate::gpio::{Error, Level, Result, Trigger};
 type IoctlLong = libc::c_ulong;
 #[cfg(target_env = "musl")]
 type IoctlLong = libc::c_long;
+
+const CONSUMER_LABEL: &str = "RPPAL";
+const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
 
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
@@ -126,6 +131,17 @@ impl LineInfo {
     }
 }
 
+impl fmt::Debug for LineInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LineInfo")
+            .field("line_offset", &self.line_offset)
+            .field("flags", &self.flags)
+            .field("name", &cbuf_to_cstring(&self.name))
+            .field("consumer", &cbuf_to_cstring(&self.consumer))
+            .finish()
+    }
+}
+
 const HANDLES_MAX: usize = 64;
 const HANDLE_FLAG_INPUT: u32 = 0x01;
 const HANDLE_FLAG_OUTPUT: u32 = 0x02;
@@ -142,6 +158,25 @@ pub struct HandleRequest {
     pub consumer_label: [u8; LABEL_BUFSIZE],
     pub lines: u32,
     pub fd: c_int,
+}
+
+impl fmt::Debug for HandleRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HandleRequest")
+            .field(
+                "line_offsets",
+                &format_args!("{:?}", &self.line_offsets[..self.lines as usize]),
+            )
+            .field("flags", &self.flags)
+            .field(
+                "default_values",
+                &format_args!("{:?}", &self.default_values[..self.lines as usize]),
+            )
+            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
+            .field("lines", &self.lines)
+            .field("fd", &self.fd)
+            .finish()
+    }
 }
 
 impl HandleRequest {
@@ -166,6 +201,10 @@ impl HandleRequest {
         for (idx, pin) in pins.iter().enumerate() {
             handle_request.line_offsets[idx] = u32::from(*pin);
         }
+
+        // Set consumer label, so other processes know we're using this handle
+        handle_request.consumer_label[0..CONSUMER_LABEL.len()]
+            .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
         parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
 
@@ -235,6 +274,10 @@ impl EventRequest {
             consumer_label: [0u8; LABEL_BUFSIZE],
             fd: 0,
         };
+
+        // Set consumer label, so other processes know we're using this event
+        event_request.consumer_label[0..CONSUMER_LABEL.len()]
+            .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
         parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
 
@@ -306,21 +349,20 @@ pub fn get_event(event_fd: c_int) -> Result<Event> {
 
 // Find the correct gpiochip device based on its label
 pub fn find_gpiochip() -> Result<File> {
-    let driver_name = b"pinctrl-bcm2835\0";
-
-    for idx in 0..=255 {
+    for id in 0..=255 {
         let gpiochip = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(format!("/dev/gpiochip{}", idx))?;
+            .open(format!("/dev/gpiochip{}", id))?;
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
-        if chip_info.label[0..driver_name.len()] == driver_name[..] {
+        if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..] {
             return Ok(gpiochip);
         }
     }
 
-    Err(Error::Io(io::Error::from_raw_os_error(2)))
+    // File Not Found IO error
+    Err(Error::Io(io::Error::from_raw_os_error(ENOENT)))
 }
 
 pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
@@ -335,4 +377,19 @@ pub fn close(fd: c_int) {
     unsafe {
         libc::close(fd);
     }
+}
+
+// Create a CString from a C-style NUL-terminated char array. This workaround
+// is needed for fixed-length buffers that fill the remaining bytes with NULs,
+// because CString::new() interprets those as a NUL in the middle of the byte
+// slice and returns a NulError.
+fn cbuf_to_cstring(buf: &[u8]) -> CString {
+    CString::new({
+        let pos = buf
+            .iter()
+            .position(|&c| c == b'\0')
+            .unwrap_or_else(|| buf.len());
+        &buf[..pos]
+    })
+    .unwrap_or_default()
 }
