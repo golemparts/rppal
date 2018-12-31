@@ -149,7 +149,6 @@ const HANDLE_FLAG_ACTIVE_LOW: u32 = 0x04;
 const HANDLE_FLAG_OPEN_DRAIN: u32 = 0x08;
 const HANDLE_FLAG_OPEN_SOURCE: u32 = 0x10;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HandleRequest {
     pub line_offsets: [u32; HANDLES_MAX],
@@ -234,6 +233,12 @@ impl HandleRequest {
         parse_retval!(unsafe { ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
 
         Ok(())
+    }
+}
+
+impl Drop for HandleRequest {
+    fn drop(&mut self) {
+        close(self.fd);
     }
 }
 
