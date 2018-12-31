@@ -207,7 +207,12 @@ impl HandleRequest {
 
         parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
 
-        Ok(handle_request)
+        // If the handle fd is zero or negative, an error occurred
+        if handle_request.fd <= 0 {
+            Err(Error::Io(std::io::Error::last_os_error()))
+        } else {
+            Ok(handle_request)
+        }
     }
 
     pub fn levels(&self) -> Result<HandleData> {
@@ -286,7 +291,12 @@ impl EventRequest {
 
         parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
 
-        Ok(event_request)
+        // If the event fd is zero or negative, an error occurred
+        if event_request.fd <= 0 {
+            Err(Error::Io(std::io::Error::last_os_error()))
+        } else {
+            Ok(event_request)
+        }
     }
 }
 
