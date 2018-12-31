@@ -201,7 +201,7 @@ impl HandleRequest {
             handle_request.line_offsets[idx] = u32::from(*pin);
         }
 
-        // Set consumer label, so other processes know we're using this handle
+        // Set consumer label, so other processes know we're using these pins
         handle_request.consumer_label[0..CONSUMER_LABEL.len()]
             .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
@@ -285,7 +285,7 @@ impl EventRequest {
             fd: 0,
         };
 
-        // Set consumer label, so other processes know we're using this event
+        // Set consumer label, so other processes know we're monitoring this event
         event_request.consumer_label[0..CONSUMER_LABEL.len()]
             .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
