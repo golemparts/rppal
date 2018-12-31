@@ -131,4 +131,4 @@ If you're not working directly on a Raspberry Pi, you'll likely need to cross co
 
 ## Copyright and license
 
-Copyright (c) 2017-2018 Rene van der Meer. Released under the [MIT license](LICENSE).
+Copyright (c) 2017-2019 Rene van der Meer. Released under the [MIT license](LICENSE).
