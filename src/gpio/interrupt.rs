@@ -34,18 +34,16 @@ struct Interrupt {
     pin: u8,
     trigger: Trigger,
     cdev_fd: i32,
-    event_fd: i32,
+    event_request: ioctl::EventRequest,
 }
 
 impl Interrupt {
-    fn new(fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
-        let event_request = ioctl::EventRequest::new(fd, pin, trigger)?;
-
+    fn new(cdev_fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
         Ok(Interrupt {
             pin,
             trigger,
-            cdev_fd: fd,
-            event_fd: event_request.fd,
+            cdev_fd,
+            event_request: ioctl::EventRequest::new(cdev_fd, pin, trigger)?,
         })
     }
 
@@ -54,7 +52,7 @@ impl Interrupt {
     }
 
     fn fd(&self) -> i32 {
-        self.event_fd
+        self.event_request.fd
     }
 
     fn pin(&self) -> u8 {
@@ -69,31 +67,19 @@ impl Interrupt {
 
     // This might block if there are no events waiting
     fn event(&mut self) -> Result<ioctl::Event> {
-        ioctl::get_event(self.event_fd)
+        ioctl::get_event(self.event_request.fd)
     }
 
     fn reset(&mut self) -> Result<()> {
-        if self.event_fd > -1 {
-            ioctl::close(self.event_fd);
-            self.event_fd = -1;
-        }
-
-        let event_request = ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger)?;
-        self.event_fd = event_request.fd;
+        // Close the old event fd before opening a new one
+        self.event_request.close();
+        self.event_request = ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger)?;
 
         Ok(())
     }
 
     fn level(&mut self) -> Result<Level> {
         ioctl::get_level(self.cdev_fd, self.pin)
-    }
-}
-
-impl Drop for Interrupt {
-    fn drop(&mut self) {
-        if self.event_fd > -1 {
-            ioctl::close(self.event_fd);
-        }
     }
 }
 

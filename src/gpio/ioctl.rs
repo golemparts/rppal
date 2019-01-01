@@ -239,11 +239,21 @@ impl HandleRequest {
 
         Ok(())
     }
+
+    pub fn close(&mut self) {
+        if self.fd > 0 {
+            unsafe {
+                libc::close(self.fd);
+            }
+
+            self.fd = 0;
+        }
+    }
 }
 
 impl Drop for HandleRequest {
     fn drop(&mut self) {
-        close(self.fd);
+        self.close();
     }
 }
 
@@ -265,7 +275,6 @@ const EVENT_FLAG_RISING_EDGE: u32 = 0x01;
 const EVENT_FLAG_FALLING_EDGE: u32 = 0x02;
 const EVENT_FLAG_BOTH_EDGES: u32 = EVENT_FLAG_RISING_EDGE | EVENT_FLAG_FALLING_EDGE;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct EventRequest {
     pub line_offset: u32,
@@ -273,6 +282,18 @@ pub struct EventRequest {
     pub event_flags: u32,
     pub consumer_label: [u8; LABEL_BUFSIZE],
     pub fd: c_int,
+}
+
+impl fmt::Debug for EventRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventRequest")
+            .field("line_offset", &self.line_offset)
+            .field("handle_flags", &self.handle_flags)
+            .field("event_flags", &self.event_flags)
+            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
+            .field("fd", &self.fd)
+            .finish()
+    }
 }
 
 impl EventRequest {
@@ -297,6 +318,22 @@ impl EventRequest {
         } else {
             Ok(event_request)
         }
+    }
+
+    pub fn close(&mut self) {
+        if self.fd > 0 {
+            unsafe {
+                libc::close(self.fd);
+            }
+
+            self.fd = 0;
+        }
+    }
+}
+
+impl Drop for EventRequest {
+    fn drop(&mut self) {
+        self.close();
     }
 }
 
@@ -385,12 +422,6 @@ pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
         0 => Ok(Level::Low),
         1 => Ok(Level::High),
         _ => unreachable!(),
-    }
-}
-
-pub fn close(fd: c_int) {
-    unsafe {
-        libc::close(fd);
     }
 }
 
