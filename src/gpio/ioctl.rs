@@ -105,6 +105,16 @@ impl ChipInfo {
     }
 }
 
+impl fmt::Debug for ChipInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ChipInfo")
+            .field("name", &cbuf_to_cstring(&self.name))
+            .field("label", &cbuf_to_cstring(&self.label))
+            .field("lines", &self.lines)
+            .finish()
+    }
+}
+
 const LINE_FLAG_KERNEL: u32 = 0x01;
 const LINE_FLAG_IS_OUT: u32 = 0x02;
 const LINE_FLAG_ACTIVE_LOW: u32 = 0x04;
@@ -157,25 +167,6 @@ pub struct HandleRequest {
     pub consumer_label: [u8; LABEL_BUFSIZE],
     pub lines: u32,
     pub fd: c_int,
-}
-
-impl fmt::Debug for HandleRequest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("HandleRequest")
-            .field(
-                "line_offsets",
-                &format_args!("{:?}", &self.line_offsets[..self.lines as usize]),
-            )
-            .field("flags", &self.flags)
-            .field(
-                "default_values",
-                &format_args!("{:?}", &self.default_values[..self.lines as usize]),
-            )
-            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
-            .field("lines", &self.lines)
-            .field("fd", &self.fd)
-            .finish()
-    }
 }
 
 impl HandleRequest {
@@ -257,6 +248,25 @@ impl Drop for HandleRequest {
     }
 }
 
+impl fmt::Debug for HandleRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HandleRequest")
+            .field(
+                "line_offsets",
+                &format_args!("{:?}", &self.line_offsets[..self.lines as usize]),
+            )
+            .field("flags", &self.flags)
+            .field(
+                "default_values",
+                &format_args!("{:?}", &self.default_values[..self.lines as usize]),
+            )
+            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
+            .field("lines", &self.lines)
+            .field("fd", &self.fd)
+            .finish()
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HandleData {
@@ -271,6 +281,14 @@ impl HandleData {
     }
 }
 
+impl fmt::Debug for HandleData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HandleRequest")
+            .field("values", &&self.values[..])
+            .finish()
+    }
+}
+
 const EVENT_FLAG_RISING_EDGE: u32 = 0x01;
 const EVENT_FLAG_FALLING_EDGE: u32 = 0x02;
 const EVENT_FLAG_BOTH_EDGES: u32 = EVENT_FLAG_RISING_EDGE | EVENT_FLAG_FALLING_EDGE;
@@ -282,18 +300,6 @@ pub struct EventRequest {
     pub event_flags: u32,
     pub consumer_label: [u8; LABEL_BUFSIZE],
     pub fd: c_int,
-}
-
-impl fmt::Debug for EventRequest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("EventRequest")
-            .field("line_offset", &self.line_offset)
-            .field("handle_flags", &self.handle_flags)
-            .field("event_flags", &self.event_flags)
-            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
-            .field("fd", &self.fd)
-            .finish()
-    }
 }
 
 impl EventRequest {
@@ -337,10 +343,22 @@ impl Drop for EventRequest {
     }
 }
 
+impl fmt::Debug for EventRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventRequest")
+            .field("line_offset", &self.line_offset)
+            .field("handle_flags", &self.handle_flags)
+            .field("event_flags", &self.event_flags)
+            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
+            .field("fd", &self.fd)
+            .finish()
+    }
+}
+
 const EVENT_TYPE_RISING_EDGE: u32 = 0x01;
 const EVENT_TYPE_FALLING_EDGE: u32 = 0x02;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 struct EventData {
     timestamp: u64,
