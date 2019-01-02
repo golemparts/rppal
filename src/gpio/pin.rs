@@ -29,6 +29,140 @@ use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown,
 // exposed through the Pi's GPIO header depends on the model.
 pub const MAX: usize = 54;
 
+macro_rules! impl_pin {
+    () => {
+        /// Returns the GPIO pin number.
+        ///
+        /// Pins are addressed by their BCM numbers, rather than their physical location.
+        #[inline]
+        pub fn pin(&self) -> u8 {
+            self.pin.pin
+        }
+    }
+}
+
+macro_rules! impl_input {
+    () => {
+        /// Reads the pin's current logic level.
+        #[inline]
+        pub fn read(&self) -> Level {
+            self.pin.read()
+        }
+
+        /// Returns `true` if the pin's logic level is [`Level::Low`].
+        ///
+        /// [`Level::Low`]: enum.Level.html
+        #[inline]
+        pub fn is_low(&self) -> bool {
+            self.pin.read() == Level::Low
+        }
+
+        /// Returns `true` if the pin's logic level is [`Level::High`].
+        ///
+        /// [`Level::High`]: enum.Level.html
+        #[inline]
+        pub fn is_high(&self) -> bool {
+            self.pin.read() == Level::High
+        }
+    }
+}
+
+macro_rules! impl_output {
+    () => {
+        /// Sets pin's logic level to [`Level::Low`].
+        ///
+        /// [`Level::Low`]: enum.Level.html
+        #[inline]
+        pub fn set_low(&mut self) {
+            self.pin.set_low()
+        }
+
+        /// Sets pin's logic level to [`Level::High`].
+        ///
+        /// [`Level::High`]: enum.Level.html
+        #[inline]
+        pub fn set_high(&mut self) {
+            self.pin.set_high()
+        }
+
+        /// Sets pin's logic level.
+        #[inline]
+        pub fn write(&mut self, level: Level) {
+            self.pin.write(level)
+        }
+    }
+}
+
+macro_rules! impl_reset_on_drop {
+    () => {
+        /// Returns the value of `reset_on_drop`.
+        pub fn reset_on_drop(&self) -> bool {
+            self.reset_on_drop
+        }
+
+        /// When enabled, resets the pin's mode to its original state and disables the
+        /// built-in pull-up/pull-down resistors, when the pin goes out of scope.
+        /// By default, this is set to `true`.
+        ///
+        /// ## Note
+        ///
+        /// Drop methods aren't called when a program is abnormally terminated, for
+        /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
+        /// isn't caught. You catch those using crates such as [`simple_signal`].
+        ///
+        /// [`simple_signal`]: https://crates.io/crates/simple-signal
+        pub fn set_reset_on_drop(&mut self, reset_on_drop: bool) {
+            self.reset_on_drop = reset_on_drop;
+        }
+    };
+}
+
+macro_rules! impl_drop {
+    ($struct:ident) => {
+        impl Drop for $struct {
+            /// Resets the pin's mode and disables the built-in pull-up/pull-down
+            /// resistors if `reset_on_drop` is set to `true` (default).
+            fn drop(&mut self) {
+                if !self.reset_on_drop {
+                    return;
+                }
+
+                if let Some(prev_mode) = self.prev_mode {
+                    self.pin.set_mode(prev_mode);
+                }
+
+                if self.pud_mode != PullUpDown::Off {
+                    self.pin.set_pullupdown(PullUpDown::Off);
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_eq {
+    ($struct:ident) => {
+        impl PartialEq for $struct {
+            fn eq(&self, other: &$struct) -> bool {
+                self.pin == other.pin
+            }
+        }
+
+        impl<'a> PartialEq<&'a $struct> for $struct {
+            fn eq(&self, other: &&'a $struct) -> bool {
+                self.pin == other.pin
+            }
+        }
+
+        impl<'a> PartialEq<$struct> for &'a $struct {
+            fn eq(&self, other: &$struct) -> bool {
+                self.pin == other.pin
+            }
+        }
+
+        impl Eq for $struct {}
+    };
+}
+
 /// Unconfigured GPIO pin.
 #[derive(Debug)]
 pub struct Pin {
@@ -155,115 +289,7 @@ impl Drop for Pin {
     }
 }
 
-macro_rules! impl_pin {
-    () => {
-        /// Returns the GPIO pin number.
-        ///
-        /// Pins are addressed by their BCM numbers, rather than their physical location.
-        #[inline]
-        pub fn pin(&self) -> u8 {
-            self.pin.pin
-        }
-    }
-}
-
-macro_rules! impl_input {
-    () => {
-        /// Reads the pin's current logic level.
-        #[inline]
-        pub fn read(&self) -> Level {
-            self.pin.read()
-        }
-
-        /// Returns `true` if the pin's logic level is [`Level::Low`].
-        ///
-        /// [`Level::Low`]: enum.Level.html
-        #[inline]
-        pub fn is_low(&self) -> bool {
-            self.pin.read() == Level::Low
-        }
-
-        /// Returns `true` if the pin's logic level is [`Level::High`].
-        ///
-        /// [`Level::High`]: enum.Level.html
-        #[inline]
-        pub fn is_high(&self) -> bool {
-            self.pin.read() == Level::High
-        }
-    }
-}
-
-macro_rules! impl_output {
-    () => {
-        /// Sets pin's logic level to [`Level::Low`].
-        ///
-        /// [`Level::Low`]: enum.Level.html
-        #[inline]
-        pub fn set_low(&mut self) {
-            self.pin.set_low()
-        }
-
-        /// Sets pin's logic level to [`Level::High`].
-        ///
-        /// [`Level::High`]: enum.Level.html
-        #[inline]
-        pub fn set_high(&mut self) {
-            self.pin.set_high()
-        }
-
-        /// Sets pin's logic level.
-        #[inline]
-        pub fn write(&mut self, level: Level) {
-            self.pin.write(level)
-        }
-    }
-}
-
-macro_rules! impl_reset_on_drop {
-    () => {
-        /// Returns the value of `reset_on_drop`.
-        pub fn reset_on_drop(&self) -> bool {
-            self.reset_on_drop
-        }
-
-        /// When enabled, resets the pin's mode to its original state and disables the
-        /// built-in pull-up/pull-down resistors, when the pin goes out of scope.
-        /// By default, this is set to `true`.
-        ///
-        /// ## Note
-        ///
-        /// Drop methods aren't called when a program is abnormally terminated, for
-        /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
-        /// isn't caught. You catch those using crates such as [`simple_signal`].
-        ///
-        /// [`simple_signal`]: https://crates.io/crates/simple-signal
-        pub fn set_reset_on_drop(&mut self, reset_on_drop: bool) {
-            self.reset_on_drop = reset_on_drop;
-        }
-    };
-}
-
-macro_rules! impl_drop {
-    ($struct:ident) => {
-        impl Drop for $struct {
-            /// Resets the pin's mode and disables the built-in pull-up/pull-down
-            /// resistors if `reset_on_drop` is set to `true` (default).
-            fn drop(&mut self) {
-                if !self.reset_on_drop {
-                    return;
-                }
-
-                if let Some(prev_mode) = self.prev_mode {
-                    self.pin.set_mode(prev_mode);
-                }
-
-                if self.pud_mode != PullUpDown::Off {
-                    self.pin.set_pullupdown(PullUpDown::Off);
-                }
-            }
-        }
-    };
-}
+impl_eq!(Pin);
 
 /// GPIO pin configured as input.
 #[derive(Debug)]
@@ -397,6 +423,7 @@ impl InputPin {
 }
 
 impl_drop!(InputPin);
+impl_eq!(InputPin);
 
 /// GPIO pin configured as output.
 #[derive(Debug)]
@@ -433,6 +460,7 @@ impl OutputPin {
 }
 
 impl_drop!(OutputPin);
+impl_eq!(OutputPin);
 
 /// GPIO pin configured with an alternate function mode.
 #[derive(Debug)]
@@ -471,3 +499,4 @@ impl AltPin {
 }
 
 impl_drop!(AltPin);
+impl_eq!(AltPin);
