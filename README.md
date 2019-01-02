@@ -10,7 +10,7 @@ RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PW
 
 Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
-RPPAL is currently under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` folder for the latest stable release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+RPPAL is currently under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` folder for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
 ## Documentation
 
@@ -29,7 +29,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 rppal = "0.10"
 ```
 
-Call `new()` on any of the peripherals to create a new instance. In production code, you'll want to parse the result rather than unwrap it.
+Call `new()` on any of the peripherals to create a new instance. In production code, you'll want to parse the returned `Result` rather than unwrap it.
 
 ```rust
 use rppal::gpio::Gpio;
