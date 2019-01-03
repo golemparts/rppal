@@ -118,6 +118,7 @@
 
 use std::fmt;
 use std::io;
+use std::ops::Not;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -209,6 +210,17 @@ impl fmt::Display for Level {
         match *self {
             Level::Low => write!(f, "Low"),
             Level::High => write!(f, "High"),
+        }
+    }
+}
+
+impl Not for Level {
+    type Output = Level;
+
+    fn not(self) -> Level {
+        match self {
+            Level::Low => Level::High,
+            Level::High => Level::Low,
         }
     }
 }
