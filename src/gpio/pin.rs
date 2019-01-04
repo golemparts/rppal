@@ -474,7 +474,7 @@ impl OutputPin {
 impl_drop!(OutputPin);
 impl_eq!(OutputPin);
 
-/// GPIO pin that can be set to any mode or alternate function.
+/// GPIO pin that can be (re)configured for any mode or alternate function.
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,
