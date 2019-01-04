@@ -33,6 +33,9 @@ use libc;
 use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
 use crate::system::DeviceInfo;
 
+const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem";
+const PATH_DEV_MEM: &str = "/dev/mem";
+
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
 const GPIO_MEM_REGISTERS: usize = 41;
 const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
@@ -67,7 +70,15 @@ impl GpioMem {
             Err(gpiomem_err) => match Self::map_devmem() {
                 Ok(ptr) => ptr,
                 Err(Error::Io(ref e)) if e.kind() == io::ErrorKind::PermissionDenied => {
-                    return Err(Error::PermissionDenied)
+                    // Did /dev/gpiomem also give us a Permission Denied error? If so, return
+                    // that path instead of /dev/mem. Solving /dev/gpiomem issues should be
+                    // preferred (add user to gpio group) over /dev/mem (use sudo),
+                    match gpiomem_err {
+                        Error::Io(ref e) if e.kind() == io::ErrorKind::PermissionDenied => {
+                            return Err(Error::PermissionDenied(String::from(PATH_DEV_GPIOMEM)));
+                        }
+                        _ => return Err(Error::PermissionDenied(String::from(PATH_DEV_MEM))),
+                    }
                 }
                 Err(Error::UnknownModel) => return Err(Error::UnknownModel),
                 _ => return Err(gpiomem_err),
@@ -88,7 +99,7 @@ impl GpioMem {
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/gpiomem")?;
+            .open(PATH_DEV_GPIOMEM)?;
 
         // Memory-map /dev/gpiomem at offset 0
         let gpiomem_ptr = unsafe {
@@ -117,7 +128,7 @@ impl GpioMem {
             .read(true)
             .write(true)
             .custom_flags(libc::O_SYNC)
-            .open("/dev/mem")?;
+            .open(PATH_DEV_MEM)?;
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
         let mem_ptr = unsafe {

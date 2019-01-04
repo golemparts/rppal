@@ -155,7 +155,7 @@ pub enum Error {
     /// More information on possible causes for this error can be found [here].
     ///
     /// [here]: index.html#permission-denied
-    PermissionDenied,
+    PermissionDenied(String),
     /// IO error.
     Io(io::Error),
     /// Interrupt polling thread panicked.
@@ -166,10 +166,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
-            Error::PermissionDenied => write!(
-                f,
-                "/dev/gpiomem, /dev/mem or /dev/gpiochipN insufficient permissions"
-            ),
+            Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
             Error::Io(ref err) => write!(f, "IO error: {}", err),
             Error::ThreadPanic => write!(f, "Interrupt polling thread panicked"),
         }

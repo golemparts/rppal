@@ -36,6 +36,7 @@ type IoctlLong = libc::c_ulong;
 #[cfg(target_env = "musl")]
 type IoctlLong = libc::c_long;
 
+const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
 const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
 
@@ -420,10 +421,17 @@ pub fn get_event(event_fd: c_int) -> Result<Event> {
 // Find the correct gpiochip device based on its label
 pub fn find_gpiochip() -> Result<File> {
     for id in 0..=255 {
-        let gpiochip = OpenOptions::new()
+        let gpiochip = match OpenOptions::new()
             .read(true)
             .write(true)
-            .open(format!("/dev/gpiochip{}", id))?;
+            .open(format!("{}{}", PATH_GPIOCHIP, id))
+        {
+            Ok(file) => file,
+            Err(ref e) if e.kind() == io::ErrorKind::PermissionDenied => {
+                return Err(Error::PermissionDenied(format!("{}{}", PATH_GPIOCHIP, id)));
+            }
+            Err(e) => return Err(Error::from(e)),
+        };
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
         if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..] {
