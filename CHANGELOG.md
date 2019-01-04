@@ -2,14 +2,18 @@
 
 ## 0.10.0 (TBD)
 
-* Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
-* Gpio: (Breaking change) Move pin-specific methods to new InputPin/OutputPin/AltPin structs, accessed through Gpio::get() (contributed by @reitermarkus).
-* Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input and return type from u8 to &InputPin (contributed by @reitermarkus).
+* (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
+* Add new badge to README.md, indicating the required minimum rustc version.
+* Gpio: (Breaking change) Move pin-specific methods from Gpio to new InputPin/OutputPin structs. Access pins through Gpio::get() (contributed by @reitermarkus).
+* Gpio: Add a new IoPin struct which allows mode switching between input, output or an alternate function.
+* Gpio: Gpio::get() returns an owned unconfigured Pin, which can be used to read the pin's mode and level. Turn a Pin into an InputPin, OutputPin or IoPin through the various Pin::into_ methods to access additional functionality.
+* Gpio: Add a variety of convenience methods to InputPin, OutputPin and IoPin for common tasks.
+* Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input parameter and return type from u8 to &InputPin (contributed by @reitermarkus).
 * Gpio: (Breaking change) Remove Error::NotInitialized, Error::UnknownMode and Error::InvalidPin (contributed by @reitermarkus).
-* Gpio: (Breaking change) Remove Error::InstanceExists. Multiple Gpio instances are now allowed to exist simultaneously.
+* Gpio: (Breaking change) Remove Error::InstanceExists. Multiple (thread-safe) Gpio instances can now exist simultaneously.
 * Gpio: Implement Clone for Gpio.
 * Gpio: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
-* Gpio: (Breaking change) Rename clear_on_drop()/set_clear_on_drop() to reset_on_drop()/set_reset_on_drop().
+* Gpio: (Breaking change) Rename clear_on_drop()/set_clear_on_drop() to reset_on_drop()/set_reset_on_drop() for clarity.
 * Gpio: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and reset_on_drop is set to true.
 * Gpio: When a pin goes out of scope, if an asynchronous interrupt trigger was configured for the pin, the polling thread will get stopped.
 * I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
