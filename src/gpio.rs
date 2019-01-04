@@ -48,10 +48,10 @@
 //! [`InputPin`] features support for both synchronous and asynchronous interrupts.
 //!
 //! Synchronous (blocking) interrupt triggers are configured using [`InputPin::set_interrupt`].
-//! A single trigger can be polled with [`InputPin::poll_interrupt`], which blocks the current
-//! thread until a trigger event occurs, or until the timeout period elapses.
-//! [`Gpio::poll_interrupts`] should be used when multiple synchronous interrupt triggers need
-//! to be polled simultaneously.
+//! An interrupt trigger for a single pin can be polled with [`InputPin::poll_interrupt`],
+//! which blocks the current thread until a trigger event occurs, or until the timeout period
+//! elapses. [`Gpio::poll_interrupts`] should be used when multiple pins have been configured
+//! for synchronous interrupt triggers, and need to be polled simultaneously.
 //!
 //! Asynchronous interrupt triggers are configured using [`InputPin::set_async_interrupt`]. The
 //! specified callback function will get executed on a separate thread when a trigger event occurs.
@@ -77,7 +77,7 @@
 //! # }
 //! ```
 //!
-//! Additional examples can be found in the [`examples`] directory.
+//! Additional examples can be found in the `examples` directory.
 //!
 //! ## Troubleshooting
 //!
@@ -98,7 +98,6 @@
 //! manually update your udev rules to set the appropriate permissions. More information
 //! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
 //!
-//! [`examples`]: https://github.com/golemparts/rppal/tree/master/examples
 //! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
