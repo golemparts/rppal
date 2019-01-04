@@ -86,7 +86,7 @@
 //! In recent releases of Raspbian (December 2017 or later), users that are part of the
 //! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
 //! `/dev/gpiochipN` without needing additional permissions. If you encounter any
-//! Permission Denied errors when creating a new [`Gpio`] instance, either the current
+//! [`PermissionDenied`] errors when creating a new [`Gpio`] instance, either the current
 //! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
 //! up-to-date and doesn't automatically configure permissions for the above-mentioned
 //! files. Updating Raspbian to the latest release should fix any permission issues.
@@ -98,6 +98,7 @@
 //! manually update your udev rules to set the appropriate permissions. More information
 //! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
 //!
+//! [`PermissionDenied`]: enum.Error.html#variant.PermissionDenied
 //! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
 //! [`Gpio`]: struct.Gpio.html
