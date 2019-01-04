@@ -43,13 +43,13 @@ macro_rules! impl_pin {
 
 macro_rules! impl_input {
     () => {
-        /// Reads the pin's current logic level.
+        /// Returns the pin's logic level.
         #[inline]
         pub fn read(&self) -> Level {
             self.pin.read()
         }
 
-        /// Returns `true` if the pin's logic level is [`Level::Low`].
+        /// Returns `true` if the pin's logic level is set to [`Level::Low`].
         ///
         /// [`Level::Low`]: enum.Level.html
         #[inline]
@@ -57,7 +57,7 @@ macro_rules! impl_input {
             self.pin.read() == Level::Low
         }
 
-        /// Returns `true` if the pin's logic level is [`Level::High`].
+        /// Returns `true` if the pin's logic level is set to [`Level::High`].
         ///
         /// [`Level::High`]: enum.Level.html
         #[inline]
@@ -69,7 +69,13 @@ macro_rules! impl_input {
 
 macro_rules! impl_output {
     () => {
-        /// Sets pin's logic level to [`Level::Low`].
+        /// Sets the pin's logic level.
+        #[inline]
+        pub fn write(&mut self, level: Level) {
+            self.pin.write(level)
+        }
+
+        /// Sets the pin's logic level to [`Level::Low`].
         ///
         /// [`Level::Low`]: enum.Level.html
         #[inline]
@@ -77,7 +83,7 @@ macro_rules! impl_output {
             self.pin.set_low()
         }
 
-        /// Sets pin's logic level to [`Level::High`].
+        /// Sets the pin's logic level to [`Level::High`].
         ///
         /// [`Level::High`]: enum.Level.html
         #[inline]
@@ -85,10 +91,17 @@ macro_rules! impl_output {
             self.pin.set_high()
         }
 
-        /// Sets pin's logic level.
+        /// Toggles the pin's logic level between [`Level::Low`] and [`Level::High`].
+        ///
+        /// [`Level::Low`]: enum.Level.html
+        /// [`Level::High`]: enum.Level.html
         #[inline]
-        pub fn write(&mut self, level: Level) {
-            self.pin.write(level)
+        pub fn toggle(&mut self) {
+            if self.is_low() {
+                self.set_high();
+            } else {
+                self.set_low();
+            }
         }
     }
 }
