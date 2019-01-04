@@ -266,7 +266,7 @@ impl Pin {
 
     /// Configures the built-in GPIO pull-up/pull-down resistors.
     #[inline]
-    pub(crate) fn set_pullupdown(&self, pud: PullUpDown) {
+    pub(crate) fn set_pullupdown(&mut self, pud: PullUpDown) {
         self.gpio_state.gpio_mem.set_pullupdown(self.pin, pud);
     }
 
