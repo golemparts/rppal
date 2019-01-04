@@ -43,13 +43,13 @@ macro_rules! impl_pin {
 
 macro_rules! impl_input {
     () => {
-        /// Returns the pin's logic level.
+        /// Reads the pin's logic level.
         #[inline]
         pub fn read(&self) -> Level {
             self.pin.read()
         }
 
-        /// Returns `true` if the pin's logic level is set to [`Level::Low`].
+        /// Reads the pin's logic level, and returns `true` if it's set to [`Level::Low`].
         ///
         /// [`Level::Low`]: enum.Level.html
         #[inline]
@@ -57,7 +57,7 @@ macro_rules! impl_input {
             self.pin.read() == Level::Low
         }
 
-        /// Returns `true` if the pin's logic level is set to [`Level::High`].
+        /// Reads the pin's logic level, and returns `true` if it's set to [`Level::High`].
         ///
         /// [`Level::High`]: enum.Level.html
         #[inline]
@@ -227,7 +227,7 @@ impl Pin {
         InputPin::new(self, PullUpDown::PullUp)
     }
 
-    /// Consumes the pin, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
+    /// Consumes the `Pin`, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
     ///
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`Mode::Output`]: enum.Mode.html#variant.Output
@@ -236,7 +236,7 @@ impl Pin {
         OutputPin::new(self)
     }
 
-    /// Consumes the pin, returns an [`IoPin`] and sets its mode to the given mode.
+    /// Consumes the `Pin`, returns an [`IoPin`] and sets its mode to the given mode.
     ///
     /// [`IoPin`]: struct.IoPin.html
     /// [`Mode`]: enum.Mode.html
@@ -253,24 +253,23 @@ impl Pin {
         self.pin
     }
 
-    #[inline]
-    pub(crate) fn set_mode(&mut self, mode: Mode) {
-        self.gpio_state.gpio_mem.set_mode(self.pin, mode);
-    }
-
-    /// Returns the current GPIO pin mode.
+    /// Returns the pin's mode.
     #[inline]
     pub fn mode(&self) -> Mode {
         self.gpio_state.gpio_mem.mode(self.pin)
     }
 
-    /// Configures the built-in GPIO pull-up/pull-down resistors.
+    #[inline]
+    pub(crate) fn set_mode(&mut self, mode: Mode) {
+        self.gpio_state.gpio_mem.set_mode(self.pin, mode);
+    }
+
     #[inline]
     pub(crate) fn set_pullupdown(&mut self, pud: PullUpDown) {
         self.gpio_state.gpio_mem.set_pullupdown(self.pin, pud);
     }
 
-    /// Reads the pin's current logic level.
+    /// Reads the pin's logic level.
     #[inline]
     pub fn read(&self) -> Level {
         self.gpio_state.gpio_mem.level(self.pin)
@@ -475,11 +474,10 @@ impl OutputPin {
 impl_drop!(OutputPin);
 impl_eq!(OutputPin);
 
-/// GPIO pin that can switch between input, output or an alternate function.
+/// GPIO pin that can be set to any mode or alternate function.
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,
-    mode: Mode,
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
     pud_mode: PullUpDown,
@@ -498,7 +496,6 @@ impl IoPin {
 
         IoPin {
             pin,
-            mode,
             prev_mode,
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
@@ -506,6 +503,26 @@ impl IoPin {
     }
 
     impl_pin!();
+
+    /// Returns the pin's mode.
+    #[inline]
+    pub fn mode(&self) -> Mode {
+        self.pin.mode()
+    }
+
+    /// Sets the pin's mode.
+    #[inline]
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.pin.set_mode(mode);
+    }
+
+    /// Configures the built-in pull-up/pull-down resistors.
+    #[inline]
+    pub fn set_pullupdown(&mut self, pud: PullUpDown) {
+        self.pin.set_pullupdown(pud);
+        self.pud_mode = pud;
+    }
+
     impl_input!();
     impl_output!();
     impl_reset_on_drop!();
