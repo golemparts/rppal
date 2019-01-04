@@ -16,6 +16,7 @@
 * Gpio: (Breaking change) Rename clear_on_drop()/set_clear_on_drop() to reset_on_drop()/set_reset_on_drop() for clarity.
 * Gpio: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and reset_on_drop is set to true.
 * Gpio: When a pin goes out of scope, if an asynchronous interrupt trigger was configured for the pin, the polling thread will get stopped.
+* Gpio: (Breaking change) Add relevant file path to Error::PermissionDenied to make it easier to solve file permission issues.
 * I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
 * The Display formatting for errors in all modules has been rewritten to include more details when available.
 
