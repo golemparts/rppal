@@ -435,14 +435,6 @@ pub fn find_gpiochip() -> Result<File> {
     Err(Error::Io(io::Error::from_raw_os_error(ENOENT)))
 }
 
-pub fn get_level(cdev_fd: c_int, pin: u8) -> Result<Level> {
-    match HandleRequest::new(cdev_fd, &[pin])?.levels()?.values[0] {
-        0 => Ok(Level::Low),
-        1 => Ok(Level::High),
-        _ => unreachable!(),
-    }
-}
-
 // Create a CString from a C-style NUL-terminated char array. This workaround
 // is needed for fixed-length buffers that fill the remaining bytes with NULs,
 // because CString::new() interprets those as a NUL in the middle of the byte

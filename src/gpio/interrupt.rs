@@ -65,8 +65,8 @@ impl Interrupt {
         self.reset()
     }
 
-    // This might block if there are no events waiting
     fn event(&mut self) -> Result<ioctl::Event> {
+        // This might block if there are no events waiting
         ioctl::get_event(self.event_request.fd)
     }
 
@@ -76,10 +76,6 @@ impl Interrupt {
         self.event_request = ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger)?;
 
         Ok(())
-    }
-
-    fn level(&mut self) -> Result<Level> {
-        ioctl::get_level(self.cdev_fd, self.pin)
     }
 }
 
