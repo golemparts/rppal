@@ -84,6 +84,8 @@
 
 #![allow(dead_code)]
 
+use std::error;
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
@@ -92,7 +94,6 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 
 use libc::c_ulong;
-use quick_error::quick_error;
 
 use crate::system;
 use crate::system::{DeviceInfo, Model};
@@ -101,35 +102,52 @@ mod ioctl;
 
 pub use self::ioctl::Capabilities;
 
-quick_error! {
 /// Errors that can occur when accessing the I2C peripheral.
-    #[derive(Debug)]
-    pub enum Error {
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-/// Invalid slave address.
-///
-/// I2C supports 7-bit and 10-bit addresses. Several 7-bit addresses
-/// are reserved, and can't be used as slave addresses. A list of
-/// those reserved addresses can be found [here].
-///
-/// [here]: https://en.wikipedia.org/wiki/I%C2%B2C#Reserved_addresses_in_7-bit_address_space
-        InvalidSlaveAddress(slave_address: u16) { description("invalid slave address") }
-/// I2C/SMBus feature not supported.
-///
-/// The underlying drivers don't support the selected I2C feature or SMBus protocol.
-        FeatureNotSupported { description("I2C/SMBus feature not supported") }
-/// Unknown model.
-///
-/// The Raspberry Pi model or SoC can't be identified. Support for
-/// new models is usually added shortly after they are officially
-/// announced and available to the public. Make sure you're using
-/// the latest release of RPPAL.
-///
-/// You may also encounter this error if your Linux distribution
-/// doesn't provide any of the common user-accessible system files
-/// that are used to identify the model and SoC.
-        UnknownModel { description("unknown Raspberry Pi model") }
+#[derive(Debug)]
+pub enum Error {
+    /// IO error.
+    Io(io::Error),
+    /// Invalid slave address.
+    ///
+    /// I2C supports 7-bit and 10-bit addresses. Several 7-bit addresses
+    /// are reserved, and can't be used as slave addresses. A list of
+    /// those reserved addresses can be found [here].
+    ///
+    /// [here]: https://en.wikipedia.org/wiki/I%C2%B2C#Reserved_addresses_in_7-bit_address_space
+    InvalidSlaveAddress(u16),
+    /// I2C/SMBus feature not supported.
+    ///
+    /// The underlying drivers don't support the selected I2C feature or SMBus protocol.
+    FeatureNotSupported,
+    /// Unknown model.
+    ///
+    /// The Raspberry Pi model or SoC can't be identified. Support for
+    /// new models is usually added shortly after they are officially
+    /// announced and available to the public. Make sure you're using
+    /// the latest release of RPPAL.
+    ///
+    /// You may also encounter this error if your Linux distribution
+    /// doesn't provide any of the common user-accessible system files
+    /// that are used to identify the model and SoC.
+    UnknownModel,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::InvalidSlaveAddress(address) => write!(f, "Invalid slave address: {}", address),
+            Error::FeatureNotSupported => write!(f, "I2C/SMBus feature not supported"),
+            Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+        }
+    }
+}
+
+impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 

@@ -34,7 +34,7 @@ use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{VMIN, VTIME};
 
-use uart::{Error, Parity, Result};
+use crate::uart::{Error, Parity, Result};
 
 #[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {

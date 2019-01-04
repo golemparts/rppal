@@ -115,6 +115,7 @@
 //! [`IoPin::set_reset_on_drop(false)`]: struct.IoPin.html#method.set_reset_on_drop
 //! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
+use std::error;
 use std::fmt;
 use std::io;
 use std::ops::Not;
@@ -125,7 +126,6 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 use lazy_static::lazy_static;
-use quick_error::quick_error;
 
 mod epoll;
 mod interrupt;
@@ -135,32 +135,52 @@ mod pin;
 
 pub use self::pin::{InputPin, IoPin, OutputPin, Pin};
 
-quick_error! {
 /// Errors that can occur when accessing the GPIO peripheral.
-    #[derive(Debug)]
-    pub enum Error {
-/// Unknown model.
-///
-/// The Raspberry Pi model or SoC can't be identified. Support for
-/// new models is usually added shortly after they are officially
-/// announced and available to the public. Make sure you're using
-/// the latest release of RPPAL.
-///
-/// You may also encounter this error if your Linux distribution
-/// doesn't provide any of the common user-accessible system files
-/// that are used to identify the model and SoC.
-        UnknownModel { description("unknown Raspberry Pi model") }
-/// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
-/// read/write access.
-///
-/// More information on possible causes for this error can be found [here].
-///
-/// [here]: index.html#permission-denied
-        PermissionDenied { description("/dev/gpiomem, /dev/mem or /dev/gpiochipN insufficient permissions") }
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-/// Interrupt polling thread panicked.
-        ThreadPanic { description("interrupt polling thread panicked") }
+#[derive(Debug)]
+pub enum Error {
+    /// Unknown model.
+    ///
+    /// The Raspberry Pi model or SoC can't be identified. Support for
+    /// new models is usually added shortly after they are officially
+    /// announced and available to the public. Make sure you're using
+    /// the latest release of RPPAL.
+    ///
+    /// You may also encounter this error if your Linux distribution
+    /// doesn't provide any of the common user-accessible system files
+    /// that are used to identify the model and SoC.
+    UnknownModel,
+    /// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
+    /// read/write access.
+    ///
+    /// More information on possible causes for this error can be found [here].
+    ///
+    /// [here]: index.html#permission-denied
+    PermissionDenied,
+    /// IO error.
+    Io(io::Error),
+    /// Interrupt polling thread panicked.
+    ThreadPanic,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+            Error::PermissionDenied => write!(
+                f,
+                "/dev/gpiomem, /dev/mem or /dev/gpiochipN insufficient permissions"
+            ),
+            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::ThreadPanic => write!(f, "Interrupt polling thread panicked"),
+        }
+    }
+}
+
+impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 

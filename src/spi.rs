@@ -101,6 +101,7 @@
 //! [`Mode3`]: enum.Mode.html
 //! [`reverse_bits`]: fn.reverse_bits.html
 
+use std::error;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
@@ -109,41 +110,66 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-use quick_error::quick_error;
-
 mod ioctl;
 
 pub use self::ioctl::TransferSegment;
 
-quick_error! {
 /// Errors that can occur when accessing the SPI peripheral.
-    #[derive(Debug)]
-    pub enum Error {
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-/// The specified number of bits per word is not supported.
-///
-/// The Raspberry Pi currently only supports 8 bit words. Any other value
-/// will trigger this error.
-        BitsPerWordNotSupported(bits_per_word: u8) { description("bits per word value not supported") }
-/// The specified bit order is not supported.
-///
-/// The Raspberry Pi currently only supports the [`MsbFirst`] bit order. If you
-/// need the [`LsbFirst`] bit order, you can use the [`reverse_bits`] function
-/// instead to reverse the bit order in software by converting your write
-/// buffer before sending it to the slave device, and your read buffer after
-/// reading any incoming data.
-///
-/// [`MsbFirst`]: enum.BitOrder.html
-/// [`LsbFirst`]: enum.BitOrder.html
-/// [`reverse_bits`]: fn.reverse_bits.html
-        BitOrderNotSupported(bit_order: BitOrder) { description("bit order value not supported") }
-/// The specified clock speed is not supported.
-        ClockSpeedNotSupported(clock_speed: u32) { description("clock speed value not supported") }
-/// The specified mode is not supported.
-        ModeNotSupported(mode: Mode) { description("mode value not supported") }
-/// The specified Slave Select polarity is not supported.
-        PolarityNotSupported(polarity: Polarity) { description("polarity value not supported") }
+#[derive(Debug)]
+pub enum Error {
+    /// IO error.
+    Io(io::Error),
+    /// The specified number of bits per word is not supported.
+    ///
+    /// The Raspberry Pi currently only supports 8 bit words. Any other value
+    /// will trigger this error.
+    BitsPerWordNotSupported(u8),
+    /// The specified bit order is not supported.
+    ///
+    /// The Raspberry Pi currently only supports the [`MsbFirst`] bit order. If you
+    /// need the [`LsbFirst`] bit order, you can use the [`reverse_bits`] function
+    /// instead to reverse the bit order in software by converting your write
+    /// buffer before sending it to the slave device, and your read buffer after
+    /// reading any incoming data.
+    ///
+    /// [`MsbFirst`]: enum.BitOrder.html
+    /// [`LsbFirst`]: enum.BitOrder.html
+    /// [`reverse_bits`]: fn.reverse_bits.html
+    BitOrderNotSupported(BitOrder),
+    /// The specified clock speed is not supported.
+    ClockSpeedNotSupported(u32),
+    /// The specified mode is not supported.
+    ModeNotSupported(Mode),
+    /// The specified Slave Select polarity is not supported.
+    PolarityNotSupported(Polarity),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::BitsPerWordNotSupported(bits_per_word) => {
+                write!(f, "Bits per word value not supported: {}", bits_per_word)
+            }
+            Error::BitOrderNotSupported(bit_order) => {
+                write!(f, "Bit order value not supported: {:?}", bit_order)
+            }
+            Error::ClockSpeedNotSupported(clock_speed) => {
+                write!(f, "Clock speed value not supported: {}", clock_speed)
+            }
+            Error::ModeNotSupported(mode) => write!(f, "Mode value not supported: {:?}", mode),
+            Error::PolarityNotSupported(polarity) => {
+                write!(f, "Polarity value not supported: {:?}", polarity)
+            }
+        }
+    }
+}
+
+impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 

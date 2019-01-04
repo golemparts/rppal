@@ -84,6 +84,8 @@
 //!
 //! [documentation]: https://www.raspberrypi.org/documentation/configuration/uart.md
 
+use std::error;
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
@@ -95,14 +97,29 @@ use libc::{O_NDELAY, O_NOCTTY, O_NONBLOCK};
 
 mod termios;
 
-quick_error! {
 /// Errors that can occur when accessing the UART peripheral.
-    #[derive(Debug)]
-    pub enum Error {
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
-/// Invalid value.
-        InvalidValue { description("invalid value") }
+#[derive(Debug)]
+pub enum Error {
+    /// IO error.
+    Io(io::Error),
+    /// Invalid value.
+    InvalidValue,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::InvalidValue => write!(f, "Invalid value"),
+        }
+    }
+}
+
+impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 

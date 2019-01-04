@@ -79,20 +79,34 @@
 //! [patch]: https://github.com/raspberrypi/linux/issues/1983
 //! [`new`]: struct.Pwm.html#method.new
 
+use std::error;
+use std::fmt;
 use std::io;
 use std::result;
 use std::time::Duration;
 
-use quick_error::quick_error;
-
 mod sysfs;
 
-quick_error! {
 /// Errors that can occur when accessing the PWM peripheral.
-    #[derive(Debug)]
-    pub enum Error {
-/// IO error.
-        Io(err: io::Error) { description(err.description()) from() }
+#[derive(Debug)]
+pub enum Error {
+    /// IO error.
+    Io(io::Error),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::Io(ref err) => write!(f, "IO error: {}", err),
+        }
+    }
+}
+
+impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 

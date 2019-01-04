@@ -25,38 +25,45 @@
 //!
 //! [`DeviceInfo`]: struct.DeviceInfo.html
 
+use std::error;
 use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
-use quick_error::quick_error;
-
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
 const GPIO_OFFSET: u32 = 0x20_0000;
 
-quick_error! {
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
-    #[derive(Debug)]
-    pub enum Error {
-/// Unknown model.
-///
-/// `DeviceInfo` was unable to identify the Raspberry Pi model based on the
-/// contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
-/// and `/sys/firmware/devicetree/base/model`.
-///
-/// Support for new models is usually added shortly after they are officially
-/// announced and available to the public. Make sure you're using the latest
-/// release of RPPAL.
-///
-/// You may also encounter this error if your Linux distribution
-/// doesn't provide any of the common user-accessible system files
-/// that are used to identify the model and SoC.
-        UnknownModel { description("unknown Raspberry Pi model") }
+#[derive(Debug)]
+pub enum Error {
+    /// Unknown model.
+    ///
+    /// `DeviceInfo` was unable to identify the Raspberry Pi model based on the
+    /// contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
+    /// and `/sys/firmware/devicetree/base/model`.
+    ///
+    /// Support for new models is usually added shortly after they are officially
+    /// announced and available to the public. Make sure you're using the latest
+    /// release of RPPAL.
+    ///
+    /// You may also encounter this error if your Linux distribution
+    /// doesn't provide any of the common user-accessible system files
+    /// that are used to identify the model and SoC.
+    UnknownModel,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+        }
     }
 }
+
+impl error::Error for Error {}
 
 /// Result type returned from methods that can have `system::Error`s.
 pub type Result<T> = result::Result<T, Error>;
