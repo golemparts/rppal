@@ -478,6 +478,7 @@ impl_eq!(OutputPin);
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,
+    mode: Mode,
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
     pud_mode: PullUpDown,
@@ -496,6 +497,7 @@ impl IoPin {
 
         IoPin {
             pin,
+            mode,
             prev_mode,
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
@@ -513,6 +515,14 @@ impl IoPin {
     /// Sets the pin's mode.
     #[inline]
     pub fn set_mode(&mut self, mode: Mode) {
+        // If self.prev_mode is set to None, that means the
+        // requested mode during construction was the same as
+        // the current mode. Save that mode if we're changing
+        // it to something else now, so we can reset it on drop.
+        if self.prev_mode.is_none() && mode != self.mode {
+            self.prev_mode = Some(self.mode);
+        }
+
         self.pin.set_mode(mode);
     }
 
