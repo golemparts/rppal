@@ -236,13 +236,13 @@ impl Pin {
         OutputPin::new(self)
     }
 
-    /// Consumes the pin, returns an [`AltPin`] and sets its mode to the given mode.
+    /// Consumes the pin, returns an [`IoPin`] and sets its mode to the given mode.
     ///
-    /// [`AltPin`]: struct.AltPin.html
+    /// [`IoPin`]: struct.IoPin.html
     /// [`Mode`]: enum.Mode.html
     #[inline]
-    pub fn into_alt(self, mode: Mode) -> AltPin {
-        AltPin::new(self, mode)
+    pub fn into_io(self, mode: Mode) -> IoPin {
+        IoPin::new(self, mode)
     }
 
     /// Returns the GPIO pin number.
@@ -475,9 +475,9 @@ impl OutputPin {
 impl_drop!(OutputPin);
 impl_eq!(OutputPin);
 
-/// GPIO pin configured with an alternate function mode.
+/// GPIO pin that can switch between input, output or an alternate function.
 #[derive(Debug)]
-pub struct AltPin {
+pub struct IoPin {
     pin: Pin,
     mode: Mode,
     prev_mode: Option<Mode>,
@@ -485,8 +485,8 @@ pub struct AltPin {
     pud_mode: PullUpDown,
 }
 
-impl AltPin {
-    pub(crate) fn new(mut pin: Pin, mode: Mode) -> AltPin {
+impl IoPin {
+    pub(crate) fn new(mut pin: Pin, mode: Mode) -> IoPin {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == mode {
@@ -496,7 +496,7 @@ impl AltPin {
             Some(prev_mode)
         };
 
-        AltPin {
+        IoPin {
             pin,
             mode,
             prev_mode,
@@ -511,5 +511,5 @@ impl AltPin {
     impl_reset_on_drop!();
 }
 
-impl_drop!(AltPin);
-impl_eq!(AltPin);
+impl_drop!(IoPin);
+impl_eq!(IoPin);
