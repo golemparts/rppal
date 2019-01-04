@@ -189,6 +189,26 @@ impl Pin {
         Pin { pin, gpio_state }
     }
 
+    /// Returns the GPIO pin number.
+    ///
+    /// Pins are addressed by their BCM numbers, rather than their physical location.
+    #[inline]
+    pub fn pin(&self) -> u8 {
+        self.pin
+    }
+
+    /// Returns the pin's mode.
+    #[inline]
+    pub fn mode(&self) -> Mode {
+        self.gpio_state.gpio_mem.mode(self.pin)
+    }
+
+    /// Reads the pin's logic level.
+    #[inline]
+    pub fn read(&self) -> Level {
+        self.gpio_state.gpio_mem.level(self.pin)
+    }
+
     /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
     /// and disables the pin's built-in pull-up/pull-down resistors.
     ///
@@ -245,20 +265,6 @@ impl Pin {
         IoPin::new(self, mode)
     }
 
-    /// Returns the GPIO pin number.
-    ///
-    /// Pins are addressed by their BCM numbers, rather than their physical location.
-    #[inline]
-    pub fn pin(&self) -> u8 {
-        self.pin
-    }
-
-    /// Returns the pin's mode.
-    #[inline]
-    pub fn mode(&self) -> Mode {
-        self.gpio_state.gpio_mem.mode(self.pin)
-    }
-
     #[inline]
     pub(crate) fn set_mode(&mut self, mode: Mode) {
         self.gpio_state.gpio_mem.set_mode(self.pin, mode);
@@ -267,12 +273,6 @@ impl Pin {
     #[inline]
     pub(crate) fn set_pullupdown(&mut self, pud: PullUpDown) {
         self.gpio_state.gpio_mem.set_pullupdown(self.pin, pud);
-    }
-
-    /// Reads the pin's logic level.
-    #[inline]
-    pub fn read(&self) -> Level {
-        self.gpio_state.gpio_mem.level(self.pin)
     }
 
     #[inline]
