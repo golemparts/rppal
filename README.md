@@ -47,8 +47,7 @@ Some peripherals may need to be enabled first through `sudo raspi-config` or by 
 
 ## Examples
 
-This example demonstrates how to blink an LED attached to a GPIO pin. Remember
-to add a resistor in series of an appropriate value, to prevent exceeding the maximum current rating of the GPIO pin and the LED.
+This example demonstrates how to blink an LED attached to a GPIO pin. Remember to add a resistor of an appropriate value in series, to prevent exceeding the maximum current rating of the GPIO pin and the LED.
 
 ```rust
 use std::thread::sleep;
