@@ -19,6 +19,7 @@
 * Gpio: (Breaking change) Add relevant file path to Error::PermissionDenied to make it easier to solve file permission issues.
 * I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
 * The Display formatting for errors in all modules has been rewritten to include more details when available.
+* DeviceInfo: (Breaking change) DeviceInfo::peripheral_base() and DeviceInfo::gpio_offset() are no longer part of the public API.
 
 ## 0.9.0 (November 15, 2018)
 
