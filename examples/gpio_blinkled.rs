@@ -20,8 +20,7 @@
 
 // gpio_blinkled.rs
 //
-// This example demonstrates how to blink an LED attached to a GPIO pin in a
-// loop.
+// Blinks an LED attached to a GPIO pin in a loop.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.

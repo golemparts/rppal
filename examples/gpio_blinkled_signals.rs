@@ -20,9 +20,9 @@
 
 // gpio_blinkled_signals.rs
 //
-// This example demonstrates how to blink an LED attached to a GPIO pin in a
-// loop, while handling any incoming SIGINT (Ctrl-C) and SIGTERM signals so
-// the pin's state can be reset before the application exits.
+// Blinks an LED attached to a GPIO pin in a loop, while handling any incoming
+// SIGINT (Ctrl-C) and SIGTERM signals so the pin's state can be reset before
+// the application exits.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.
