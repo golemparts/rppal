@@ -283,7 +283,7 @@ pub struct DeviceInfo {
 impl DeviceInfo {
     /// Constructs a new `DeviceInfo`.
     ///
-    /// `new` automatically identifies the Raspberry Pi model and SoC based on
+    /// `new` attempts to identify the Raspberry Pi's model and SoC based on
     /// the contents of `/proc/cpuinfo`, `/sys/firmware/devicetree/base/compatible`
     /// and `/sys/firmware/devicetree/base/model`.
     pub fn new() -> Result<DeviceInfo> {
@@ -338,12 +338,12 @@ impl DeviceInfo {
     }
 
     /// Returns the base memory address for the BCM283x peripherals.
-    pub fn peripheral_base(&self) -> u32 {
+    pub(crate) fn peripheral_base(&self) -> u32 {
         self.peripheral_base
     }
 
     /// Returns the offset from the base memory address for the GPIO section.
-    pub fn gpio_offset(&self) -> u32 {
+    pub(crate) fn gpio_offset(&self) -> u32 {
         self.gpio_offset
     }
 }
