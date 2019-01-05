@@ -4,6 +4,7 @@
 
 * (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
 * Add new badge to README.md, indicating the required minimum rustc version.
+* Add Gpio examples to the examples subdirectory.
 * Gpio: (Breaking change) Move pin-specific methods from Gpio to new InputPin/OutputPin structs. Access pins through Gpio::get() (contributed by @reitermarkus).
 * Gpio: Add a new IoPin struct which allows mode switching between input, output or an alternate function.
 * Gpio: Gpio::get() returns an owned unconfigured Pin, which can be used to read the pin's mode and level. Turn a Pin into an InputPin, OutputPin or IoPin through the various Pin::into_ methods to access additional functionality.
