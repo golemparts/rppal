@@ -128,6 +128,9 @@ fn print_header(max: usize) {
     for (idx, pin_type) in HEADER.iter().take(max).enumerate() {
         match pin_type {
             PinType::Gpio(bcm_gpio) => {
+                // Retrieve a Pin without converting it into an InputPin,
+                // OutputPin or IoPin, so we can read the pin's current level
+                // and mode without affecting its state.
                 let pin = gpio.get(*bcm_gpio).unwrap_or_else(|| {
                     eprintln!("Error: Can't access GPIO pin {}", *bcm_gpio);
                     exit(1);
@@ -151,6 +154,7 @@ fn print_header(max: usize) {
 }
 
 fn main() {
+    // Identify the Pi's model, so we can print the appropriate GPIO header.
     match DeviceInfo::new()
         .unwrap_or_else(|e| {
             eprintln!("Error: Can't identify Raspberry Pi model ({})", e);
@@ -158,6 +162,8 @@ fn main() {
         })
         .model()
     {
+        // The GPIO header on the earlier Pi models overlaps with the first 26 pins
+        // of the 40-pin header on the newer models.
         Model::RaspberryPiA | Model::RaspberryPiBRev1 | Model::RaspberryPiBRev2 => {
             print_header(MAX_PINS_SHORT)
         }
