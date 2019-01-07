@@ -25,7 +25,7 @@
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.
 //
-// Interrupting the loop by pressing Ctrl-C causes the application to exit
+// Interrupting the process by pressing Ctrl-C causes the application to exit
 // immediately without resetting the pin's state, so the LED might stay lit.
 // Check out the gpio_blinkled_signals.rs example to learn how to properly
 // handle incoming signals to prevent an abnormal termination.
