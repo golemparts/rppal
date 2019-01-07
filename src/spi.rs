@@ -20,10 +20,10 @@
 
 //! Interface for the SPI peripheral.
 //!
-//! RPPAL provides access to the available SPI peripherals by using the spidev interface
-//! through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to a Slave Select
-//! pin (0, 1, 2). Which of these buses and pins is available depends on your Raspberry
-//! Pi model and configuration, as explained below.
+//! RPPAL provides access to the available SPI buses by using the `spidev` device
+//! interface through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to
+//! a Slave Select pin (0, 1, 2). Which of these buses and pins is available depends on
+//! your Raspberry Pi model and configuration, as explained below.
 //!
 //! ## SPI buses
 //!

@@ -20,8 +20,8 @@
 
 //! Interface for the PWM peripheral.
 //!
-//! RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm`
-//! sysfs interface.
+//! RPPAL controls the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs
+//! interface.
 //!
 //! ## PWM channels
 //!

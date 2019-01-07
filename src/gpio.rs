@@ -20,9 +20,9 @@
 
 //! Interface for the GPIO peripheral.
 //!
-//! To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly
+//! To ensure fast performance, RPPAL controls the GPIO peripheral by directly
 //! accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts
-//! are controlled using the `/dev/gpiochipN` (N=0-2) character device.
+//! are configured using the `gpiochip` character device.
 //!
 //! ## Pins
 //!
@@ -85,7 +85,7 @@
 //!
 //! In recent releases of Raspbian (December 2017 or later), users that are part of the
 //! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
-//! `/dev/gpiochipN` without needing additional permissions. If you encounter any
+//! `/dev/gpiochipN` (N = 0-2) without needing additional permissions. If you encounter any
 //! [`PermissionDenied`] errors when creating a new [`Gpio`] instance, either the current
 //! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
 //! up-to-date and doesn't automatically configure permissions for the above-mentioned

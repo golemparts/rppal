@@ -80,7 +80,7 @@ Additional examples can be found in the `examples` directory.
 
 ### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
 
-To ensure fast performance, RPPAL interfaces with the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are controlled using the `/dev/gpiochipN` character device.
+To ensure fast performance, RPPAL controls the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are configured using the `gpiochip` character device.
 
 #### Features
 
@@ -101,7 +101,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 ### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
-RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
+RPPAL controls the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sysfs interface.
 
 #### Features
 
@@ -110,7 +110,7 @@ RPPAL configures the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` 
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
-RPPAL accesses the Raspberry Pi's main and auxiliary SPI peripherals through the `spidev` device interface.
+RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the `spidev` device interface.
 
 #### Features
 
