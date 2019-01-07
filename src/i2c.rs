@@ -22,7 +22,7 @@
 //!
 //! The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus
 //! compliant with the I2C bus/interface. RPPAL communicates with the BSC
-//! using the i2cdev device interface.
+//! using the `i2cdev` device interface.
 //!
 //! ## I2C buses
 //!
