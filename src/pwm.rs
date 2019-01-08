@@ -155,7 +155,7 @@ impl Pwm {
         let _ = pwm.disable();
 
         // Default settings
-        let _ = pwm.set_duty_cycle(Duration::from_secs(0));
+        let _ = pwm.set_pulse_width(Duration::from_secs(0));
         let _ = pwm.set_period(Duration::from_secs(0));
         let _ = pwm.set_polarity(Polarity::Normal);
 
@@ -166,7 +166,7 @@ impl Pwm {
     ///
     /// `period` represents the time it takes for the PWM channel to complete one cycle.
     ///
-    /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
+    /// `pulse_width` represents the amount of time the PWM channel's logic level is set
     /// high (or low if the polarity is set to [`Inverse`]) during a single period.
     ///
     /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
@@ -180,7 +180,7 @@ impl Pwm {
     pub fn with_period(
         channel: Channel,
         period: Duration,
-        duty_cycle: Duration,
+        pulse_width: Duration,
         polarity: Polarity,
         enabled: bool,
     ) -> Result<Pwm> {
@@ -193,11 +193,11 @@ impl Pwm {
         // "enable" is still set to 1, even though the channel isn't enabled.
         let _ = pwm.disable();
 
-        // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
-        let _ = sysfs::set_duty_cycle(channel as u8, 0);
+        // Set pulse width to 0 first in case the new period is shorter than the current pulse width
+        let _ = sysfs::set_pulse_width(channel as u8, 0);
 
         pwm.set_period(period)?;
-        pwm.set_duty_cycle(duty_cycle)?;
+        pwm.set_pulse_width(pulse_width)?;
         pwm.set_polarity(polarity)?;
         if enabled {
             pwm.enable()?;
@@ -237,15 +237,15 @@ impl Pwm {
         // "enable" is still set to 1, even though the channel isn't enabled.
         let _ = pwm.disable();
 
-        // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
-        let _ = sysfs::set_duty_cycle(channel as u8, 0);
+        // Set pulse width to 0 first in case the new period is shorter than the current pulse width
+        let _ = sysfs::set_pulse_width(channel as u8, 0);
 
         // Convert to nanoseconds
         let period = (1.0f64 / frequency) * 1_000_000_000f64;
-        let duty_cycle = period * duty_cycle.min(1.0);
+        let pulse_width = period * duty_cycle.min(1.0);
 
         sysfs::set_period(channel as u8, period as u64)?;
-        sysfs::set_duty_cycle(channel as u8, duty_cycle as u64)?;
+        sysfs::set_pulse_width(channel as u8, pulse_width as u64)?;
 
         pwm.set_polarity(polarity)?;
         if enabled {
@@ -263,7 +263,7 @@ impl Pwm {
     /// Sets the period.
     ///
     /// `period` represents the time it takes for the PWM channel to complete one cycle.
-    /// The selected period must be longer than or equal to the duty cycle.
+    /// The specified period must be longer than or equal to the pulse width.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
             self.channel as u8,
@@ -274,23 +274,25 @@ impl Pwm {
         Ok(())
     }
 
-    /// Gets the configured duty cycle.
-    pub fn duty_cycle(&self) -> Result<Duration> {
-        Ok(Duration::from_nanos(sysfs::duty_cycle(self.channel as u8)?))
+    /// Gets the configured pulse width.
+    pub fn pulse_width(&self) -> Result<Duration> {
+        Ok(Duration::from_nanos(sysfs::pulse_width(
+            self.channel as u8,
+        )?))
     }
 
-    /// Sets the duty cycle.
+    /// Sets the pulse width.
     ///
-    /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
+    /// `pulse_width` represents the amount of time the PWM channel's logic level is set
     /// high (or low if the polarity is set to [`Inverse`]) during a single period. The
-    /// duty cycle must be shorter than or equal to the period.
+    /// pulse width must be shorter than or equal to the period.
     ///
     /// [`Inverse`]: enum.Polarity.html
-    pub fn set_duty_cycle(&self, duty_cycle: Duration) -> Result<()> {
-        sysfs::set_duty_cycle(
+    pub fn set_pulse_width(&self, pulse_width: Duration) -> Result<()> {
+        sysfs::set_pulse_width(
             self.channel as u8,
-            u64::from(duty_cycle.subsec_nanos())
-                .saturating_add(duty_cycle.as_secs().saturating_mul(1_000_000_000)),
+            u64::from(pulse_width.subsec_nanos())
+                .saturating_add(pulse_width.as_secs().saturating_mul(1_000_000_000)),
         )?;
 
         Ok(())
@@ -306,14 +308,14 @@ impl Pwm {
     /// `duty_cycle` is specified as a floating point percentage, where `1.0` represents 100%.
     pub fn set_frequency(&self, frequency: f64, duty_cycle: f64) -> Result<()> {
         // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
-        let _ = sysfs::set_duty_cycle(self.channel as u8, 0);
+        let _ = sysfs::set_pulse_width(self.channel as u8, 0);
 
         // Convert to nanoseconds
         let period = (1.0f64 / frequency) * 1_000_000_000f64;
-        let duty_cycle = period * duty_cycle.min(1.0);
+        let pulse_width = period * duty_cycle.min(1.0);
 
         sysfs::set_period(self.channel as u8, period as u64)?;
-        sysfs::set_duty_cycle(self.channel as u8, duty_cycle as u64)?;
+        sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
 
         Ok(())
     }

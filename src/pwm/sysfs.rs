@@ -131,7 +131,9 @@ pub fn set_period(channel: u8, period: u64) -> Result<()> {
     Ok(())
 }
 
-pub fn duty_cycle(channel: u8) -> Result<u64> {
+pub fn pulse_width(channel: u8) -> Result<u64> {
+    // The sysfs PWM interface specifies the duty cycle in nanoseconds, which
+    // means it's actually the pulse width.
     let duty_cycle =
         fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel))?;
 
@@ -142,9 +144,11 @@ pub fn duty_cycle(channel: u8) -> Result<u64> {
     }
 }
 
-pub fn set_duty_cycle(channel: u8, duty_cycle: u64) -> Result<()> {
+pub fn set_pulse_width(channel: u8, pulse_width: u64) -> Result<()> {
+    // The sysfs PWM interface specifies the duty cycle in nanoseconds, which
+    // means it's actually the pulse width.
     File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel))?
-        .write_fmt(format_args!("{}", duty_cycle))?;
+        .write_fmt(format_args!("{}", pulse_width))?;
 
     Ok(())
 }
