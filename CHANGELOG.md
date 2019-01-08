@@ -3,28 +3,30 @@
 ## 0.10.0 (TBD)
 
 * (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
-* Add new badge to README.md, indicating the required minimum rustc version.
-* Add Gpio examples to the examples subdirectory.
-* Gpio: (Breaking change) Move pin-specific methods from Gpio to new InputPin/OutputPin structs. Access pins through Gpio::get() (contributed by @reitermarkus).
-* Gpio: Add a new IoPin struct which allows mode switching between input, output or an alternate function.
-* Gpio: Gpio::get() returns an owned unconfigured Pin, which can be used to read the pin's mode and level. Turn a Pin into an InputPin, OutputPin or IoPin through the various Pin::into_ methods to access additional functionality.
-* Gpio: Add a variety of convenience methods to InputPin, OutputPin and IoPin for common tasks.
-* Gpio: (Breaking change) Change Gpio::poll_interrupts() pins input parameter and return type from u8 to &InputPin (contributed by @reitermarkus).
-* Gpio: (Breaking change) Remove Error::NotInitialized, Error::UnknownMode and Error::InvalidPin (contributed by @reitermarkus).
-* Gpio: (Breaking change) Remove Error::InstanceExists. Multiple (thread-safe) Gpio instances can now exist simultaneously.
-* Gpio: Implement Clone for Gpio.
-* Gpio: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
-* Gpio: (Breaking change) Rename clear_on_drop()/set_clear_on_drop() to reset_on_drop()/set_reset_on_drop() for clarity.
-* Gpio: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and reset_on_drop is set to true.
-* Gpio: When a pin goes out of scope, if an asynchronous interrupt trigger was configured for the pin, the polling thread will get stopped.
-* Gpio: (Breaking change) Add relevant file path to Error::PermissionDenied to make it easier to solve file permission issues.
-* I2c: (Breaking change) Rename Error::UnknownSoC to Error::UnknownModel for consistency.
-* The Display formatting for errors in all modules has been rewritten to include more details when available.
-* DeviceInfo: (Breaking change) DeviceInfo::peripheral_base() and DeviceInfo::gpio_offset() are no longer part of the public API.
+* Add new badge to `README.md`, indicating the required minimum rustc version.
+* Add `Gpio` and `Pwm` examples to the examples subdirectory.
+* The `Display` formatting for errors in all modules has been rewritten to include more details when available.
+* **DeviceInfo**: (Breaking change) `DeviceInfo::peripheral_base()` and `DeviceInfo::gpio_offset()` are no longer part of the public API.
+* **Gpio**: (Breaking change) Move pin-specific methods from `Gpio` to the new `InputPin`/`OutputPin` structs. Access pins through `Gpio::get()` (contributed by @reitermarkus).
+* **Gpio**: Add a new `IoPin` struct which allows mode switching between input, output or an alternate function.
+* **Gpio**: `Gpio::get()` returns an owned unconfigured `Pin`, which can be used to read the pin's mode and logic level. Convert a `Pin` to an `InputPin`, `OutputPin` or `IoPin` through the various `Pin::into_` methods to access additional functionality.
+* **Gpio**: Add a variety of convenience methods to `InputPin`, `OutputPin` and `IoPin` for common tasks.
+* **Gpio**: (Breaking change) Change `Gpio::poll_interrupts()` `pins` input parameter and return type from `u8` to `&InputPin` (contributed by @reitermarkus).
+* **Gpio**: (Breaking change) Remove `Error::NotInitialized`, `Error::UnknownMode` and `Error::InvalidPin` (contributed by @reitermarkus).
+* **Gpio**: (Breaking change) Remove `Error::InstanceExists`. Multiple (thread-safe) `Gpio` instances can now exist simultaneously.
+* **Gpio**: Implement `Clone` for `Gpio`.
+* **Gpio**: (Breaking change) Rename `Error::UnknownSoC` to `Error::UnknownModel` for consistency.
+* **Gpio**: (Breaking change) Rename `clear_on_drop()`/`set_clear_on_drop()` to `reset_on_drop()`/`set_reset_on_drop()` for clarity.
+* **Gpio**: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and `reset_on_drop` is set to true.
+* **Gpio**: When a pin goes out of scope, if an asynchronous interrupt trigger was configured for the pin, the polling thread will get stopped.
+* **Gpio**: (Breaking change) Add relevant file path to `Error::PermissionDenied` to make it easier to solve file permission issues.
+* **I2c**: (Breaking change) Rename `Error::UnknownSoC` to `Error::UnknownModel` for consistency.
+* **Pwm**: (Breaking change) Rename `duty_cycle()` to `pulse_width()` and `set_duty_cycle()` to `set_pulse_width()` to better reflect the specified value type.
+* **Pwm**: Add `duty_cycle()` and `set_duty_cycle()` convenience methods that convert the specified ratio to the correct pulse width value.
 
 ## 0.9.0 (November 15, 2018)
 
-* DeviceInfo: Add support for Raspberry Pi 3 A+.
+* **DeviceInfo**: Add support for Raspberry Pi 3 A+.
 
 ## 0.8.1 (October 5, 2018)
 
@@ -32,67 +34,67 @@
 
 ## 0.8.0 (August 14, 2018)
 
-* Gpio: Replace GPIO sysfs interface (/sys/class/gpio) for interrupts with GPIO character device (/dev/gpiochipN).
-* Pwm: Add support for up to two hardware PWM channels with configurable period/frequency, duty cycle and polarity.
-* Spi: Fix 0-length transfers caused by TransferSegment instances with write_buffer set to None.
+* **Gpio**: Replace GPIO sysfs interface (`/sys/class/gpio`) for interrupts with GPIO character device (`/dev/gpiochipN`).
+* **Pwm**: Add support for up to two hardware PWM channels with configurable period/frequency, duty cycle and polarity.
+* **Spi**: Fix 0-length transfers caused by `TransferSegment` instances with `write_buffer` set to `None`.
 
 ## 0.7.1 (June 26, 2018)
 
-* Revert the use of the recently stabilized Duration::subsec_millis() back to Duration::subsec_nanos() to allow older stable versions of the compiler to work.
+* Revert the use of the recently stabilized `Duration::subsec_millis()` back to `Duration::subsec_nanos()` to allow older stable versions of the compiler to work.
 
 ## 0.7.0 (June 26, 2018)
 
-* DeviceInfo: (Breaking change) Remove Error::CantAccessProcCpuInfo.
-* DeviceInfo: Add additional options to automatically identify the Pi model when /proc/cpuinfo contains inaccurate data.
-* Gpio: (Breaking change) Remove Error::ChannelDisconnected.
-* I2c: Add support for I2C with basic read/write, block read/write, and write_read.
-* I2c: Add support for SMBus with Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, and PEC.
+* **DeviceInfo**: (Breaking change) Remove `Error::CantAccessProcCpuInfo`.
+* **DeviceInfo**: Add additional options to automatically identify the Pi model when /proc/cpuinfo contains inaccurate data.
+* **Gpio**: (Breaking change) Remove `Error::ChannelDisconnected`.
+* **I2c**: Add support for I2C with basic read/write, block read/write, and write_read.
+* **I2c**: Add support for SMBus with Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, and PEC.
 * Reduce external dependencies.
 
 ## 0.6.0 (June 1, 2018)
 
-* DeviceInfo: (Breaking change) Return model and soc by value, rather than by reference.
-* DeviceInfo: (Breaking change) Remove SoC::Bcm2837 to reduce ambiguity. The Pi 3B and Compute Module 3 now return the more accurate SoC::Bcm2837A1.
-* DeviceInfo: (Breaking change) Remove SoC::Unknown. An unknown SoC is now treated as a failure.
-* DeviceInfo: Return the actual SoC based on the Raspberry Pi model, rather than the inaccurate /proc/cpuinfo data.
-* Gpio: (Breaking change) Remove InterruptError. Merge remaining errors with Error.
-* Gpio: (Breaking change) Replace all DevGpioMem and DevMem errors with Error::PermissionDenied and Error::Io.
-* Gpio: (Breaking change) Change the return value for poll_interrupt() and poll_interrupts() to Ok(Option) on success, with Some() indicating an interrupt triggered, and None indicating a timeout occurred.
-* Gpio: (Breaking change) Only a single instance of Gpio can exist at any time. Creating another instance before the existing one goes out of scope will return an Error::InstanceExists.
-* Spi: Add support for SPI with half-duplex reads/writes and full-duplex multi-segment transfers.
+* **DeviceInfo**: (Breaking change) Return model and soc by value, rather than by reference.
+* **DeviceInfo**: (Breaking change) Remove `SoC::Bcm2837` to reduce ambiguity. The Pi 3B and Compute Module 3 now return the more accurate `SoC::Bcm2837A1`.
+* **DeviceInfo**: (Breaking change) Remove `SoC::Unknown`. An unknown SoC is now treated as a failure.
+* **DeviceInfo**: Return the actual SoC based on the Raspberry Pi model, rather than the inaccurate `/proc/cpuinfo` data.
+* **Gpio**: (Breaking change) Remove `InterruptError`. Merge remaining errors with `Error`.
+* **Gpio**: (Breaking change) Replace all `DevGpioMem` and `DevMem` errors with `Error::PermissionDenied` and `Error::Io`.
+* **Gpio**: (Breaking change) Change the return value for `poll_interrupt()` and `poll_interrupts()` to `Ok(Option)` on success, with `Some()` indicating an interrupt triggered, and `None` indicating a timeout occurred.
+* **Gpio**: (Breaking change) Only a single instance of `Gpio` can exist at any time. Creating another instance before the existing one goes out of scope will return an `Error::InstanceExists`.
+* **Spi**: Add support for SPI with half-duplex reads/writes and full-duplex multi-segment transfers.
 
 ## 0.5.1 (May 19, 2018)
 
-* Gpio: Add poll_interrupts(), which waits for multiple synchronous interrupts at the same time.
-* Gpio: Add public interface for InterruptError.
+* **Gpio**: Add `poll_interrupts()`, which waits for multiple synchronous interrupts at the same time.
+* **Gpio**: Add public interface for `InterruptError`.
 * Cleanup documentation.
 
 ## 0.5.0 (May 9, 2018)
 
-* DeviceInfo: Add hardcoded Raspberry Pi 3 B+ SoC identifier, rather than relying on inaccurate info from /proc/cpuinfo.
-* Gpio: Add support for asynchronous interrupts (set_async_interrupt(), clear_async_interrupt()).
-* Gpio: Add support for synchronous interrupts (set_interrupt(), clear_interrupt(), poll_interrupt()).
+* **DeviceInfo**: Add hardcoded Raspberry Pi 3 B+ SoC identifier, rather than relying on inaccurate info from `/proc/cpuinfo`.
+* **Gpio**: Add support for asynchronous interrupts (`set_async_interrupt()`, `clear_async_interrupt()`).
+* **Gpio**: Add support for synchronous interrupts (`set_interrupt()`, `clear_interrupt()`, `poll_interrupt()`).
 
 ## 0.4.0 (March 19, 2018)
 
-* Gpio: Replace &mut self with &self where possible.
+* **Gpio**: Replace `&mut self` with `&self` where possible.
 
 ## 0.3.0 (March 16, 2018)
 
-* DeviceInfo: Add support for Raspberry Pi 3 B+.
-* DeviceInfo: Set memory offsets based on model info rather than SoC.
+* **DeviceInfo**: Add support for Raspberry Pi 3 B+.
+* **DeviceInfo**: Set memory offsets based on model info rather than SoC.
 
 ## 0.2.0 (October 6, 2017)
 
-* To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU somewhere in their name have been changed to Gpio, Io, Bcm and Cpu respectively.
-* GPIO has been added as a temporary (deprecated) type alias for Gpio.
+* To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU somewhere in their name have been changed to `Gpio`, `Io`, `Bcm` and `Cpu` respectively.
+* **Gpio**: GPIO has been added as a temporary (deprecated) type alias for `Gpio`.
 * Minor version bump due to incompatible API changes in a 0.x.x release.
 
 ## 0.1.3 (May 27, 2017)
 
-* DeviceInfo: Add additional revision codes for old models.
-* GPIO: Always try /dev/mem after /dev/gpiomem fails. Return new error PermissionDenied when both /dev/gpiomem and /dev/mem have permission issues. This is a workaround for Ubuntu Core 16 where /dev/gpiomem can't be accessed by applications installed using snap. Reported by VBota1.
+* **DeviceInfo**: Add additional revision codes for old models.
+* **GPIO**: Always try `/dev/mem` after `/dev/gpiomem` fails. Return new error `PermissionDenied` when both `/dev/gpiomem` and `/dev/mem` have permission issues. This is a workaround for Ubuntu Core 16 where `/dev/gpiomem` can't be accessed by applications installed using snap (reported by @VBota1).
 
 ## 0.1.2 (March 3, 2017)
 
-* DeviceInfo: Change returned u32 references to copied values.
+* **DeviceInfo**: Change returned `u32` references to copied values.
