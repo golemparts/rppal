@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// i2c_ds3231.rs - Set and retrieve the time on a DS3231 RTC using I2C.
+// i2c_ds3231.rs - Sets and retrieves the time on a DS3231 RTC using I2C.
 
 use std::process::exit;
 use std::thread::sleep;
@@ -30,9 +30,9 @@ use rppal::i2c::I2c;
 const ADDR_DS3231: u16 = 0x68;
 
 // DS3231 register addresses.
-const SECONDS: usize = 0x00;
-const MINUTES: usize = 0x01;
-const HOURS: usize = 0x02;
+const REG_SECONDS: usize = 0x00;
+const REG_MINUTES: usize = 0x01;
+const REG_HOURS: usize = 0x02;
 
 // Helper functions to encode and decode binary-coded decimal (BCD) values.
 fn bcd2dec(bcd: u8) -> u8 {
@@ -50,34 +50,44 @@ fn main() {
     });
 
     // Set the I2C slave address to the device we're communicating with.
-    i2c.set_slave_address(ADDR_DS3231).unwrap();
+    i2c.set_slave_address(ADDR_DS3231).unwrap_or_else(|e| {
+        eprintln!("Error: Unable to set slave address ({})", e);
+        exit(1);
+    });
 
     // Set the time to 11:59:50 AM. Start at register address 0x00 (Seconds) and
     // write 3 bytes, overwriting the Seconds, Minutes and Hours registers.
     // Setting bit 6 of the Hours register indicates we're using a 12-hour
     // format. Leaving bit 5 unset indicates AM.
     i2c.block_write(
-        SECONDS as u8,
+        REG_SECONDS as u8,
         &[dec2bcd(50), dec2bcd(59), dec2bcd(11) | (1 << 6)],
     )
-    .unwrap();
+    .unwrap_or_else(|e| {
+        eprintln!("Error: I2C block write failed ({})", e);
+        exit(1);
+    });
 
     let mut reg: [u8; 3] = [0; 3];
     loop {
-        // Start at the Seconds register (0x00) and read the values for the next
-        // 3 registers (Seconds, Minutes, Hours) into the reg variable.
-        i2c.block_read(SECONDS as u8, &mut reg).unwrap();
+        // Start at register address 0x00 (Seconds) and read the values of the
+        // next 3 registers (Seconds, Minutes, Hours) into the reg variable.
+        i2c.block_read(REG_SECONDS as u8, &mut reg)
+            .unwrap_or_else(|e| {
+                eprintln!("Error: I2C block read failed ({})", e);
+                exit(1);
+            });
 
         // Display the retrieved time in the appropriate format based on bit 6 of
         // the Hours register.
-        if reg[HOURS] & (1 << 6) > 0 {
+        if reg[REG_HOURS] & (1 << 6) > 0 {
             // 12-hour format.
             println!(
                 "{:0>2}:{:0>2}:{:0>2} {}",
-                bcd2dec(reg[HOURS] & 0x1F),
-                bcd2dec(reg[MINUTES]),
-                bcd2dec(reg[SECONDS]),
-                if reg[HOURS] & (1 << 5) > 0 {
+                bcd2dec(reg[REG_HOURS] & 0x1F),
+                bcd2dec(reg[REG_MINUTES]),
+                bcd2dec(reg[REG_SECONDS]),
+                if reg[REG_HOURS] & (1 << 5) > 0 {
                     "PM"
                 } else {
                     "AM"
@@ -87,9 +97,9 @@ fn main() {
             // 24-hour format.
             println!(
                 "{:0>2}:{:0>2}:{:0>2}",
-                bcd2dec(reg[HOURS] & 0x3F),
-                bcd2dec(reg[MINUTES]),
-                bcd2dec(reg[SECONDS])
+                bcd2dec(reg[REG_HOURS] & 0x3F),
+                bcd2dec(reg[REG_MINUTES]),
+                bcd2dec(reg[REG_SECONDS])
             );
         }
 
