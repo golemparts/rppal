@@ -120,7 +120,7 @@ macro_rules! impl_reset_on_drop {
         /// ## Note
         ///
         /// Drop methods aren't called when a program is abnormally terminated, for
-        /// instance when a user presses <kbd>Ctrl + C</kbd>, and the `SIGINT` signal
+        /// instance when a user presses <kbd>Ctrl</kbd> + <kbd>C</kbd>, and the `SIGINT` signal
         /// isn't caught. You catch those using crates such as [`simple_signal`].
         ///
         /// [`simple_signal`]: https://crates.io/crates/simple-signal
