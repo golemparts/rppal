@@ -134,6 +134,8 @@ mod ioctl;
 mod mem;
 mod pin;
 
+use crate::system;
+
 pub use self::pin::{InputPin, IoPin, OutputPin, Pin};
 
 /// Errors that can occur when accessing the GPIO peripheral.
@@ -179,6 +181,12 @@ impl error::Error for Error {}
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::Io(err)
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(_err: system::Error) -> Error {
+        Error::UnknownModel
     }
 }
 
