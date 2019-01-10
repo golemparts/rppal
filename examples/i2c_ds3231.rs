@@ -24,7 +24,7 @@ use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::i2c::I2c;
+use rppal::i2c::{I2c, Result};
 
 // DS3231 I2C default slave address.
 const ADDR_DS3231: u16 = 0x68;
@@ -43,17 +43,11 @@ fn dec2bcd(dec: u8) -> u8 {
     ((dec / 10) << 4) | (dec % 10)
 }
 
-fn main() {
-    let mut i2c = I2c::new().unwrap_or_else(|e| {
-        eprintln!("Error: Can't access I2C peripheral ({})", e);
-        exit(1);
-    });
+fn i2c_ds3231_example() -> Result<()> {
+    let mut i2c = I2c::new()?;
 
     // Set the I2C slave address to the device we're communicating with.
-    i2c.set_slave_address(ADDR_DS3231).unwrap_or_else(|e| {
-        eprintln!("Error: Unable to set slave address ({})", e);
-        exit(1);
-    });
+    i2c.set_slave_address(ADDR_DS3231)?;
 
     // Set the time to 11:59:50 AM. Start at register address 0x00 (Seconds) and
     // write 3 bytes, overwriting the Seconds, Minutes and Hours registers.
@@ -62,21 +56,13 @@ fn main() {
     i2c.block_write(
         REG_SECONDS as u8,
         &[dec2bcd(50), dec2bcd(59), dec2bcd(11) | (1 << 6)],
-    )
-    .unwrap_or_else(|e| {
-        eprintln!("Error: I2C block write failed ({})", e);
-        exit(1);
-    });
+    )?;
 
     let mut reg: [u8; 3] = [0; 3];
     loop {
         // Start at register address 0x00 (Seconds) and read the values of the
         // next 3 registers (Seconds, Minutes, Hours) into the reg variable.
-        i2c.block_read(REG_SECONDS as u8, &mut reg)
-            .unwrap_or_else(|e| {
-                eprintln!("Error: I2C block read failed ({})", e);
-                exit(1);
-            });
+        i2c.block_read(REG_SECONDS as u8, &mut reg)?;
 
         // Display the retrieved time in the appropriate format based on bit 6 of
         // the Hours register.
@@ -105,4 +91,11 @@ fn main() {
 
         sleep(Duration::from_secs(1));
     }
+}
+
+fn main() {
+    i2c_ds3231_example().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        exit(1);
+    });
 }
