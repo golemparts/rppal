@@ -18,10 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// gpio_status.rs
-//
-// Retrieves the mode and logic level for each of the pins on the 26-pin or
-// 40-pin GPIO header, and displays the results in an ASCII table.
+// gpio_status.rs - Retrieves the mode and logic level for each of the pins on
+// the 26-pin or 40-pin GPIO header, and displays the results in an ASCII table.
 
 use std::fmt;
 use std::process::exit;

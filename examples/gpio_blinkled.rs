@@ -18,9 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// gpio_blinkled.rs
-//
-// Blinks an LED attached to a GPIO pin in a loop.
+// gpio_blinkled.rs - Blinks an LED connected to a GPIO pin in a loop.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.

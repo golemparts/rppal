@@ -18,11 +18,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// gpio_blinkled_signals.rs
-//
-// Blinks an LED attached to a GPIO pin in a loop, while handling any incoming
-// SIGINT (Ctrl-C) and SIGTERM signals so the pin's state can be reset before
-// the application exits.
+// gpio_blinkled_signals.rs - Blinks an LED connected to a GPIO pin in a loop,
+// while handling any incoming SIGINT (Ctrl-C) and SIGTERM signals so the
+// pin's state can be reset before the application exits.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.
