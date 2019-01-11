@@ -32,28 +32,24 @@ use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::gpio::Gpio;
+use rppal::gpio::{Gpio, Result};
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 23;
 
-fn main() {
-    let gpio = Gpio::new().unwrap_or_else(|e| {
-        eprintln!("Error: Can't access GPIO peripheral ({})", e);
-        exit(1);
-    });
-
+fn gpio_blinkled_example() -> Result<()> {
     // Retrieve the GPIO pin and configure it as an output.
-    let mut pin = gpio
-        .get(GPIO_LED)
-        .unwrap_or_else(|| {
-            eprintln!("Error: Can't access GPIO pin {}", GPIO_LED);
-            exit(1);
-        })
-        .into_output();
+    let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
     loop {
         pin.toggle();
         sleep(Duration::from_millis(500));
     }
+}
+
+fn main() {
+    gpio_blinkled_example().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        exit(1);
+    });
 }

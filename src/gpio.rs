@@ -68,7 +68,7 @@
 //!
 //! # fn main() -> rppal::gpio::Result<()> {
 //! let gpio = Gpio::new()?;
-//! let mut pin = gpio.get(23).unwrap().into_output();
+//! let mut pin = gpio.get(23)?.into_output();
 //!
 //! pin.set_high();
 //! sleep(Duration::from_secs(1));
@@ -152,6 +152,18 @@ pub enum Error {
     /// doesn't provide any of the common user-accessible system files
     /// that are used to identify the model and SoC.
     UnknownModel,
+    /// Pin is not available.
+    ///
+    /// The pin is already in use elsewhere in your application, or the GPIO peripheral
+    /// doesn't expose a pin with the specified number. If the pin is currently in use, you
+    /// can retrieve it again after the [`Pin`] (or derived [`InputPin`], [`OutputPin`] or
+    /// [`IoPin`]) instance goes out of scope.
+    ///
+    /// [`Pin`]: struct.Pin.html
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`OutputPin`]: struct.OutputPin.html
+    /// [`IoPin`]: struct.IoPin.html
+    PinNotAvailable(u8),
     /// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
     /// read/write access.
     ///
@@ -169,6 +181,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+            Error::PinNotAvailable(pin) => write!(f, "Pin {} is not available", pin),
             Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
             Error::Io(ref err) => write!(f, "IO error: {}", err),
             Error::ThreadPanic => write!(f, "Interrupt polling thread panicked"),
@@ -326,8 +339,8 @@ impl Gpio {
     pub fn new() -> Result<Gpio> {
         let mut static_state = GPIO_STATE.lock().unwrap();
 
-        // Create a strong reference if a GpioState instance already exists,
-        // otherwise initialize it here so we can return any relevant errors.
+        // Clone a strong reference if a GpioState instance already exists, otherwise
+        // initialize it here so we can return any relevant errors.
         if let Some(ref state) = static_state.upgrade() {
             Ok(Gpio {
                 inner: state.clone(),
@@ -357,29 +370,28 @@ impl Gpio {
     /// Returns a [`Pin`] for the specified BCM GPIO pin number.
     ///
     /// Retrieving a GPIO pin grants access to the pin through an owned [`Pin`] instance.
-    /// If the pin is already in use, `get` returns `None`. After a [`Pin`] (or a derived
-    /// [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it can be retrieved
-    /// again through another `get` call.
+    /// If the pin is already in use, or the GPIO peripheral doesn't expose a pin with the
+    /// specified number, `get` returns an [`Error::PinNotAvailable`]. After a [`Pin`]
+    /// (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it
+    /// can be retrieved again through another `get` call.
     ///
     /// [`Pin`]: struct.Pin.html
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`IoPin`]: struct.IoPin.html
-    pub fn get(&self, pin: u8) -> Option<Pin> {
+    /// [`Error::PinNotAvailable`]: enum.Error.html#variant.PinNotAvailable
+    pub fn get(&self, pin: u8) -> Result<Pin> {
         if pin as usize >= pin::MAX {
-            return None;
+            return Err(Error::PinNotAvailable(pin));
         }
 
-        // Returns true if the pin is currently taken, otherwise atomically sets
-        // it to true here
+        // Returns true if the pin is already taken, otherwise atomically sets it to true here
         if self.inner.pins_taken[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
-            // Pin is currently taken
-            None
+            // Pin is taken
+            Err(Error::PinNotAvailable(pin))
         } else {
             // Return an owned Pin
-            let pin_instance = pin::Pin::new(pin, self.inner.clone());
-
-            Some(pin_instance)
+            Ok(Pin::new(pin, self.inner.clone()))
         }
     }
 

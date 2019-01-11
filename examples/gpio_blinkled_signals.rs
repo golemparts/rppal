@@ -34,32 +34,20 @@ use std::time::Duration;
 // The simple-signal crate is used to handle incoming signals.
 use simple_signal::{set_handler, Signal};
 
-use rppal::gpio::Gpio;
+use rppal::gpio::{Gpio, Result};
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 23;
 
-fn main() {
-    let gpio = Gpio::new().unwrap_or_else(|e| {
-        eprintln!("Error: Can't access GPIO peripheral ({})", e);
-        exit(1);
-    });
-
+fn gpio_blinkled_signals_example() -> Result<()> {
     // Retrieve the GPIO pin and configure it as an output.
-    let mut pin = gpio
-        .get(GPIO_LED)
-        .unwrap_or_else(|| {
-            eprintln!("Error: Can't access GPIO pin {}", GPIO_LED);
-            exit(1);
-        })
-        .into_output();
+    let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
     // Clone running, so we can safely access it from within the signal handler.
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
-    // When a SIGINT (Ctrl-C) or SIGTERM signal is caught, atomically set
-    // running to false.
+    // When a SIGINT (Ctrl-C) or SIGTERM signal is caught, atomically set running to false.
     set_handler(&[Signal::Int, Signal::Term], move |_| {
         r.store(false, Ordering::SeqCst);
     });
@@ -73,7 +61,15 @@ fn main() {
     // After we're done blinking, turn the LED off.
     pin.set_low();
 
-    // When the pin variable goes out of scope at the end of the main()
-    // function, the GPIO pin mode is automatically reset to its original
-    // value, provided reset_on_drop is set to true (default).
+    Ok(())
+
+    // When the pin variable goes out of scope, the GPIO pin mode is automatically reset
+    // to its original value, provided reset_on_drop is set to true (default).
+}
+
+fn main() {
+    gpio_blinkled_signals_example().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        exit(1);
+    });
 }

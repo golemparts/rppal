@@ -24,7 +24,7 @@
 use std::fmt;
 use std::process::exit;
 
-use rppal::gpio::Gpio;
+use rppal::gpio::{Gpio, Result};
 use rppal::system::{DeviceInfo, Model};
 
 enum PinType {
@@ -111,11 +111,8 @@ fn format_pin(
     }
 }
 
-fn print_header(max: usize) {
-    let gpio = Gpio::new().unwrap_or_else(|e| {
-        eprintln!("Error: Can't access GPIO peripheral ({})", e);
-        exit(1);
-    });
+fn print_header(max: usize) -> Result<()> {
+    let gpio = Gpio::new()?;
 
     let mut buf = String::with_capacity(1600);
 
@@ -129,10 +126,7 @@ fn print_header(max: usize) {
                 // Retrieve a Pin without converting it into an InputPin,
                 // OutputPin or IoPin, so we can read the pin's current level
                 // and mode without affecting its state.
-                let pin = gpio.get(*bcm_gpio).unwrap_or_else(|| {
-                    eprintln!("Error: Can't access GPIO pin {}", *bcm_gpio);
-                    exit(1);
-                });
+                let pin = gpio.get(*bcm_gpio)?;
 
                 format_pin(
                     &mut buf,
@@ -149,17 +143,13 @@ fn print_header(max: usize) {
     buf.push_str("+------+-------+---+----+----+---+-------+------+\n");
 
     print!("{}", buf);
+
+    Ok(())
 }
 
-fn main() {
+fn gpio_status_example() -> Result<()> {
     // Identify the Pi's model, so we can print the appropriate GPIO header.
-    match DeviceInfo::new()
-        .unwrap_or_else(|e| {
-            eprintln!("Error: Can't identify Raspberry Pi model ({})", e);
-            exit(1);
-        })
-        .model()
-    {
+    match DeviceInfo::new()?.model() {
         // The GPIO header on the earlier Pi models overlaps with the first 26 pins
         // of the 40-pin header on the newer models.
         Model::RaspberryPiA | Model::RaspberryPiBRev1 | Model::RaspberryPiBRev2 => {
@@ -178,4 +168,11 @@ fn main() {
             exit(1);
         }
     }
+}
+
+fn main() {
+    gpio_status_example().unwrap_or_else(|e| {
+        eprintln!("Error: {}", e);
+        exit(1);
+    });
 }
