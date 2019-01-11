@@ -4,10 +4,12 @@ Before running any examples that interface with external components, read throug
 
 `gpio_blinkled.rs` - Blinks an LED connected to a GPIO pin in a loop.
 
-`gpio_blinkled_signals.rs` - Blinks an LED connected to a GPIO pin in a loop, while handling any incoming SIGINT (Ctrl-C) and SIGTERM signals so the pin's state can be reset before the application exits.
+`gpio_blinkled_signals.rs` - Blinks an LED connected to a GPIO pin in a loop, while handling any incoming `SIGINT` (<kbd>Ctrl</kbd> + <kbd>C</kbd>) and `SIGTERM` signals so the pin's state can be reset before the application exits.
 
 `gpio_status.rs` - Retrieves the mode and logic level for each of the pins on the 26-pin or 40-pin GPIO header, and displays the results in an ASCII table.
 
 `i2c_ds3231.rs` - Sets and retrieves the time on a DS3231 RTC using I2C.
 
 `pwm_blinkled.rs` - Blinks an LED connected to a GPIO pin using PWM.
+
+`pwm_servo.rs` - Rotates a servo using PWM.
