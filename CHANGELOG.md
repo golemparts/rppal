@@ -4,8 +4,8 @@
 
 * (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
 * Add new badge to `README.md`, indicating the required minimum rustc version.
-* Add `Gpio` and `Pwm` examples to the examples subdirectory.
-* Rewrite `Display` formatting for errors in all modules to include more details when available.
+* Add `Gpio`, `I2c` and `Pwm` examples to the examples subdirectory.
+* Rewrite `Display` formatting for `Error`s in all modules to include more details when available.
 * **DeviceInfo**: (Breaking change) Remove `DeviceInfo::peripheral_base()` and `DeviceInfo::gpio_offset()` from the public API.
 * **Gpio**: (Breaking change) Move pin-specific methods from `Gpio` to the new `InputPin`/`OutputPin` structs. Access pins through `Gpio::get()` (contributed by @reitermarkus).
 * **Gpio**: Add a new `IoPin` struct which allows mode switching between input, output or an alternate function.
@@ -15,12 +15,12 @@
 * **Gpio**: (Breaking change) Remove `Error::InstanceExists`. Multiple (thread-safe) `Gpio` instances can now exist simultaneously.
 * **Gpio**: (Breaking change) Rename `Error::UnknownSoC` to `Error::UnknownModel` for consistency.
 * **Gpio**: (Breaking change) Add relevant file path to `Error::PermissionDenied` to make it easier to solve file permission issues.
-* **Gpio**: Add `Error::PinNotAvailable`, returned by `Gpio::get()` to indicate a pin is already in use, or isn't available on the current Raspberry Pi model.
-* **Gpio**: Implement `Clone` for `Gpio`.
+* **Gpio**: (Breaking change) Add `Error::PinNotAvailable`, returned by `Gpio::get()` to indicate a pin is already in use, or isn't available on the current Raspberry Pi model.
 * **Gpio**: (Breaking change) Rename `clear_on_drop()`/`set_clear_on_drop()` to `reset_on_drop()`/`set_reset_on_drop()` for clarity.
 * **Gpio**: (Breaking change) Change `Gpio::poll_interrupts()` `pins` input parameter and return type from `u8` to `&InputPin` (contributed by @reitermarkus).
 * **Gpio**: When a pin goes out of scope, if an asynchronous interrupt trigger was configured for the pin, the polling thread will get stopped.
 * **Gpio**: Disable built-in pull-up/pull-down resistors when a pin goes out of scope and `reset_on_drop` is set to true.
+* **Gpio**: Implement `Clone` for `Gpio`.
 * **I2c**: (Breaking change) Rename `Error::UnknownSoC` to `Error::UnknownModel` for consistency.
 * **Pwm**: (Breaking change) Rename `duty_cycle()` to `pulse_width()` and `set_duty_cycle()` to `set_pulse_width()` to better reflect the specified value type.
 * **Pwm**: Add `duty_cycle()` and `set_duty_cycle()` convenience methods that convert the specified ratio to the correct pulse width value.
