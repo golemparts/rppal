@@ -50,6 +50,7 @@ Some peripherals may need to be enabled first through `sudo raspi-config` or by 
 This example demonstrates how to blink an LED connected to a GPIO pin. Remember to add a resistor of an appropriate value in series, to prevent exceeding the maximum current rating of the GPIO pin and the LED.
 
 ```rust
+use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -59,17 +60,17 @@ use rppal::system::DeviceInfo;
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 23;
 
-fn main() {
-    let device_info = DeviceInfo::new().unwrap();
-    println!("Model: {} (SoC: {})", device_info.model(), device_info.soc());
+fn main() -> Result<(), Box<dyn Error>> {
+    println!("Blinking an LED on a {}.", DeviceInfo::new()?.model());
 
-    let gpio = Gpio::new().unwrap();
-    let mut pin = gpio.get(GPIO_LED).unwrap().into_output();
+    let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
-    // Blink an LED attached to the pin.
+    // Blink the LED by setting the pin's logic level high for 500ms.
     pin.set_high();
     sleep(Duration::from_millis(500));
     pin.set_low();
+
+    Ok(())
 }
 ```
 
