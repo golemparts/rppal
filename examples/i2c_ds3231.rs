@@ -20,11 +20,11 @@
 
 // i2c_ds3231.rs - Sets and retrieves the time on a DS3231 RTC using I2C.
 
-use std::process::exit;
+use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::i2c::{I2c, Result};
+use rppal::i2c::I2c;
 
 // DS3231 I2C default slave address.
 const ADDR_DS3231: u16 = 0x68;
@@ -43,7 +43,7 @@ fn dec2bcd(dec: u8) -> u8 {
     ((dec / 10) << 4) | (dec % 10)
 }
 
-fn i2c_ds3231_example() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut i2c = I2c::new()?;
 
     // Set the I2C slave address to the device we're communicating with.
@@ -91,11 +91,4 @@ fn i2c_ds3231_example() -> Result<()> {
 
         sleep(Duration::from_secs(1));
     }
-}
-
-fn main() {
-    i2c_ds3231_example().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
-        exit(1);
-    });
 }

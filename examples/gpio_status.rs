@@ -21,10 +21,11 @@
 // gpio_status.rs - Retrieves the mode and logic level for each of the pins on
 // the 26-pin or 40-pin GPIO header, and displays the results in an ASCII table.
 
+use std::error::Error;
 use std::fmt;
 use std::process::exit;
 
-use rppal::gpio::{Gpio, Result};
+use rppal::gpio::Gpio;
 use rppal::system::{DeviceInfo, Model};
 
 enum PinType {
@@ -111,7 +112,7 @@ fn format_pin(
     }
 }
 
-fn print_header(max: usize) -> Result<()> {
+fn print_header(max: usize) -> Result<(), Box<dyn Error>> {
     let gpio = Gpio::new()?;
 
     let mut buf = String::with_capacity(1600);
@@ -147,7 +148,7 @@ fn print_header(max: usize) -> Result<()> {
     Ok(())
 }
 
-fn gpio_status_example() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Identify the Pi's model, so we can print the appropriate GPIO header.
     match DeviceInfo::new()?.model() {
         // The GPIO header on the earlier Pi models overlaps with the first 26 pins
@@ -168,11 +169,4 @@ fn gpio_status_example() -> Result<()> {
             exit(1);
         }
     }
-}
-
-fn main() {
-    gpio_status_example().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
-        exit(1);
-    });
 }

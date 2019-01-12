@@ -25,7 +25,7 @@
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.
 
-use std::process::exit;
+use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
@@ -34,12 +34,12 @@ use std::time::Duration;
 // The simple-signal crate is used to handle incoming signals.
 use simple_signal::{set_handler, Signal};
 
-use rppal::gpio::{Gpio, Result};
+use rppal::gpio::Gpio;
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 23;
 
-fn gpio_blinkled_signals_example() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Retrieve the GPIO pin and configure it as an output.
     let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
@@ -65,11 +65,4 @@ fn gpio_blinkled_signals_example() -> Result<()> {
 
     // When the pin variable goes out of scope, the GPIO pin mode is automatically reset
     // to its original value, provided reset_on_drop is set to true (default).
-}
-
-fn main() {
-    gpio_blinkled_signals_example().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
-        exit(1);
-    });
 }

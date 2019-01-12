@@ -28,16 +28,16 @@
 // Check out the gpio_blinkled_signals.rs example to learn how to properly
 // handle incoming signals to prevent an abnormal termination.
 
-use std::process::exit;
+use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::gpio::{Gpio, Result};
+use rppal::gpio::Gpio;
 
 // Gpio uses BCM pin numbering. BCM GPIO 23 is tied to physical pin 16.
 const GPIO_LED: u8 = 23;
 
-fn gpio_blinkled_example() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Retrieve the GPIO pin and configure it as an output.
     let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
@@ -45,11 +45,4 @@ fn gpio_blinkled_example() -> Result<()> {
         pin.toggle();
         sleep(Duration::from_millis(500));
     }
-}
-
-fn main() {
-    gpio_blinkled_example().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
-        exit(1);
-    });
 }

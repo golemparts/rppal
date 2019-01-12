@@ -28,13 +28,13 @@
 // gpio_blinkled_signals.rs example to learn how to properly handle incoming
 // signals to prevent an abnormal termination.
 
-use std::process::exit;
+use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 
-use rppal::pwm::{Channel, Polarity, Pwm, Result};
+use rppal::pwm::{Channel, Polarity, Pwm};
 
-fn pwm_blinkled_example() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Enable PWM channel 0 (BCM GPIO 18, physical pin 12) at 2 Hz with a 25% duty cycle.
     let pwm = Pwm::with_frequency(Channel::Pwm0, 2.0, 0.25, Polarity::Normal, true)?;
 
@@ -50,11 +50,4 @@ fn pwm_blinkled_example() -> Result<()> {
 
     // When the pwm variable goes out of scope, the PWM channel is automatically disabled.
     // You can manually disable the channel by calling the Pwm::disable() method.
-}
-
-fn main() {
-    pwm_blinkled_example().unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
-        exit(1);
-    });
 }
