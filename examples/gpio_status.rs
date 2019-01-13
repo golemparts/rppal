@@ -112,7 +112,7 @@ fn format_pin(
     }
 }
 
-fn print_header(max: usize) -> Result<(), Box<dyn Error>> {
+fn print_header(header: &[PinType]) -> Result<(), Box<dyn Error>> {
     let gpio = Gpio::new()?;
 
     let mut buf = String::with_capacity(1600);
@@ -121,7 +121,7 @@ fn print_header(max: usize) -> Result<(), Box<dyn Error>> {
     buf.push_str("| GPIO | Mode  | L |   Pin   | L | Mode  | GPIO |\n");
     buf.push_str("+------+-------+---+----+----+---+-------+------+\n");
 
-    for (idx, pin_type) in HEADER.iter().take(max).enumerate() {
+    for (idx, pin_type) in header.iter().enumerate() {
         match pin_type {
             PinType::Gpio(bcm_gpio) => {
                 // Retrieve a Pin without converting it into an InputPin,
@@ -149,13 +149,17 @@ fn print_header(max: usize) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // The GPIO header on the earlier Pi models mostly overlaps with the first 26 pins of
+    // the 40-pin header on the newer models. A few pins are switched on the Pi B Rev 1.
+    let mut header_rev1 = HEADER;
+    header_rev1[2] = PinType::Gpio(0);
+    header_rev1[4] = PinType::Gpio(1);
+    header_rev1[12] = PinType::Gpio(21);
+
     // Identify the Pi's model, so we can print the appropriate GPIO header.
     match DeviceInfo::new()?.model() {
-        // The GPIO header on the earlier Pi models overlaps with the first 26 pins
-        // of the 40-pin header on the newer models.
-        Model::RaspberryPiA | Model::RaspberryPiBRev1 | Model::RaspberryPiBRev2 => {
-            print_header(MAX_PINS_SHORT)
-        }
+        Model::RaspberryPiBRev1 => print_header(&header_rev1[..MAX_PINS_SHORT]),
+        Model::RaspberryPiA | Model::RaspberryPiBRev2 => print_header(&HEADER[..MAX_PINS_SHORT]),
         Model::RaspberryPiAPlus
         | Model::RaspberryPiBPlus
         | Model::RaspberryPi2B
@@ -163,7 +167,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         | Model::RaspberryPi3B
         | Model::RaspberryPi3BPlus
         | Model::RaspberryPiZero
-        | Model::RaspberryPiZeroW => print_header(MAX_PINS_LONG),
+        | Model::RaspberryPiZeroW => print_header(&HEADER[..MAX_PINS_LONG]),
         model => {
             eprintln!("Error: No GPIO header information available for {}", model);
             exit(1);
