@@ -321,7 +321,7 @@ impl Drop for AsyncInterrupt {
         // because we could potentially block indefinitely while unwinding if the
         // poll thread is executing a callback that doesn't return.
         if !thread::panicking() {
-            self.stop().ok();
+            let _ = self.stop();
         }
     }
 }
