@@ -475,6 +475,12 @@ impl_drop!(OutputPin);
 impl_eq!(OutputPin);
 
 /// GPIO pin that can be (re)configured for any mode or alternate function.
+///
+/// An `IoPin` can be set to any available mode. Depending on the mode, some methods
+/// may not have any effect. For instance, using a method that alters the pin's logic
+/// level won't cause any changes when the pin's mode is set to [`Mode::Input`].
+///
+/// [`Mode::Input`]: enum.Mode.html#variant.Input
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,

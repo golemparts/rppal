@@ -144,6 +144,11 @@ pub struct Pwm {
 
 impl Pwm {
     /// Constructs a new `Pwm`.
+    ///
+    /// `new` sets the period and pulse width to 0, and leaves the channel disabled
+    /// until [`enable`] is called.
+    ///
+    /// [`enable`]: #method.enable
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
@@ -173,7 +178,7 @@ impl Pwm {
     ///
     /// `enabled` immediately enables PWM on the selected channel.
     ///
-    /// This method will fail if `period` is shorter than `duty_cycle`.
+    /// This method will fail if `period` is shorter than `pulse_width`.
     ///
     /// [`Normal`]: enum.Polarity.html
     /// [`Inverse`]: enum.Polarity.html
@@ -255,7 +260,7 @@ impl Pwm {
         Ok(pwm)
     }
 
-    /// Returns the configured period.
+    /// Returns the period.
     pub fn period(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::period(self.channel as u8)?))
     }
@@ -263,7 +268,8 @@ impl Pwm {
     /// Sets the period.
     ///
     /// `period` represents the time it takes for the PWM channel to complete one cycle.
-    /// The specified period must be longer than or equal to the pulse width.
+    ///
+    /// This method will fail if `period` is shorter than the current pulse width.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
             self.channel as u8,
@@ -274,7 +280,7 @@ impl Pwm {
         Ok(())
     }
 
-    /// Returns the configured pulse width.
+    /// Returns the pulse width.
     pub fn pulse_width(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::pulse_width(
             self.channel as u8,
@@ -284,8 +290,9 @@ impl Pwm {
     /// Sets the pulse width.
     ///
     /// `pulse_width` represents the amount of time the PWM channel's logic level is set
-    /// high (or low if the polarity is set to [`Inverse`]) during a single period. The
-    /// pulse width must be shorter than or equal to the period.
+    /// high (or low if the polarity is set to [`Inverse`]) during a single period.
+    ///
+    /// This method will fail if `pulse_width` is longer than the current period.
     ///
     /// [`Inverse`]: enum.Polarity.html
     pub fn set_pulse_width(&self, pulse_width: Duration) -> Result<()> {
@@ -298,7 +305,7 @@ impl Pwm {
         Ok(())
     }
 
-    /// Returns the configured duty cycle.
+    /// Returns the duty cycle.
     ///
     /// `duty_cycle` is a convenience method that calculates the duty cycle as a
     /// floating point ratio between `0.0` (0%) and `1.0` (100%) based on the configured
@@ -312,12 +319,12 @@ impl Pwm {
 
     /// Sets the duty cycle.
     ///
+    /// `set_duty_cycle` is a convenience method that converts `duty_cycle` to a
+    /// pulse width based on the current period.
+    ///
     /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
     /// high (or low if the polarity is set to [`Inverse`]) during a single period. The
     /// duty cycle is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
-    ///
-    /// `set_duty_cycle` is a convenience method that converts `duty_cycle` to the
-    /// correct pulse width value, based on the configured period.
     ///
     /// [`Inverse`]: enum.Polarity.html
     pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
@@ -351,7 +358,7 @@ impl Pwm {
         Ok(())
     }
 
-    /// Returns the configured polarity.
+    /// Returns the polarity.
     pub fn polarity(&self) -> Result<Polarity> {
         Ok(sysfs::polarity(self.channel as u8)?)
     }
@@ -370,19 +377,19 @@ impl Pwm {
         Ok(())
     }
 
-    /// Checks whether PWM is currently enabled on the selected channel.
+    /// Returns `true` if the PWM channel is enabled.
     pub fn enabled(&self) -> Result<bool> {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
-    /// Enables PWM on the selected channel.
+    /// Enables the PWM channel.
     pub fn enable(&self) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, true)?;
 
         Ok(())
     }
 
-    /// Disables PWM on the selected channel.
+    /// Disables the PWM channel.
     pub fn disable(&self) -> Result<()> {
         sysfs::set_enabled(self.channel as u8, false)?;
 
