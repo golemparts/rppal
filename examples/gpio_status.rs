@@ -149,16 +149,18 @@ fn print_header(header: &[PinType]) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // The GPIO header on the earlier Pi models mostly overlaps with the first 26 pins of
-    // the 40-pin header on the newer models. A few pins are switched on the Pi B Rev 1.
-    let mut header_rev1 = HEADER;
-    header_rev1[2] = PinType::Gpio(0);
-    header_rev1[4] = PinType::Gpio(1);
-    header_rev1[12] = PinType::Gpio(21);
-
     // Identify the Pi's model, so we can print the appropriate GPIO header.
     match DeviceInfo::new()?.model() {
-        Model::RaspberryPiBRev1 => print_header(&header_rev1[..MAX_PINS_SHORT]),
+        Model::RaspberryPiBRev1 => {
+            // The GPIO header on the earlier Pi models mostly overlaps with the first 26 pins of
+            // the 40-pin header on the newer models. A few pins are switched on the Pi B Rev 1.
+            let mut header_rev1 = HEADER;
+            header_rev1[2] = PinType::Gpio(0);
+            header_rev1[4] = PinType::Gpio(1);
+            header_rev1[12] = PinType::Gpio(21);
+
+            print_header(&header_rev1[..MAX_PINS_SHORT])
+        }
         Model::RaspberryPiA | Model::RaspberryPiBRev2 => print_header(&HEADER[..MAX_PINS_SHORT]),
         Model::RaspberryPiAPlus
         | Model::RaspberryPiBPlus
