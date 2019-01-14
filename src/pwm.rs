@@ -336,6 +336,16 @@ impl Pwm {
         Ok(())
     }
 
+    /// Returns the frequency.
+    ///
+    /// `frequency` is a convenience method that calculates the frequency in herz (Hz)
+    /// based on the configured period.
+    pub fn frequency(&self) -> Result<f64> {
+        let period = sysfs::period(self.channel as u8)? as f64;
+
+        Ok(1.0f64 / (period / 1_000_000_000f64))
+    }
+
     /// Sets the frequency and duty cycle.
     ///
     /// `set_frequency` is a convenience method that converts `frequency` to a period,
