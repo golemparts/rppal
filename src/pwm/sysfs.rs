@@ -116,9 +116,8 @@ pub fn unexport(channel: u8) -> Result<()> {
 
 pub fn period(channel: u8) -> Result<u64> {
     let period = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/period", channel))?;
-
-    if let Ok(period_u64) = u64::from_str_radix(&period, 10) {
-        Ok(period_u64)
+    if let Ok(period) = period.trim().parse() {
+        Ok(period)
     } else {
         Ok(0)
     }
@@ -137,8 +136,8 @@ pub fn pulse_width(channel: u8) -> Result<u64> {
     let duty_cycle =
         fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel))?;
 
-    if let Ok(duty_cycle_u64) = u64::from_str_radix(&duty_cycle, 10) {
-        Ok(duty_cycle_u64)
+    if let Ok(duty_cycle) = duty_cycle.trim().parse() {
+        Ok(duty_cycle)
     } else {
         Ok(0)
     }
@@ -156,7 +155,7 @@ pub fn set_pulse_width(channel: u8, pulse_width: u64) -> Result<()> {
 pub fn polarity(channel: u8) -> Result<Polarity> {
     let polarity = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/polarity", channel))?;
 
-    match &polarity[..] {
+    match polarity.trim() {
         "normal" => Ok(Polarity::Normal),
         _ => Ok(Polarity::Inverse),
     }
@@ -177,7 +176,7 @@ pub fn set_polarity(channel: u8, polarity: Polarity) -> Result<()> {
 pub fn enabled(channel: u8) -> Result<bool> {
     let enabled = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel))?;
 
-    match &enabled[..] {
+    match enabled.trim() {
         "0" => Ok(false),
         _ => Ok(true),
     }
