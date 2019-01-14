@@ -23,7 +23,8 @@
 * **Gpio**: Implement `Clone` for `Gpio`.
 * **I2c**: (Breaking change) Rename `Error::UnknownSoC` to `Error::UnknownModel` for consistency.
 * **Pwm**: (Breaking change) Rename `duty_cycle()` to `pulse_width()` and `set_duty_cycle()` to `set_pulse_width()` to better reflect the specified value type.
-* **Pwm**: Add `duty_cycle()` and `set_duty_cycle()` convenience methods that convert the specified ratio to the correct pulse width value.
+* **Pwm**: Add `duty_cycle()`, `set_duty_cycle()` and `frequency()` convenience methods that convert between frequency/duty cycle and period/pulse width.
+* **Pwm**: Fix incorrect return values for `period()`, `duty_cycle()`, `polarity()` and `enabled()` caused by whitespace.
 
 ## 0.9.0 (November 15, 2018)
 
