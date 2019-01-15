@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the SPI peripheral.
+//! Interface for the main and auxiliary SPI peripherals.
 //!
 //! RPPAL provides access to the available SPI buses by using the `spidev` device
 //! interface through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to
@@ -69,7 +69,7 @@
 //!
 //! ## Buffer size limits
 //!
-//! By default, spidev can handle up to 4096 bytes in a single
+//! By default, `spidev` can handle up to 4096 bytes in a single
 //! transfer. You can increase this limit to a maximum of 65536 bytes by adding
 //! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
@@ -77,7 +77,7 @@
 //!
 //! ## Not supported
 //!
-//! Some features exposed by the generic spidev interface aren't fully
+//! Some features exposed by the generic `spidev` interface aren't fully
 //! supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
 //! first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
 //! SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
@@ -117,7 +117,7 @@ pub use self::ioctl::TransferSegment;
 /// Errors that can occur when accessing the SPI peripheral.
 #[derive(Debug)]
 pub enum Error {
-    /// IO error.
+    /// I/O error.
     Io(io::Error),
     /// The specified number of bits per word is not supported.
     ///
@@ -147,7 +147,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::BitsPerWordNotSupported(bits_per_word) => {
                 write!(f, "Bits per word value not supported: {}", bits_per_word)
             }

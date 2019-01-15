@@ -20,8 +20,7 @@
 
 //! Raspberry Pi system-related tools.
 //!
-//! Use [`DeviceInfo`] to identify what Raspberry Pi model and SoC the software is
-//! running on.
+//! Use [`DeviceInfo`] to identify the Raspberry Pi's model and SoC.
 //!
 //! [`DeviceInfo`]: struct.DeviceInfo.html
 

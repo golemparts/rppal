@@ -439,7 +439,7 @@ pub fn find_gpiochip() -> Result<File> {
         }
     }
 
-    // File Not Found IO error
+    // File Not Found I/O error
     Err(Error::Io(io::Error::from_raw_os_error(ENOENT)))
 }
 

@@ -119,9 +119,9 @@ macro_rules! impl_reset_on_drop {
         ///
         /// ## Note
         ///
-        /// Drop methods aren't called when a program is abnormally terminated, for
+        /// Drop methods aren't called when a process is abnormally terminated, for
         /// instance when a user presses <kbd>Ctrl</kbd> + <kbd>C</kbd>, and the `SIGINT` signal
-        /// isn't caught. You catch those using crates such as [`simple_signal`].
+        /// isn't caught. You can catch those using crates such as [`simple_signal`].
         ///
         /// [`simple_signal`]: https://crates.io/crates/simple-signal
         pub fn set_reset_on_drop(&mut self, reset_on_drop: bool) {
@@ -177,6 +177,15 @@ macro_rules! impl_eq {
 }
 
 /// Unconfigured GPIO pin.
+///
+/// An unconfigured `Pin` can be used to read the pin's current mode and logic level.
+/// Configuring the `Pin` as an [`InputPin`], [`OutputPin`] or [`IoPin`] through the
+/// various `into_` methods available on `Pin` sets the appropriate mode, and provides
+/// access to additional methods depending on the pin's mode.
+///
+/// [`InputPin`]: struct.InputPin.html
+/// [`OutputPin`]: struct.OutputPin.html
+/// [`IoPin`]: struct.IoPin.html
 #[derive(Debug)]
 pub struct Pin {
     pub(crate) pin: u8,
@@ -304,6 +313,13 @@ impl Drop for Pin {
 impl_eq!(Pin);
 
 /// GPIO pin configured as input.
+///
+/// When an `InputPin` is derived from a [`Pin`], its mode is automatically set to [`Mode::Input`].
+/// `InputPin`s can be used to read a pin's logic level, or (a)synchronously poll for
+/// interrupt trigger events.
+///
+/// [`Pin`]: struct.Pin.html
+/// [`Mode::Input`]: enum.Mode.html#variant.Input
 #[derive(Debug)]
 pub struct InputPin {
     pub(crate) pin: Pin,
@@ -340,13 +356,13 @@ impl InputPin {
 
     /// Configures a synchronous interrupt trigger.
     ///
-    /// After configuring a synchronous interrupt trigger, use [`poll_interrupt`] or
+    /// After configuring a synchronous interrupt trigger, call [`poll_interrupt`] or
     /// [`Gpio::poll_interrupts`] to block while waiting for a trigger event.
     ///
     /// Any previously configured (a)synchronous interrupt triggers will be cleared.
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
-    /// [`Gpio::poll_interrupts`]: struct.Gpio#method.poll_interrupts
+    /// [`Gpio::poll_interrupts`]: struct.Gpio.html#method.poll_interrupts
     pub fn set_interrupt(&mut self, trigger: Trigger) -> Result<()> {
         self.clear_async_interrupt()?;
 
@@ -369,16 +385,15 @@ impl InputPin {
     /// [`Gpio::poll_interrupts`] to block while waiting for any of the interrupts to trigger, or switch to
     /// using asynchronous interrupts with [`set_async_interrupt`].
     ///
-    /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
-    /// previous call to `poll_interrupt`.
-    /// If `reset` is set to `true`, clears any cached interrupt trigger events before polling.
+    /// Setting `reset` to `false` returns any cached interrupt trigger events if available. Setting `reset` to `true`
+    /// clears all cached events before polling for new events.
     ///
     /// The `timeout` duration indicates how long the call will block while waiting
     /// for interrupt trigger events, after which an `Ok(None))` is returned.
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// [`set_interrupt`]: #method.set_interrupt
-    /// [`Gpio::poll_interrupts`]: struct.Gpio#method.poll_interrupts
+    /// [`Gpio::poll_interrupts`]: struct.Gpio.html#method.poll_interrupts
     /// [`set_async_interrupt`]: #method.set_async_interrupt
     pub fn poll_interrupt(
         &mut self,
@@ -395,7 +410,7 @@ impl InputPin {
         }
     }
 
-    /// Configures an asynchronous interrupt trigger, which will execute the callback on a
+    /// Configures an asynchronous interrupt trigger, which executes the callback on a
     /// separate thread when the interrupt is triggered.
     ///
     /// The callback closure or function pointer is called with a single [`Level`] argument.
@@ -438,6 +453,13 @@ impl_drop!(InputPin);
 impl_eq!(InputPin);
 
 /// GPIO pin configured as output.
+///
+/// When an `OutputPin` is derived from a [`Pin`], its mode is automatically set to [`Mode::Output`].
+/// `OutputPin`s can be used to change a pin's logic level. Additionally, read methods
+/// are provided as a convenience to check the pin's set logic level.
+///
+/// [`Pin`]: struct.Pin.html
+/// [`Mode::Output`]: enum.Mode.html#variant.Output
 #[derive(Debug)]
 pub struct OutputPin {
     pin: Pin,
@@ -476,10 +498,13 @@ impl_eq!(OutputPin);
 
 /// GPIO pin that can be (re)configured for any mode or alternate function.
 ///
-/// An `IoPin` can be set to any available mode. Depending on the mode, some methods
-/// may not have any effect. For instance, using a method that alters the pin's logic
-/// level won't cause any changes when the pin's mode is set to [`Mode::Input`].
+/// When an `IoPin` is derived from a [`Pin`], its mode is automatically set to the
+/// specified mode. An `IoPin` can be reconfigured for any available mode. Depending on the
+/// mode, some methods may not have any effect. For instance, using a method that
+/// alters the pin's logic level won't cause any changes when the pin's mode is set
+/// to [`Mode::Input`].
 ///
+/// [`Pin`]: struct.Pin.html
 /// [`Mode::Input`]: enum.Mode.html#variant.Input
 #[derive(Debug)]
 pub struct IoPin {

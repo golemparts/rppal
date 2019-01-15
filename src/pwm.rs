@@ -43,11 +43,11 @@
 //!
 //! As of kernel version 4.14.34, released on April 16 2018, it's possible to
 //! configure your Raspberry Pi to allow non-root access to PWM. 4.14.34 includes
-//! a [patch] that allows udev to change file permissions when a
+//! a [patch] that allows `udev` to change file permissions when a
 //! PWM channel is exported. This will let any user that's a member of the `gpio`
 //! group configure PWM without having to use `sudo`.
 //!
-//! The udev rules needed to make this work haven't been patched in yet as of
+//! The `udev` rules needed to make this work haven't been patched in yet as of
 //! June 2018, but you can easily add them yourself. Make sure you're running
 //! 4.14.34 or later, and append the following snippet to
 //! `/etc/udev/rules.d/99-com.rules`. Reboot the Raspberry Pi afterwards.
@@ -67,7 +67,7 @@
 //! If [`new`] returns an `io::ErrorKind::PermissionDenied`
 //! error, make sure `/sys/class/pwm` and all of its subdirectories
 //! are owned by `root:gpio`, the current user is a member of the `gpio` group
-//! and udev is properly configured as mentioned above. Alternatively, you can
+//! and `udev` is properly configured as mentioned above. Alternatively, you can
 //! launch your application using `sudo`.
 //!
 //! ### Not found
@@ -90,14 +90,14 @@ mod sysfs;
 /// Errors that can occur when accessing the PWM peripheral.
 #[derive(Debug)]
 pub enum Error {
-    /// IO error.
+    /// I/O error.
     Io(io::Error),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::Io(ref err) => write!(f, "I/O error: {}", err),
         }
     }
 }
@@ -145,9 +145,10 @@ pub struct Pwm {
 impl Pwm {
     /// Constructs a new `Pwm`.
     ///
-    /// `new` sets the period and pulse width to 0, and leaves the channel disabled
-    /// until [`enable`] is called.
+    /// `new` sets the period and pulse width to `0`, polarity to [`Normal`], and
+    /// leaves the channel disabled until [`enable`] is called.
     ///
+    /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`enable`]: #method.enable
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
@@ -174,14 +175,15 @@ impl Pwm {
     /// `pulse_width` represents the amount of time the PWM channel's logic level is set
     /// high (or low if the polarity is set to [`Inverse`]) during a single period.
     ///
-    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
+    /// `polarity` configures the active logic level as either high ([`Normal`])
+    /// or low ([`Inverse`]).
     ///
     /// `enabled` immediately enables PWM on the selected channel.
     ///
     /// This method will fail if `period` is shorter than `pulse_width`.
     ///
-    /// [`Normal`]: enum.Polarity.html
-    /// [`Inverse`]: enum.Polarity.html
+    /// [`Normal`]: enum.Polarity.html#variant.Normal
+    /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn with_period(
         channel: Channel,
         period: Duration,
@@ -220,12 +222,13 @@ impl Pwm {
     ///
     /// `duty_cycle` is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
     ///
-    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
+    /// `polarity` configures the active logic level as either high ([`Normal`])
+    /// or low ([`Inverse`]).
     ///
     /// `enabled` immediately enables PWM on the selected channel.
     ///
-    /// [`Normal`]: enum.Polarity.html
-    /// [`Inverse`]: enum.Polarity.html
+    /// [`Normal`]: enum.Polarity.html#variant.Normal
+    /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn with_frequency(
         channel: Channel,
         frequency: f64,
@@ -298,48 +301,13 @@ impl Pwm {
     ///
     /// This method will fail if `pulse_width` is longer than the current period.
     ///
-    /// [`Inverse`]: enum.Polarity.html
+    /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn set_pulse_width(&self, pulse_width: Duration) -> Result<()> {
         sysfs::set_pulse_width(
             self.channel as u8,
             u64::from(pulse_width.subsec_nanos())
                 .saturating_add(pulse_width.as_secs().saturating_mul(1_000_000_000)),
         )?;
-
-        Ok(())
-    }
-
-    /// Returns the duty cycle.
-    ///
-    /// `duty_cycle` is a convenience method that calculates the duty cycle as a
-    /// floating point ratio between `0.0` (0%) and `1.0` (100%) based on the configured
-    /// period and pulse width.
-    pub fn duty_cycle(&self) -> Result<f64> {
-        let period = sysfs::period(self.channel as u8)? as f64;
-        let pulse_width = sysfs::pulse_width(self.channel as u8)? as f64;
-
-        Ok(if period == 0.0 {
-            0.0
-        } else {
-            (pulse_width / period).max(0.0).min(1.0)
-        })
-    }
-
-    /// Sets the duty cycle.
-    ///
-    /// `set_duty_cycle` is a convenience method that converts `duty_cycle` to a
-    /// pulse width based on the current period.
-    ///
-    /// `duty_cycle` represents the amount of time the PWM channel's logic level is set
-    /// high (or low if the polarity is set to [`Inverse`]) during a single period. The
-    /// duty cycle is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
-    ///
-    /// [`Inverse`]: enum.Polarity.html
-    pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
-        let period = sysfs::period(self.channel as u8)? as f64;
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
-
-        sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
 
         Ok(())
     }
@@ -384,6 +352,37 @@ impl Pwm {
         Ok(())
     }
 
+    /// Returns the duty cycle.
+    ///
+    /// `duty_cycle` is a convenience method that calculates the duty cycle as a
+    /// floating point ratio between `0.0` (0%) and `1.0` (100%) based on the configured
+    /// period and pulse width.
+    pub fn duty_cycle(&self) -> Result<f64> {
+        let period = sysfs::period(self.channel as u8)? as f64;
+        let pulse_width = sysfs::pulse_width(self.channel as u8)? as f64;
+
+        Ok(if period == 0.0 {
+            0.0
+        } else {
+            (pulse_width / period).max(0.0).min(1.0)
+        })
+    }
+
+    /// Sets the duty cycle.
+    ///
+    /// `set_duty_cycle` is a convenience method that converts `duty_cycle` to a
+    /// pulse width based on the configured period.
+    ///
+    /// `duty_cycle` is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
+    pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
+        let period = sysfs::period(self.channel as u8)? as f64;
+        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+
+        sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
+
+        Ok(())
+    }
+
     /// Returns the polarity.
     pub fn polarity(&self) -> Result<Polarity> {
         Ok(sysfs::polarity(self.channel as u8)?)
@@ -391,12 +390,13 @@ impl Pwm {
 
     /// Sets the polarity.
     ///
-    /// `polarity` configures the active logic level as either high ([`Normal`]) or low ([`Inverse`]).
+    /// `polarity` configures the active logic level as either high
+    /// ([`Normal`]) or low ([`Inverse`]).
     ///
     /// By default, `polarity` is set to [`Normal`].
     ///
-    /// [`Normal`]: enum.Polarity.html
-    /// [`Inverse`]: enum.Polarity.html
+    /// [`Normal`]: enum.Polarity.html#variant.Normal
+    /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
         sysfs::set_polarity(self.channel as u8, polarity)?;
 

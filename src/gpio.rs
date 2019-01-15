@@ -26,26 +26,27 @@
 //!
 //! ## Pins
 //!
-//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number through
+//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number by calling
 //! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's current
 //! mode or logic level. Configuring the [`Pin`] as an [`InputPin`], [`OutputPin`] or
 //! [`IoPin`] through the various `into_` methods available on [`Pin`] sets the
-//! appropriate mode, and provides access to additional methods depending on the pin mode.
+//! appropriate mode, and provides access to additional methods depending on the pin's mode.
 //!
 //! Retrieving a GPIO pin with [`Gpio::get`] grants access to the pin through an owned [`Pin`]
-//! instance. If the pin is already in use, [`Gpio::get`] returns `None`. After a [`Pin`]
+//! instance. If the pin is already in use, or the GPIO peripheral doesn't expose a pin with
+//! the specified number, [`Gpio::get`] returns an [`Error::PinNotAvailable`]. After a [`Pin`]
 //! (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it can be
 //! retrieved again through another [`Gpio::get`] call.
 //!
 //! By default, pins are reset to their original state when they go out of scope.
 //! Use [`InputPin::set_reset_on_drop(false)`], [`OutputPin::set_reset_on_drop(false)`]
 //! or [`IoPin::set_reset_on_drop(false)`], respectively, to disable this behavior.
-//! Note that `drop` methods aren't called when a program is abnormally terminated (for
-//! instance when a SIGINT isn't caught).
+//! Note that `drop` methods aren't called when a process is abnormally terminated (for
+//! instance when a `SIGINT` signal isn't caught).
 //!
 //! ## Interrupts
 //!
-//! [`InputPin`] features support for both synchronous and asynchronous interrupts.
+//! [`InputPin`] supports both synchronous and asynchronous interrupts.
 //!
 //! Synchronous (blocking) interrupt triggers are configured using [`InputPin::set_interrupt`].
 //! An interrupt trigger for a single pin can be polled with [`InputPin::poll_interrupt`],
@@ -95,9 +96,10 @@
 //!
 //! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
 //! the latest available release, or updating hasn't fixed the issue, you might be able to
-//! manually update your udev rules to set the appropriate permissions. More information
+//! manually update your `udev` rules to set the appropriate permissions. More information
 //! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
 //!
+//! [`Error::PinNotAvailable`]: enum.Error.html#variant.PinNotAvailable
 //! [`PermissionDenied`]: enum.Error.html#variant.PermissionDenied
 //! [raspberrypi/linux#1225]: https://github.com/raspberrypi/linux/issues/1225
 //! [raspberrypi/linux#2289]: https://github.com/raspberrypi/linux/issues/2289
@@ -114,7 +116,6 @@
 //! [`OutputPin::set_reset_on_drop(false)`]: struct.OutputPin.html#method.set_reset_on_drop
 //! [`IoPin`]: struct.IoPin.html
 //! [`IoPin::set_reset_on_drop(false)`]: struct.IoPin.html#method.set_reset_on_drop
-//! [`Error::InstanceExists`]: enum.Error.html#variant.InstanceExists
 
 use std::error;
 use std::fmt;
@@ -171,7 +172,7 @@ pub enum Error {
     ///
     /// [here]: index.html#permission-denied
     PermissionDenied(String),
-    /// IO error.
+    /// I/O error.
     Io(io::Error),
     /// Interrupt polling thread panicked.
     ThreadPanic,
@@ -183,7 +184,7 @@ impl fmt::Display for Error {
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
             Error::PinNotAvailable(pin) => write!(f, "Pin {} is not available", pin),
             Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
-            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::ThreadPanic => write!(f, "Interrupt polling thread panicked"),
         }
     }
@@ -371,7 +372,7 @@ impl Gpio {
     ///
     /// Retrieving a GPIO pin grants access to the pin through an owned [`Pin`] instance.
     /// If the pin is already in use, or the GPIO peripheral doesn't expose a pin with the
-    /// specified number, `get` returns an [`Error::PinNotAvailable`]. After a [`Pin`]
+    /// specified number, `get` returns `Err(`[`Error::PinNotAvailable`]`)`. After a [`Pin`]
     /// (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it
     /// can be retrieved again through another `get` call.
     ///
@@ -397,16 +398,15 @@ impl Gpio {
 
     /// Blocks until an interrupt is triggered on any of the specified pins, or until a timeout occurs.
     ///
-    /// This only works for pins that have been configured for synchronous interrupts using
-    /// [`InputPin::set_interrupt`]. Asynchronous interrupt triggers are automatically polled on a separate thread.
+    /// Only pins that have been previously configured for synchronous interrupts using [`InputPin::set_interrupt`]
+    /// can be polled. Asynchronous interrupt triggers are automatically polled on a separate thread.
     ///
     /// Calling `poll_interrupts` blocks any other calls to `poll_interrupts` or [`InputPin::poll_interrupt`] until
-    /// it returns. If you need to poll multiple pins simultaneously on different threads, use
+    /// it returns. If you need to poll multiple pins simultaneously on different threads, consider using
     /// asynchronous interrupts with [`InputPin::set_async_interrupt`] instead.
     ///
-    /// If `reset` is set to `false`, returns immediately if an interrupt trigger event was cached in a
-    /// previous call to [`InputPin::poll_interrupt`] or `poll_interrupts`.
-    /// If `reset` is set to `true`, clears any cached interrupt trigger events before polling.
+    /// Setting `reset` to `false` returns any cached interrupt trigger events if available. Setting `reset` to `true`
+    /// clears all cached events before polling for new events.
     ///
     /// The `timeout` duration indicates how long the call to `poll_interrupts` will block while waiting
     /// for interrupt trigger events, after which an `Ok(None)` is returned.
@@ -417,11 +417,11 @@ impl Gpio {
     /// at the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time [`InputPin::poll_interrupt`] or `poll_interrupts` is called.
     ///
-    /// [`InputPin::set_interrupt`]: struct.InputPin#method.set_interrupt
-    /// [`InputPin::poll_interrupt`]: struct.InputPin#method.poll_interrupt
-    /// [`InputPin::set_async_interrupt`]: struct.InputPin#method.set_async_interrupt
-    /// [`InputPin`]: struct.InputPin
-    /// [`Level`]: struct.Level
+    /// [`InputPin::set_interrupt`]: struct.InputPin.html#method.set_interrupt
+    /// [`InputPin::poll_interrupt`]: struct.InputPin.html#method.poll_interrupt
+    /// [`InputPin::set_async_interrupt`]: struct.InputPin.html#method.set_async_interrupt
+    /// [`InputPin`]: struct.InputPin.html
+    /// [`Level`]: enum.Level.html
     pub fn poll_interrupts<'a>(
         &self,
         pins: &[&'a InputPin],

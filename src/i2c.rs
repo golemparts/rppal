@@ -54,7 +54,7 @@
 //!
 //! ## Not supported
 //!
-//! Some I2C and SMBus features aren't fully supported by the i2cdev interface, the underlying driver or
+//! Some I2C and SMBus features aren't fully supported by the `i2cdev` interface, the underlying driver or
 //! the BCM283x SoC: 10-bit slave addresses, SMBus Block Read, SMBus Block Process Call, SMBus Host Notify,
 //! SMBus Read/Write 32/64, and the SMBus Address Resolution Protocol.
 //!
@@ -105,7 +105,7 @@ pub use self::ioctl::Capabilities;
 /// Errors that can occur when accessing the I2C peripheral.
 #[derive(Debug)]
 pub enum Error {
-    /// IO error.
+    /// I/O error.
     Io(io::Error),
     /// Invalid slave address.
     ///
@@ -135,7 +135,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::InvalidSlaveAddress(address) => write!(f, "Invalid slave address: {}", address),
             Error::FeatureNotSupported => write!(f, "I2C/SMBus feature not supported"),
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),

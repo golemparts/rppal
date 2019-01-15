@@ -100,7 +100,7 @@ mod termios;
 /// Errors that can occur when accessing the UART peripheral.
 #[derive(Debug)]
 pub enum Error {
-    /// IO error.
+    /// I/O error.
     Io(io::Error),
     /// Invalid value.
     InvalidValue,
@@ -109,7 +109,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Error::Io(ref err) => write!(f, "IO error: {}", err),
+            Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::InvalidValue => write!(f, "Invalid value"),
         }
     }
