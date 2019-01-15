@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     spi.write(&[WRITE, 0, 0, 0, 1, 2, 3, 4, 5])?;
 
     // Read the STATUS register by writing the RDSR instruction, and then reading
-    // a single byte. Wait until the WIP bit is set to 0, indicating the write
+    // a single byte. Loop until the WIP bit is set to 0, indicating the write
     // operation is completed. transfer_segments() will keep the Slave Select line
     // active until both segments have been transferred.
     let mut buffer = [0u8; 1];
