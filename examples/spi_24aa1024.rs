@@ -43,8 +43,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // reset after a WRITE instruction is successfully executed.
     spi.write(&[WREN])?;
 
-    // Use the WRITE instruction to select 24-bit memory address 0x00 and write 5
-    // bytes (1, 2, 3, 4, 5).
+    // Use the WRITE instruction to select memory address 0 and write 5 bytes
+    // (1, 2, 3, 4, 5). Addresses are specified as 24-bit values, but the 7 most
+    // significant bits are ignored.
     spi.write(&[WRITE, 0, 0, 0, 1, 2, 3, 4, 5])?;
 
     // Read the STATUS register by writing the RDSR instruction, and then reading
@@ -63,8 +64,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // Use the READ instruction to select 24-bit memory address 0x00, and then
-    // read 5 bytes.
+    // Use the READ instruction to select memory address 0, specified as a 24-bit
+    // value, and then read 5 bytes.
     let mut buffer = [0u8; 5];
     spi.transfer_segments(&[
         TransferSegment::new(None, Some(&[READ, 0, 0, 0])),
