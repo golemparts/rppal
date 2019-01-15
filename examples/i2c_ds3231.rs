@@ -18,7 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// i2c_ds3231.rs - Sets and retrieves the time on a DS3231 RTC using I2C.
+// i2c_ds3231.rs - Sets and retrieves the time on a Maxim Integrated DS3231
+// RTC using I2C.
 
 use std::error::Error;
 use std::thread::sleep;
