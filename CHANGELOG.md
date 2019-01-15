@@ -4,7 +4,7 @@
 
 * (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
 * Add new badge to `README.md`, indicating the required minimum rustc version.
-* Add `Gpio`, `I2c` and `Pwm` examples to the examples subdirectory.
+* Add `Gpio`, `I2c`, `Pwm` and `Spi` examples to the examples subdirectory.
 * Rewrite `Display` formatting for `Error`s in all modules to include more details when available.
 * **DeviceInfo**: (Breaking change) Remove `DeviceInfo::peripheral_base()` and `DeviceInfo::gpio_offset()` from the public API.
 * **Gpio**: (Breaking change) Move pin-specific methods from `Gpio` to the new `InputPin`/`OutputPin` structs. Access pins through `Gpio::get()` (contributed by @reitermarkus).
