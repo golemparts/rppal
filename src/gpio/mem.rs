@@ -25,7 +25,7 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 use libc;
@@ -235,13 +235,13 @@ impl GpioMem {
         // 250MHz or 400MHz, a 5µs delay + overhead is more than adequate.
 
         // Set-up time for the control signal.
-        sleep(Duration::new(0, 5000)); // >= 5µs
+        thread::sleep(Duration::new(0, 5000)); // >= 5µs
 
         // Clock the control signal into the selected pin.
         self.write(offset, 1 << shift);
 
         // Hold time for the control signal.
-        sleep(Duration::new(0, 5000)); // >= 5µs
+        thread::sleep(Duration::new(0, 5000)); // >= 5µs
 
         // Remove the control signal and clock.
         self.write(GPPUD, reg_value & !0b11);

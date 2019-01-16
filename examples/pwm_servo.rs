@@ -34,7 +34,7 @@
 // signals to prevent an abnormal termination.
 
 use std::error::Error;
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 use rppal::pwm::{Channel, Polarity, Pwm};
@@ -60,17 +60,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     // Sleep for 500ms while the servo moves into position.
-    sleep(Duration::from_millis(500));
+    thread::sleep(Duration::from_millis(500));
 
     // Rotate the servo to the opposite side.
     pwm.set_pulse_width(Duration::from_micros(PULSE_MIN_US))?;
 
-    sleep(Duration::from_millis(500));
+    thread::sleep(Duration::from_millis(500));
 
     // Rotate the servo to its neutral (center) position in small steps.
     for pulse in (PULSE_MIN_US..=PULSE_NEUTRAL_US).step_by(10) {
         pwm.set_pulse_width(Duration::from_micros(pulse))?;
-        sleep(Duration::from_millis(20));
+        thread::sleep(Duration::from_millis(20));
     }
 
     Ok(())

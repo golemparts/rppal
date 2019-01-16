@@ -51,7 +51,7 @@ This example demonstrates how to blink an LED connected to a GPIO pin. Remember 
 
 ```rust
 use std::error::Error;
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 use rppal::gpio::Gpio;
@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Blink the LED by setting the pin's logic level high for 500ms.
     pin.set_high();
-    sleep(Duration::from_millis(500));
+    thread::sleep(Duration::from_millis(500));
     pin.set_low();
 
     Ok(())

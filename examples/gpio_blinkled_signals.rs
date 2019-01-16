@@ -28,7 +28,7 @@
 use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 // The simple-signal crate is used to handle incoming signals.
@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Blink the LED until running is set to false.
     while running.load(Ordering::SeqCst) {
         pin.toggle();
-        sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(500));
     }
 
     // After we're done blinking, turn the LED off.

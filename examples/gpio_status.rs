@@ -23,7 +23,7 @@
 
 use std::error::Error;
 use std::fmt;
-use std::process::exit;
+use std::process;
 
 use rppal::gpio::Gpio;
 use rppal::system::{DeviceInfo, Model};
@@ -172,7 +172,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         | Model::RaspberryPiZeroW => print_header(&HEADER[..MAX_PINS_LONG]),
         model => {
             eprintln!("Error: No GPIO header information available for {}", model);
-            exit(1);
+            process::exit(1);
         }
     }
 }

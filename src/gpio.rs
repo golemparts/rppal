@@ -62,7 +62,7 @@
 //! Basic example:
 //!
 //! ```
-//! use std::thread::sleep;
+//! use std::thread;
 //! use std::time::Duration;
 //!
 //! use rppal::gpio::Gpio;
@@ -72,7 +72,7 @@
 //! let mut pin = gpio.get(23)?.into_output();
 //!
 //! pin.set_high();
-//! sleep(Duration::from_secs(1));
+//! thread::sleep(Duration::from_secs(1));
 //! pin.set_low();
 //! # Ok(())
 //! # }

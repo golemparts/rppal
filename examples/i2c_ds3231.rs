@@ -22,7 +22,7 @@
 // RTC using I2C.
 
 use std::error::Error;
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 use rppal::i2c::I2c;
@@ -90,6 +90,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
         }
 
-        sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(1));
     }
 }

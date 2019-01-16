@@ -23,7 +23,6 @@
 use std::io;
 
 use libc::{c_int, termios};
-use libc::{cfgetospeed, cfmakeraw, cfsetispeed, cfsetospeed, tcgetattr, tcsetattr};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
 use libc::{B1000000, B1152000, B460800, B500000, B576000, B921600};
 use libc::{B115200, B19200, B230400, B38400, B57600};
@@ -49,7 +48,7 @@ pub fn attributes(fd: c_int) -> Result<termios> {
         c_ospeed: 0,
     };
 
-    parse_retval!(unsafe { tcgetattr(fd, &mut attr) })?;
+    parse_retval!(unsafe { libc::tcgetattr(fd, &mut attr) })?;
 
     Ok(attr)
 }
@@ -67,19 +66,19 @@ pub fn attributes(fd: c_int) -> Result<termios> {
         __c_ospeed: 0,
     };
 
-    parse_retval!(unsafe { tcgetattr(fd, &mut attr) })?;
+    parse_retval!(unsafe { libc::tcgetattr(fd, &mut attr) })?;
 
     Ok(attr)
 }
 
 pub fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
-    parse_retval!(unsafe { tcsetattr(fd, TCSANOW, attr) })?;
+    parse_retval!(unsafe { libc::tcsetattr(fd, TCSANOW, attr) })?;
 
     Ok(())
 }
 
 pub fn line_speed(fd: c_int) -> Result<u32> {
-    Ok(match unsafe { cfgetospeed(&attributes(fd)?) } {
+    Ok(match unsafe { libc::cfgetospeed(&attributes(fd)?) } {
         B0 => 0,
         B50 => 50,
         B75 => 75,
@@ -152,8 +151,8 @@ pub fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
     };
 
     let mut attr = attributes(fd)?;
-    parse_retval!(unsafe { cfsetispeed(&mut attr, baud) })?;
-    parse_retval!(unsafe { cfsetospeed(&mut attr, baud) })?;
+    parse_retval!(unsafe { libc::cfsetispeed(&mut attr, baud) })?;
+    parse_retval!(unsafe { libc::cfsetospeed(&mut attr, baud) })?;
     set_attributes(fd, &attr)?;
 
     Ok(())
@@ -269,7 +268,7 @@ pub fn set_raw_mode(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
     // Change flags to enable non-canonical mode
     unsafe {
-        cfmakeraw(&mut attr);
+        libc::cfmakeraw(&mut attr);
     }
     attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
     attr.c_cc[VTIME] = 0; // No timeout needed

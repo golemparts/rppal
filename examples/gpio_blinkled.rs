@@ -29,7 +29,7 @@
 // handle incoming signals to prevent an abnormal termination.
 
 use std::error::Error;
-use std::thread::sleep;
+use std::thread;
 use std::time::Duration;
 
 use rppal::gpio::Gpio;
@@ -43,6 +43,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         pin.toggle();
-        sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(500));
     }
 }
