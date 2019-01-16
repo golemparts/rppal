@@ -556,13 +556,16 @@ impl Spi {
 
     /// Transfers multiple half-duplex or full-duplex segments.
     ///
-    /// `transfer_segments` transfers multiple segments in
-    /// a single call. Each [`Segment`] contains a reference
-    /// to a read buffer, a write buffer, or both, and optional
-    /// settings that override the SPI bus settings for that
+    /// `transfer_segments` transfers multiple segments in a single call. Each
+    /// [`Segment`] contains a reference to a read buffer, a write buffer, or
+    /// both, and optional settings that override the SPI bus settings for that
     /// specific segment.
     ///
+    /// By default, Slave Select stays active until all segments have been
+    /// transferred. You can change this behavior using [`Segment::set_ss_change`].
+    ///
     /// [`Segment`]: struct.Segment.html
+    /// [`Segment::set_ss_change`]: struct.Segment.html#method.set_ss_change
     pub fn transfer_segments(&self, segments: &[Segment<'_, '_>]) -> Result<()> {
         ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
 
