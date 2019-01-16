@@ -88,7 +88,8 @@ impl<'a, 'b> Segment<'a, 'b> {
     /// for a read operation.
     ///
     /// Incoming data from the slave device is written to `read_buffer`. The total
-    /// number of bytes read depends on the length of `read_buffer`.
+    /// number of bytes read depends on the length of `read_buffer`. A zero-value
+    /// byte is sent for every byte read.
     ///
     /// By default, all customizable settings are set to 0, which means it uses
     /// the same values as set for [`Spi`].
@@ -119,7 +120,7 @@ impl<'a, 'b> Segment<'a, 'b> {
     ///
     /// If `read_buffer` is set to `None`, any incoming data is discarded.
     ///
-    /// If `write_buffer` is set to `None`, a zero-value byte will be sent for every
+    /// If `write_buffer` is set to `None`, a zero-value byte is sent for every
     /// byte read.
     ///
     /// If both `read_buffer` and `write_buffer` are specified, [`transfer_segments`]
