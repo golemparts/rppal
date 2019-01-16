@@ -97,7 +97,7 @@ macro_rules! impl_output {
         /// [`High`]: enum.Level.html#variant.High
         #[inline]
         pub fn toggle(&mut self) {
-            if self.is_low() {
+            if self.pin.read() == Level::Low {
                 self.set_high();
             } else {
                 self.set_low();
@@ -455,8 +455,7 @@ impl_eq!(InputPin);
 /// GPIO pin configured as output.
 ///
 /// When an `OutputPin` is derived from a [`Pin`], its mode is automatically set to [`Output`].
-/// `OutputPin`s can be used to change a pin's logic level. Additionally, read methods
-/// are provided as a convenience to check the pin's set logic level.
+/// `OutputPin`s can be used to change a pin's logic level.
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Output`]: enum.Mode.html#variant.Output
@@ -488,7 +487,6 @@ impl OutputPin {
     }
 
     impl_pin!();
-    impl_input!();
     impl_output!();
     impl_reset_on_drop!();
 }
