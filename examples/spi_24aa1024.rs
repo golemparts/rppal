@@ -55,8 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut buffer = [0u8; 1];
     loop {
         spi.transfer_segments(&[
-            Segment::new(None, Some(&[RDSR])),
-            Segment::new(Some(&mut buffer), None),
+            Segment::with_write(&[RDSR]),
+            Segment::with_read(&mut buffer),
         ])?;
 
         if buffer[0] & WIP == 0 {
@@ -68,8 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // value, and then read 5 bytes.
     let mut buffer = [0u8; 5];
     spi.transfer_segments(&[
-        Segment::new(None, Some(&[READ, 0, 0, 0])),
-        Segment::new(Some(&mut buffer), None),
+        Segment::with_write(&[READ, 0, 0, 0]),
+        Segment::with_read(&mut buffer),
     ])?;
 
     println!("Bytes read: {:?}", buffer);

@@ -27,6 +27,7 @@
 * **Pwm**: Add `duty_cycle()`, `set_duty_cycle()` and `frequency()` convenience methods that convert between frequency/duty cycle and period/pulse width.
 * **Pwm**: Fix incorrect return values for `period()`, `duty_cycle()`, `polarity()` and `enabled()` caused by whitespace.
 * **Spi**: (Breaking change) Rename 'TransferSegment' to 'Segment'.
+* **Spi**: Add `Segment::with_read()` and `Segment::with_write()` convenience methods to specify either a read or a write operation.
 
 ## 0.9.0 (November 15, 2018)
 

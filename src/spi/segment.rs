@@ -78,6 +78,28 @@ impl<'a, 'b> Segment<'a, 'b> {
         Segment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
     }
 
+    /// Constructs a new `Segment` with the default settings, and configures it
+    /// for a read operation.
+    ///
+    /// By default, all customizable settings are set to 0, which means it uses
+    /// the same values as set for [`Spi`].
+    ///
+    /// [`Spi`]: struct.Spi.html
+    pub fn with_read(read_buffer: &mut [u8]) -> Segment<'_, '_> {
+        Segment::with_settings(Some(read_buffer), None, 0, 0, 0, false)
+    }
+
+    /// Constructs a new `Segment` with the default settings, and configures it
+    /// for a write operation.
+    ///
+    /// By default, all customizable settings are set to 0, which means it uses
+    /// the same values as set for [`Spi`].
+    ///
+    /// [`Spi`]: struct.Spi.html
+    pub fn with_write(write_buffer: &[u8]) -> Segment<'_, '_> {
+        Segment::with_settings(None, Some(write_buffer), 0, 0, 0, false)
+    }
+
     /// Constructs a new `Segment` with the specified settings.
     ///
     /// These settings override the values set for [`Spi`], and are only used
