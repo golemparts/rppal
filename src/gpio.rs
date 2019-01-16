@@ -34,7 +34,7 @@
 //!
 //! Retrieving a GPIO pin with [`Gpio::get`] grants access to the pin through an owned [`Pin`]
 //! instance. If the pin is already in use, or the GPIO peripheral doesn't expose a pin with
-//! the specified number, [`Gpio::get`] returns an [`Error::PinNotAvailable`]. After a [`Pin`]
+//! the specified number, [`Gpio::get`] returns `Err(`[`Error::PinNotAvailable`]`)`. After a [`Pin`]
 //! (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it can be
 //! retrieved again through another [`Gpio::get`] call.
 //!

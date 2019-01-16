@@ -49,17 +49,17 @@ macro_rules! impl_input {
             self.pin.read()
         }
 
-        /// Reads the pin's logic level, and returns `true` if it's set to [`Level::Low`].
+        /// Reads the pin's logic level, and returns `true` if it's set to [`Low`].
         ///
-        /// [`Level::Low`]: enum.Level.html
+        /// [`Low`]: enum.Level.html#variant.Low
         #[inline]
         pub fn is_low(&self) -> bool {
             self.pin.read() == Level::Low
         }
 
-        /// Reads the pin's logic level, and returns `true` if it's set to [`Level::High`].
+        /// Reads the pin's logic level, and returns `true` if it's set to [`High`].
         ///
-        /// [`Level::High`]: enum.Level.html
+        /// [`High`]: enum.Level.html#variant.High
         #[inline]
         pub fn is_high(&self) -> bool {
             self.pin.read() == Level::High
@@ -75,26 +75,26 @@ macro_rules! impl_output {
             self.pin.write(level)
         }
 
-        /// Sets the pin's logic level to [`Level::Low`].
+        /// Sets the pin's logic level to [`Low`].
         ///
-        /// [`Level::Low`]: enum.Level.html
+        /// [`Low`]: enum.Level.html#variant.Low
         #[inline]
         pub fn set_low(&mut self) {
             self.pin.set_low()
         }
 
-        /// Sets the pin's logic level to [`Level::High`].
+        /// Sets the pin's logic level to [`High`].
         ///
-        /// [`Level::High`]: enum.Level.html
+        /// [`High`]: enum.Level.html#variant.High
         #[inline]
         pub fn set_high(&mut self) {
             self.pin.set_high()
         }
 
-        /// Toggles the pin's logic level between [`Level::Low`] and [`Level::High`].
+        /// Toggles the pin's logic level between [`Low`] and [`High`].
         ///
-        /// [`Level::Low`]: enum.Level.html
-        /// [`Level::High`]: enum.Level.html
+        /// [`Low`]: enum.Level.html#variant.Low
+        /// [`High`]: enum.Level.html#variant.High
         #[inline]
         pub fn toggle(&mut self) {
             if self.is_low() {
@@ -218,48 +218,48 @@ impl Pin {
         self.gpio_state.gpio_mem.level(self.pin)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
     /// and disables the pin's built-in pull-up/pull-down resistors.
     ///
     /// [`InputPin`]: struct.InputPin.html
-    /// [`Mode::Input`]: enum.Mode.html#variant.Input
+    /// [`Input`]: enum.Mode.html#variant.Input
     #[inline]
     pub fn into_input(self) -> InputPin {
         InputPin::new(self, PullUpDown::Off)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
     /// and enables the pin's built-in pull-down resistor.
     ///
     /// The pull-down resistor is disabled when `InputPin` goes out of scope if [`reset_on_drop`]
     /// is set to `true` (default).
     ///
     /// [`InputPin`]: struct.InputPin.html
-    /// [`Mode::Input`]: enum.Mode.html#variant.Input
+    /// [`Input`]: enum.Mode.html#variant.Input
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pulldown(self) -> InputPin {
         InputPin::new(self, PullUpDown::PullDown)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Mode::Input`],
+    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
     /// and enables the pin's built-in pull-up resistor.
     ///
     /// The pull-up resistor is disabled when `InputPin` goes out of scope if [`reset_on_drop`]
     /// is set to `true` (default).
     ///
     /// [`InputPin`]: struct.InputPin.html
-    /// [`Mode::Input`]: enum.Mode.html#variant.Input
+    /// [`Input`]: enum.Mode.html#variant.Input
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pullup(self) -> InputPin {
         InputPin::new(self, PullUpDown::PullUp)
     }
 
-    /// Consumes the `Pin`, returns an [`OutputPin`] and sets its mode to [`Mode::Output`].
+    /// Consumes the `Pin`, returns an [`OutputPin`] and sets its mode to [`Output`].
     ///
     /// [`OutputPin`]: struct.OutputPin.html
-    /// [`Mode::Output`]: enum.Mode.html#variant.Output
+    /// [`Output`]: enum.Mode.html#variant.Output
     #[inline]
     pub fn into_output(self) -> OutputPin {
         OutputPin::new(self)
@@ -314,12 +314,12 @@ impl_eq!(Pin);
 
 /// GPIO pin configured as input.
 ///
-/// When an `InputPin` is derived from a [`Pin`], its mode is automatically set to [`Mode::Input`].
+/// When an `InputPin` is derived from a [`Pin`], its mode is automatically set to [`Input`].
 /// `InputPin`s can be used to read a pin's logic level, or (a)synchronously poll for
 /// interrupt trigger events.
 ///
 /// [`Pin`]: struct.Pin.html
-/// [`Mode::Input`]: enum.Mode.html#variant.Input
+/// [`Input`]: enum.Mode.html#variant.Input
 #[derive(Debug)]
 pub struct InputPin {
     pub(crate) pin: Pin,
@@ -454,12 +454,12 @@ impl_eq!(InputPin);
 
 /// GPIO pin configured as output.
 ///
-/// When an `OutputPin` is derived from a [`Pin`], its mode is automatically set to [`Mode::Output`].
+/// When an `OutputPin` is derived from a [`Pin`], its mode is automatically set to [`Output`].
 /// `OutputPin`s can be used to change a pin's logic level. Additionally, read methods
 /// are provided as a convenience to check the pin's set logic level.
 ///
 /// [`Pin`]: struct.Pin.html
-/// [`Mode::Output`]: enum.Mode.html#variant.Output
+/// [`Output`]: enum.Mode.html#variant.Output
 #[derive(Debug)]
 pub struct OutputPin {
     pin: Pin,
@@ -502,10 +502,10 @@ impl_eq!(OutputPin);
 /// specified mode. An `IoPin` can be reconfigured for any available mode. Depending on the
 /// mode, some methods may not have any effect. For instance, using a method that
 /// alters the pin's logic level won't cause any changes when the pin's mode is set
-/// to [`Mode::Input`].
+/// to [`Input`].
 ///
 /// [`Pin`]: struct.Pin.html
-/// [`Mode::Input`]: enum.Mode.html#variant.Input
+/// [`Input`]: enum.Mode.html#variant.Input
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,

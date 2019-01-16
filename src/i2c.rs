@@ -326,12 +326,11 @@ impl I2c {
     /// Enables or disables 10-bit addressing.
     ///
     /// 10-bit addressing currently isn't supported on the Raspberry Pi. `set_addr_10bit` returns
-    /// [`Err(Error::FeatureNotSupported)`] unless underlying driver support is
-    /// detected.
+    /// `Err(`[`Error::FeatureNotSupported`]`)` unless underlying driver support is detected.
     ///
     /// By default, `addr_10bit` is set to `false`.
     ///
-    /// [`Err(Error::FeatureNotSupported)`]: enum.Error.html#variant.FeatureNotSupported
+    /// [`Error::FeatureNotSupported`]: enum.Error.html#variant.FeatureNotSupported
     pub fn set_addr_10bit(&mut self, addr_10bit: bool) -> Result<()> {
         if !self.capabilities().addr_10bit() {
             return Err(Error::FeatureNotSupported);
@@ -586,7 +585,7 @@ impl I2c {
     /// multi-byte `buffer`.
     ///
     /// `smbus_block_read` currently isn't supported on the Raspberry Pi, and returns
-    /// [`Err(Error::FeatureNotSupported)`] unless underlying driver support is
+    /// `Err(`[`Error::FeatureNotSupported`]`)` unless underlying driver support is
     /// detected. You might be able to emulate the `smbus_block_read` functionality
     /// with [`write_read`], [`block_read`] or [`read`] provided the length of the
     /// expected incoming data is known beforehand, or the slave device allows the
@@ -599,7 +598,7 @@ impl I2c {
     ///
     /// Returns how many bytes were read.
     ///
-    /// [`Err(Error::FeatureNotSupported)`]: enum.Error.html#variant.FeatureNotSupported
+    /// [`Error::FeatureNotSupported`]: enum.Error.html#variant.FeatureNotSupported
     /// [`write_read`]: #method.write_read
     /// [`block_read`]: #method.block_read
     /// [`read`]: #method.read
