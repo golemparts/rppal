@@ -506,7 +506,7 @@ impl Spi {
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
     /// The SPI protocol doesn't indicate how much incoming data is waiting,
-    /// so the maximum number of bytes read depends on the length of `buffer`.
+    /// so the total number of bytes read depends on the length of `buffer`.
     ///
     /// During the read, the MOSI line is kept in a state that results in a
     /// zero value byte shifted out for every byte `read` receives on the MISO
@@ -547,7 +547,7 @@ impl Spi {
     ///
     /// Returns how many bytes were transferred.
     pub fn transfer(&self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
-        let segment = Segment::new(Some(read_buffer), Some(write_buffer));
+        let segment = Segment::new(read_buffer, write_buffer);
 
         ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
 
@@ -557,9 +557,9 @@ impl Spi {
     /// Transfers multiple half-duplex or full-duplex segments.
     ///
     /// `transfer_segments` transfers multiple segments in a single call. Each
-    /// [`Segment`] contains a reference to a read buffer, a write buffer, or
-    /// both, and optional settings that override the SPI bus settings for that
-    /// specific segment.
+    /// [`Segment`] contains a reference to either a read buffer or a write buffer,
+    /// or both. Optional settings can be configured that override the SPI bus
+    /// settings for that specific segment.
     ///
     /// By default, Slave Select stays active until all segments have been
     /// transferred. You can change this behavior using [`Segment::set_ss_change`].
