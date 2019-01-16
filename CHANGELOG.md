@@ -26,6 +26,7 @@
 * **Pwm**: (Breaking change) Rename `enabled()` to `is_enabled()` for more idiomatic predicates.
 * **Pwm**: Add `duty_cycle()`, `set_duty_cycle()` and `frequency()` convenience methods that convert between frequency/duty cycle and period/pulse width.
 * **Pwm**: Fix incorrect return values for `period()`, `duty_cycle()`, `polarity()` and `enabled()` caused by whitespace.
+* **Spi**: (Breaking change) Rename 'TransferSegment' to 'Segment'.
 
 ## 0.9.0 (November 15, 2018)
 

@@ -111,9 +111,9 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 
 mod ioctl;
-mod transfer_segment;
+mod segment;
 
-pub use self::transfer_segment::TransferSegment;
+pub use self::segment::Segment;
 
 /// Errors that can occur when accessing the SPI peripheral.
 #[derive(Debug)]
@@ -547,7 +547,7 @@ impl Spi {
     ///
     /// Returns how many bytes were transferred.
     pub fn transfer(&self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
-        let segment = TransferSegment::new(Some(read_buffer), Some(write_buffer));
+        let segment = Segment::new(Some(read_buffer), Some(write_buffer));
 
         ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
 
@@ -557,13 +557,13 @@ impl Spi {
     /// Transfers multiple half-duplex or full-duplex segments.
     ///
     /// `transfer_segments` transfers multiple segments in
-    /// a single call. Each [`TransferSegment`] contains a reference
+    /// a single call. Each [`Segment`] contains a reference
     /// to a read buffer, a write buffer, or both, and optional
     /// settings that override the SPI bus settings for that
     /// specific segment.
     ///
-    /// [`TransferSegment`]: struct.TransferSegment.html
-    pub fn transfer_segments(&self, segments: &[TransferSegment<'_, '_>]) -> Result<()> {
+    /// [`Segment`]: struct.Segment.html
+    pub fn transfer_segments(&self, segments: &[Segment<'_, '_>]) -> Result<()> {
         ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
 
         Ok(())

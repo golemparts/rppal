@@ -25,7 +25,7 @@ use std::io;
 use std::mem::size_of;
 use std::result;
 
-use super::transfer_segment::TransferSegment;
+use super::segment::Segment;
 
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
@@ -132,13 +132,12 @@ pub fn set_mode32(fd: c_int, value: u32) -> Result<i32> {
     parse_retval!(unsafe { ioctl(fd, REQ_WR_MODE_32, &value) })
 }
 
-pub fn transfer(fd: c_int, segments: &[TransferSegment<'_, '_>]) -> Result<i32> {
+pub fn transfer(fd: c_int, segments: &[Segment<'_, '_>]) -> Result<i32> {
     parse_retval!(unsafe {
         ioctl(
             fd,
             REQ_WR_MESSAGE
-                | (((segments.len() * size_of::<TransferSegment<'_, '_>>()) as IoctlLong)
-                    << SIZESHIFT),
+                | (((segments.len() * size_of::<Segment<'_, '_>>()) as IoctlLong) << SIZESHIFT),
             segments,
         )
     })

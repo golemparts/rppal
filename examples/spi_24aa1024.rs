@@ -22,7 +22,7 @@
 
 use std::error::Error;
 
-use rppal::spi::{Bus, Mode, SlaveSelect, Spi, TransferSegment};
+use rppal::spi::{Bus, Mode, Segment, SlaveSelect, Spi};
 
 // Instruction set.
 const WRITE: u8 = 0b0010; // Write data, starting at the selected address.
@@ -55,8 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut buffer = [0u8; 1];
     loop {
         spi.transfer_segments(&[
-            TransferSegment::new(None, Some(&[RDSR])),
-            TransferSegment::new(Some(&mut buffer), None),
+            Segment::new(None, Some(&[RDSR])),
+            Segment::new(Some(&mut buffer), None),
         ])?;
 
         if buffer[0] & WIP == 0 {
@@ -68,8 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // value, and then read 5 bytes.
     let mut buffer = [0u8; 5];
     spi.transfer_segments(&[
-        TransferSegment::new(None, Some(&[READ, 0, 0, 0])),
-        TransferSegment::new(Some(&mut buffer), None),
+        Segment::new(None, Some(&[READ, 0, 0, 0])),
+        Segment::new(Some(&mut buffer), None),
     ])?;
 
     println!("Bytes read: {:?}", buffer);

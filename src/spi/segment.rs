@@ -23,12 +23,12 @@ use std::marker;
 
 /// Part of a multi-segment transfer.
 ///
-/// `TransferSegment`s are transferred using the [`transfer_segments`] method.
+/// `Segment`s are transferred using the [`transfer_segments`] method.
 ///
 /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
 #[derive(PartialEq, Copy, Clone)]
 #[repr(C)]
-pub struct TransferSegment<'a, 'b> {
+pub struct Segment<'a, 'b> {
     // Pointer to write buffer, or 0.
     tx_buf: u64,
     // Pointer to read buffer, or 0.
@@ -55,8 +55,8 @@ pub struct TransferSegment<'a, 'b> {
     write_buffer_lifetime: marker::PhantomData<&'b [u8]>,
 }
 
-impl<'a, 'b> TransferSegment<'a, 'b> {
-    /// Constructs a new `TransferSegment` with the default settings.
+impl<'a, 'b> Segment<'a, 'b> {
+    /// Constructs a new `Segment` with the default settings.
     ///
     /// If `read_buffer` is set to `None`, any incoming data is discarded.
     ///
@@ -74,11 +74,11 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     pub fn new(
         read_buffer: Option<&'a mut [u8]>,
         write_buffer: Option<&'b [u8]>,
-    ) -> TransferSegment<'a, 'b> {
-        TransferSegment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
+    ) -> Segment<'a, 'b> {
+        Segment::with_settings(read_buffer, write_buffer, 0, 0, 0, false)
     }
 
-    /// Constructs a new `TransferSegment` with the specified settings.
+    /// Constructs a new `Segment` with the specified settings.
     ///
     /// These settings override the values set for [`Spi`], and are only used
     /// for this specific segment.
@@ -108,7 +108,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
         delay: u16,
         bits_per_word: u8,
         ss_change: bool,
-    ) -> TransferSegment<'a, 'b> {
+    ) -> Segment<'a, 'b> {
         // Len will contain the length of the shortest of the supplied buffers
         let mut len: u32 = 0;
 
@@ -128,7 +128,7 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
             0
         };
 
-        TransferSegment {
+        Segment {
             tx_buf,
             rx_buf,
             len,
@@ -227,9 +227,9 @@ impl<'a, 'b> TransferSegment<'a, 'b> {
     }
 }
 
-impl<'a, 'b> fmt::Debug for TransferSegment<'a, 'b> {
+impl<'a, 'b> fmt::Debug for Segment<'a, 'b> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TransferSegment")
+        f.debug_struct("Segment")
             .field("tx_buf", &self.tx_buf)
             .field("rx_buf", &self.rx_buf)
             .field("len", &self.len)
