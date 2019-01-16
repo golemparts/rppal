@@ -404,7 +404,7 @@ impl Pwm {
     }
 
     /// Returns `true` if the PWM channel is enabled.
-    pub fn enabled(&self) -> Result<bool> {
+    pub fn is_enabled(&self) -> Result<bool> {
         Ok(sysfs::enabled(self.channel as u8)?)
     }
 
