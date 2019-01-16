@@ -111,8 +111,9 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 
 mod ioctl;
+mod transfer_segment;
 
-pub use self::ioctl::TransferSegment;
+pub use self::transfer_segment::TransferSegment;
 
 /// Errors that can occur when accessing the SPI peripheral.
 #[derive(Debug)]
