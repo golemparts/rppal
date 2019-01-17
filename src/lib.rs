@@ -25,9 +25,6 @@
 
 // Used by rustdoc to link other crates to rppal's docs
 #![doc(html_root_url = "https://docs.rs/rppal/0.10.0")]
-// This is no longer needed as of the version of clippy that's distributed with
-// rust 1.32, which fixes false positives when Self is wrapped in Result or Option.
-#![allow(clippy::new_ret_no_self)]
 
 mod user;
 
