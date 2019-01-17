@@ -220,7 +220,7 @@ impl Pwm {
     ///
     /// `frequency` is specified in herz (Hz).
     ///
-    /// `duty_cycle` is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
+    /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     ///
     /// `polarity` configures the active logic level as either high ([`Normal`])
     /// or low ([`Inverse`]).
@@ -333,7 +333,7 @@ impl Pwm {
     ///
     /// `frequency` is specified in herz (Hz).
     ///
-    /// `duty_cycle` is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
+    /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_frequency(&self, frequency: f64, duty_cycle: f64) -> Result<()> {
         // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
         let _ = sysfs::set_pulse_width(self.channel as u8, 0);
@@ -355,7 +355,7 @@ impl Pwm {
     /// Returns the duty cycle.
     ///
     /// `duty_cycle` is a convenience method that calculates the duty cycle as a
-    /// floating point ratio between `0.0` (0%) and `1.0` (100%) based on the configured
+    /// floating point value between `0.0` (0%) and `1.0` (100%) based on the configured
     /// period and pulse width.
     pub fn duty_cycle(&self) -> Result<f64> {
         let period = sysfs::period(self.channel as u8)? as f64;
@@ -373,7 +373,7 @@ impl Pwm {
     /// `set_duty_cycle` is a convenience method that converts `duty_cycle` to a
     /// pulse width based on the configured period.
     ///
-    /// `duty_cycle` is specified as a floating point ratio between `0.0` (0%) and `1.0` (100%).
+    /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
         let period = sysfs::period(self.channel as u8)? as f64;
         let pulse_width = period * duty_cycle.max(0.0).min(1.0);
