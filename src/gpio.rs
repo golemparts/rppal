@@ -27,8 +27,8 @@
 //! ## Pins
 //!
 //! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number by calling
-//! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's current
-//! mode or logic level. Configuring the [`Pin`] as an [`InputPin`], [`OutputPin`] or
+//! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's
+//! mode and logic level. Configuring the [`Pin`] as an [`InputPin`], [`OutputPin`] or
 //! [`IoPin`] through the various `into_` methods available on [`Pin`] sets the
 //! appropriate mode, and provides access to additional methods depending on the pin's mode.
 //!
@@ -157,7 +157,7 @@ pub enum Error {
     ///
     /// The pin is already in use elsewhere in your application, or the GPIO peripheral
     /// doesn't expose a pin with the specified number. If the pin is currently in use, you
-    /// can retrieve it again after the [`Pin`] (or derived [`InputPin`], [`OutputPin`] or
+    /// can retrieve it again after the [`Pin`] (or a derived [`InputPin`], [`OutputPin`] or
     /// [`IoPin`]) instance goes out of scope.
     ///
     /// [`Pin`]: struct.Pin.html

@@ -69,8 +69,8 @@
 //!
 //! ## Buffer size limits
 //!
-//! By default, `spidev` can handle up to 4096 bytes in a single
-//! transfer. You can increase this limit to a maximum of 65536 bytes by adding
+//! By default, `spidev` can handle up to 4096 bytes in a single transfer. You
+//! can increase this limit to a maximum of 65536 bytes by appending
 //! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
 //! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
@@ -78,19 +78,19 @@
 //! ## Not supported
 //!
 //! Some features exposed by the generic `spidev` interface aren't fully
-//! supported by the underlying driver or the BCM283x SoC: SPI_LSB_FIRST (LSB
-//! first bit order), SPI_3WIRE (bidirectional mode), SPI_LOOP (loopback mode),
-//! SPI_NO_CS (no Slave Select), SPI_READY (slave ready signal),
-//! SPI_TX_DUAL/SPI_RX_DUAL (dual SPI), SPI_TX_QUAD/SPI_RX_QUAD (quad SPI),
+//! supported by the underlying driver or the BCM283x SoC: `SPI_LSB_FIRST` (LSB
+//! first bit order), `SPI_3WIRE` (bidirectional mode), `SPI_LOOP` (loopback mode),
+//! `SPI_NO_CS` (no Slave Select), `SPI_READY` (slave ready signal),
+//! `SPI_TX_DUAL`/`SPI_RX_DUAL` (dual SPI), `SPI_TX_QUAD`/`SPI_RX_QUAD` (quad SPI),
 //! and any number of bits per word other than 8.
 //!
-//! If your slave device requires SPI_LSB_FIRST, you can use the
+//! If your slave device requires `SPI_LSB_FIRST`, you can use the
 //! [`reverse_bits`] function instead to reverse the bit order in software.
 //!
-//! SPI_LOOP mode can be achieved by connecting the MOSI and MISO pins
+//! `SPI_LOOP` mode can be achieved by connecting the MOSI and MISO pins
 //! together.
 //!
-//! SPI_NO_CS can be implemented by connecting the Slave Select pin on your
+//! `SPI_NO_CS` can be implemented by connecting the Slave Select pin on your
 //! slave device to any other available GPIO pin on the Pi, and manually
 //! changing it to high and low as needed.
 //!

@@ -178,11 +178,14 @@ macro_rules! impl_eq {
 
 /// Unconfigured GPIO pin.
 ///
-/// An unconfigured `Pin` can be used to read the pin's current mode and logic level.
-/// Configuring the `Pin` as an [`InputPin`], [`OutputPin`] or [`IoPin`] through the
-/// various `into_` methods available on `Pin` sets the appropriate mode, and provides
-/// access to additional methods depending on the pin's mode.
+/// `Pin`s are constructed by retrieving them using [`Gpio::get`].
 ///
+/// An unconfigured `Pin` can be used to read the pin's mode and logic level.
+/// Converting the `Pin` to an [`InputPin`], [`OutputPin`] or [`IoPin`] through the
+/// various `into_` methods available on `Pin` configures the appropriate mode, and
+/// provides access to additional methods depending on the pin's mode.
+///
+/// [`Gpio::get`]: struct.Gpio.html#method.get
 /// [`InputPin`]: struct.InputPin.html
 /// [`OutputPin`]: struct.OutputPin.html
 /// [`IoPin`]: struct.IoPin.html
@@ -314,12 +317,18 @@ impl_eq!(Pin);
 
 /// GPIO pin configured as input.
 ///
-/// When an `InputPin` is derived from a [`Pin`], its mode is automatically set to [`Input`].
-/// `InputPin`s can be used to read a pin's logic level, or (a)synchronously poll for
+/// `InputPin`s are constructed by converting a [`Pin`] using [`Pin::into_input`],
+/// [`Pin::into_input_pullup`] and [`Pin::into_input_pulldown`]. The pin's mode is
+/// automatically set to [`Input`].
+///
+/// An `InputPin` can be used to read a pin's logic level, or (a)synchronously poll for
 /// interrupt trigger events.
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Input`]: enum.Mode.html#variant.Input
+/// [`Pin::into_input`]: struct.Pin.html#method.into_input
+/// [`Pin::into_input_pullup`]: struct.Pin.html#method.into_input_pullup
+/// [`Pin::into_input_pulldown`]: struct.Pin.html#method.into_input_pulldown
 #[derive(Debug)]
 pub struct InputPin {
     pub(crate) pin: Pin,
@@ -454,11 +463,14 @@ impl_eq!(InputPin);
 
 /// GPIO pin configured as output.
 ///
-/// When an `OutputPin` is derived from a [`Pin`], its mode is automatically set to [`Output`].
-/// `OutputPin`s can be used to change a pin's logic level.
+/// `OutputPin`s are constructed by converting a [`Pin`] using [`Pin::into_output`].
+/// The pin's mode is automatically set to [`Output`].
+///
+/// An `OutputPin` can be used to change a pin's logic level.
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Output`]: enum.Mode.html#variant.Output
+/// [`Pin::into_output`]: struct.Pin.html#method.into_output
 #[derive(Debug)]
 pub struct OutputPin {
     pin: Pin,
@@ -496,14 +508,17 @@ impl_eq!(OutputPin);
 
 /// GPIO pin that can be (re)configured for any mode or alternate function.
 ///
-/// When an `IoPin` is derived from a [`Pin`], its mode is automatically set to the
-/// specified mode. An `IoPin` can be reconfigured for any available mode. Depending on the
+/// `IoPin`s are constructed by converting a [`Pin`] using [`Pin::into_io`].
+/// The pin's mode is automatically set to the specified mode.
+///
+/// An `IoPin` can be reconfigured for any available mode. Depending on the
 /// mode, some methods may not have any effect. For instance, using a method that
 /// alters the pin's logic level won't cause any changes when the pin's mode is set
 /// to [`Input`].
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Input`]: enum.Mode.html#variant.Input
+/// [`Pin::into_io`]: struct.Pin.html#method.into_io
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,

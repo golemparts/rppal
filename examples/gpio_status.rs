@@ -124,9 +124,9 @@ fn print_header(header: &[PinType]) -> Result<(), Box<dyn Error>> {
     for (idx, pin_type) in header.iter().enumerate() {
         match pin_type {
             PinType::Gpio(bcm_gpio) => {
-                // Retrieve a Pin without converting it into an InputPin,
-                // OutputPin or IoPin, so we can read the pin's current level
-                // and mode without affecting its state.
+                // Retrieve a Pin without converting it to an InputPin,
+                // OutputPin or IoPin, so we can check the pin's mode
+                // and level without affecting its state.
                 let pin = gpio.get(*bcm_gpio)?;
 
                 format_pin(
