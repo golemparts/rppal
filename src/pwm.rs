@@ -145,10 +145,9 @@ pub struct Pwm {
 impl Pwm {
     /// Constructs a new `Pwm`.
     ///
-    /// `new` sets the period and pulse width to `0`, polarity to [`Normal`], and
-    /// leaves the channel disabled until [`enable`] is called.
+    /// `new` doesn't change the channel's period, pulse width or polarity. The channel
+    /// will remain disabled until [`enable`] is called.
     ///
-    /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`enable`]: #method.enable
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
@@ -160,30 +159,27 @@ impl Pwm {
         // "enable" is still set to 1, even though the channel isn't enabled.
         let _ = pwm.disable();
 
-        // Default settings
-        let _ = pwm.set_pulse_width(Duration::from_secs(0));
-        let _ = pwm.set_period(Duration::from_secs(0));
-        let _ = pwm.set_polarity(Polarity::Normal);
-
         Ok(pwm)
     }
 
     /// Constructs a new `Pwm` using the specified settings.
     ///
-    /// `period` represents the time it takes for the PWM channel to complete one cycle.
+    /// `period` specifies the time it takes for the PWM channel to complete one cycle.
     ///
-    /// `pulse_width` represents the amount of time the PWM channel's logic level is set
-    /// high (or low if the polarity is set to [`Inverse`]) during a single period.
+    /// `pulse_width` specifies the amount of time the PWM channel is active during a
+    /// single period.
     ///
     /// `polarity` configures the active logic level as either high ([`Normal`])
     /// or low ([`Inverse`]).
     ///
-    /// `enabled` immediately enables PWM on the selected channel.
+    /// `enabled` enables PWM on the selected channel. If `enabled` is set to `false`,
+    /// the channel will remain disabled until [`enable`] is called.
     ///
     /// This method will fail if `period` is shorter than `pulse_width`.
     ///
     /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`Inverse`]: enum.Polarity.html#variant.Inverse
+    /// [`enable`]: #method.enable
     pub fn with_period(
         channel: Channel,
         period: Duration,
@@ -225,10 +221,12 @@ impl Pwm {
     /// `polarity` configures the active logic level as either high ([`Normal`])
     /// or low ([`Inverse`]).
     ///
-    /// `enabled` immediately enables PWM on the selected channel.
+    /// `enabled` enables PWM on the selected channel. If `enabled` is set to `false`,
+    /// the channel will remain disabled until [`enable`] is called.
     ///
     /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`Inverse`]: enum.Polarity.html#variant.Inverse
+    /// [`enable`]: #method.enable
     pub fn with_frequency(
         channel: Channel,
         frequency: f64,
@@ -258,7 +256,6 @@ impl Pwm {
 
         sysfs::set_period(channel as u8, period as u64)?;
         sysfs::set_pulse_width(channel as u8, pulse_width as u64)?;
-
         pwm.set_polarity(polarity)?;
         if enabled {
             pwm.enable()?;
@@ -274,7 +271,7 @@ impl Pwm {
 
     /// Sets the period.
     ///
-    /// `period` represents the time it takes for the PWM channel to complete one cycle.
+    /// `period` specifies the time it takes for the PWM channel to complete one cycle.
     ///
     /// This method will fail if `period` is shorter than the current pulse width.
     pub fn set_period(&self, period: Duration) -> Result<()> {
@@ -296,12 +293,10 @@ impl Pwm {
 
     /// Sets the pulse width.
     ///
-    /// `pulse_width` represents the amount of time the PWM channel's logic level is set
-    /// high (or low if the polarity is set to [`Inverse`]) during a single period.
+    /// `pulse_width` specifies the amount of time the PWM channel is active during a
+    /// single period.
     ///
     /// This method will fail if `pulse_width` is longer than the current period.
-    ///
-    /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn set_pulse_width(&self, pulse_width: Duration) -> Result<()> {
         sysfs::set_pulse_width(
             self.channel as u8,
@@ -392,8 +387,6 @@ impl Pwm {
     ///
     /// `polarity` configures the active logic level as either high
     /// ([`Normal`]) or low ([`Inverse`]).
-    ///
-    /// By default, `polarity` is set to [`Normal`].
     ///
     /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`Inverse`]: enum.Polarity.html#variant.Inverse
