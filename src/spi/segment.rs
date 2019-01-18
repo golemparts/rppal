@@ -23,14 +23,14 @@ use std::marker;
 
 /// Part of a multi-segment transfer.
 ///
-/// `Segment`s are transferred using the [`transfer_segments`] method.
+/// `Segment`s are transferred using the [`Spi::transfer_segments`] method.
 ///
 /// Construct a new `Segment` for a simultaneous (full-duplex) read/write
 /// transfer using [`new`]. For read operations without any outgoing data,
 /// use [`with_read`]. For write operations where any incoming data
 /// should be discarded, use [`with_write`].
 ///
-/// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+/// [`Spi::transfer_segments`]: struct.Spi.html#method.transfer_segments
 /// [`with_read`]: #method.with_read
 /// [`with_write`]: #method.with_write
 /// [`new`]: #method.new
@@ -70,13 +70,13 @@ impl<'a, 'b> Segment<'a, 'b> {
     /// For `Segment`s that only require either a read or write operation, call
     /// [`with_read`] or [`with_write`] instead of `new`.
     ///
-    /// [`transfer_segments`] will only transfer as many bytes as the shortest of
+    /// [`Spi::transfer_segments`] will only transfer as many bytes as the shortest of
     /// the two buffers contains.
     ///
     /// By default, all customizable settings are set to 0, which means it uses
     /// the same values as set for [`Spi`].
     ///
-    /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+    /// [`Spi::transfer_segments`]: struct.Spi.html#method.transfer_segments
     /// [`Spi`]: struct.Spi.html
     /// [`with_read`]: #method.with_read
     /// [`with_write`]: #method.with_write
@@ -87,30 +87,30 @@ impl<'a, 'b> Segment<'a, 'b> {
     /// Constructs a new `Segment` with the default settings, and configures it
     /// for a read operation.
     ///
-    /// Incoming data from the slave device is written to `read_buffer`. The total
-    /// number of bytes read depends on the length of `read_buffer`. A zero-value
+    /// Incoming data from the slave device is written to `buffer`. The total
+    /// number of bytes read depends on the length of `buffer`. A zero-value
     /// byte is sent for every byte read.
     ///
     /// By default, all customizable settings are set to 0, which means it uses
     /// the same values as set for [`Spi`].
     ///
     /// [`Spi`]: struct.Spi.html
-    pub fn with_read(read_buffer: &mut [u8]) -> Segment<'_, '_> {
-        Segment::with_settings(Some(read_buffer), None, 0, 0, 0, false)
+    pub fn with_read(buffer: &mut [u8]) -> Segment<'_, '_> {
+        Segment::with_settings(Some(buffer), None, 0, 0, 0, false)
     }
 
     /// Constructs a new `Segment` with the default settings, and configures it
     /// for a write operation.
     ///
-    /// Outgoing data from `write_buffer` is sent to the slave device. Any
+    /// Outgoing data from `buffer` is sent to the slave device. Any
     /// incoming data is discarded.
     ///
     /// By default, all customizable settings are set to 0, which means it uses
     /// the same values as set for [`Spi`].
     ///
     /// [`Spi`]: struct.Spi.html
-    pub fn with_write(write_buffer: &[u8]) -> Segment<'_, '_> {
-        Segment::with_settings(None, Some(write_buffer), 0, 0, 0, false)
+    pub fn with_write(buffer: &[u8]) -> Segment<'_, '_> {
+        Segment::with_settings(None, Some(buffer), 0, 0, 0, false)
     }
 
     /// Constructs a new `Segment` with the specified settings.
@@ -123,7 +123,7 @@ impl<'a, 'b> Segment<'a, 'b> {
     /// If `write_buffer` is set to `None`, a zero-value byte is sent for every
     /// byte read.
     ///
-    /// If both `read_buffer` and `write_buffer` are specified, [`transfer_segments`]
+    /// If both `read_buffer` and `write_buffer` are specified, [`Spi::transfer_segments`]
     /// will only transfer as many bytes as the shortest of the two buffers contains.
     ///
     /// `clock_speed` sets a custom clock speed in hertz (Hz).
@@ -134,7 +134,7 @@ impl<'a, 'b> Segment<'a, 'b> {
     ///
     /// `ss_change` changes how Slave Select behaves in between two segments (toggle SS), or after the final segment (keep SS active).
     ///
-    /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+    /// [`Spi::transfer_segments`]: struct.Spi.html#method.transfer_segments
     /// [`Spi`]: struct.Spi.html
     pub fn with_settings(
         read_buffer: Option<&'a mut [u8]>,
@@ -181,10 +181,11 @@ impl<'a, 'b> Segment<'a, 'b> {
 
     /// Returns the number of bytes that will be transferred.
     ///
-    /// If both a read buffer and write buffer are supplied, [`transfer_segments`] only
-    /// transfers as many bytes as the shortest of the two buffers contains.
+    /// If both a read buffer and write buffer are supplied,
+    /// [`Spi::transfer_segments`] only transfers as many bytes as the
+    /// shortest of the two buffers contains.
     ///
-    /// [`transfer_segments`]: struct.Spi.html#method.transfer_segments
+    /// [`Spi::transfer_segments`]: struct.Spi.html#method.transfer_segments
     pub fn len(&self) -> usize {
         self.len as usize
     }

@@ -32,7 +32,7 @@
 //! interface, and for HAT identification.
 //!
 //! The I2C bus connected to physical pins 3 (SDA) and 5 (SCL) is disabled by
-//! default. You can enable it by running `sudo raspi-config`, or by manually
+//! default. You can enable it through `sudo raspi-config`, or by manually
 //! adding `dtparam=i2c_arm=on` to `/boot/config.txt`. Remember to reboot
 //! the Raspberry Pi afterwards.
 //!
@@ -59,7 +59,7 @@
 //! SMBus Read/Write 32/64, and the SMBus Address Resolution Protocol.
 //!
 //! While clock stretching is supported, a bug exists in the implementation on the BCM283x SoC that will result
-//! in corrupted data when a slave device tries to use clock stretching at arbitrary points during the transfer.
+//! in corrupted data when a slave device uses clock stretching at arbitrary points during the transfer.
 //! Clock stretching only works properly during read operations, directly after the ACK phase, when the additional
 //! delay is longer than half of a clock period. More information can be found [here](https://elinux.org/BCM2835_datasheet_errata#p35_I2C_clock_stretching).
 //!
@@ -160,7 +160,7 @@ impl From<system::Error> for Error {
 /// Result type returned from methods that can have `i2c::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Provides access to the Raspberry Pi's I2C peripherals.
+/// Provides access to the Raspberry Pi's I2C peripheral.
 ///
 /// Before using `I2c`, make sure your Raspberry Pi has the necessary I2C buses
 /// enabled. More information can be found [here].
@@ -189,7 +189,7 @@ pub struct I2c {
 impl I2c {
     /// Constructs a new `I2c`.
     ///
-    /// `new` tries to identify which I2C bus is bound to physical pins 3 (SDA)
+    /// `new` attempts to identify which I2C bus is bound to physical pins 3 (SDA)
     /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
     /// bus 0 is selected. For every other model, bus 1 is used.
     ///

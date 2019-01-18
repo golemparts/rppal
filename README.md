@@ -29,7 +29,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 rppal = "0.10"
 ```
 
-Call `new()` on any of the peripherals to create a new instance.
+Call `new()` on any of the peripherals to construct a new instance.
 
 ```rust
 use rppal::gpio::Gpio;

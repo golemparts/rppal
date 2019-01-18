@@ -539,7 +539,7 @@ impl Spi {
     /// the MISO line. `transfer` stores the incoming data in `read_buffer`,
     /// and sends the outgoing data contained in `write_buffer`.
     ///
-    /// Because data is sent and received simultaneously, `transfer` can only
+    /// Because data is sent and received simultaneously, `transfer` will only
     /// transfer as many bytes as the shortest of the two buffers contains.
     ///
     /// Slave Select is set to active at the start of the transfer, and inactive

@@ -114,7 +114,7 @@ macro_rules! impl_reset_on_drop {
         }
 
         /// When enabled, resets the pin's mode to its original state and disables the
-        /// built-in pull-up/pull-down resistors, when the pin goes out of scope.
+        /// built-in pull-up/pull-down resistors when the pin goes out of scope.
         /// By default, this is set to `true`.
         ///
         /// ## Note
@@ -268,7 +268,7 @@ impl Pin {
         OutputPin::new(self)
     }
 
-    /// Consumes the `Pin`, returns an [`IoPin`] and sets its mode to the given mode.
+    /// Consumes the `Pin`, returns an [`IoPin`] and sets its mode to the specified mode.
     ///
     /// [`IoPin`]: struct.IoPin.html
     /// [`Mode`]: enum.Mode.html

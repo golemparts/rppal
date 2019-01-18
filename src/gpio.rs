@@ -28,8 +28,8 @@
 //!
 //! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number by calling
 //! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's
-//! mode and logic level. Configuring the [`Pin`] as an [`InputPin`], [`OutputPin`] or
-//! [`IoPin`] through the various `into_` methods available on [`Pin`] sets the
+//! mode and logic level. Converting the [`Pin`] to an [`InputPin`], [`OutputPin`] or
+//! [`IoPin`] through the various `into_` methods available on [`Pin`] configures the
 //! appropriate mode, and provides access to additional methods depending on the pin's mode.
 //!
 //! Retrieving a GPIO pin with [`Gpio::get`] grants access to the pin through an owned [`Pin`]
@@ -87,7 +87,7 @@
 //! In recent releases of Raspbian (December 2017 or later), users that are part of the
 //! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
 //! `/dev/gpiochipN` (N = 0-2) without needing additional permissions. If you encounter any
-//! [`PermissionDenied`] errors when creating a new [`Gpio`] instance, either the current
+//! [`PermissionDenied`] errors when constructing a new [`Gpio`] instance, either the current
 //! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
 //! up-to-date and doesn't automatically configure permissions for the above-mentioned
 //! files. Updating Raspbian to the latest release should fix any permission issues.

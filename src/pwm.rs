@@ -32,8 +32,8 @@
 //! on BCM GPIO 19 (physical pin 35). More details on enabling and configuring PWM on
 //! other GPIO pins than the default ones can be found in `/boot/overlays/README`.
 //!
-//! The Raspberry Pi's analog audio output needs both PWM channels. Using both audio out
-//! and PWM at the same time may cause issues.
+//! The Raspberry Pi's analog audio output uses both PWM channels. Playing audio and
+//! simultaneously accessing a PWM channel may cause issues.
 //!
 //! Some of the GPIO pins capable of supporting hardware PWM can also be configured for
 //! use with other peripherals. Be careful not to enable two peripherals on the same pin
