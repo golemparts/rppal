@@ -76,7 +76,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 Additional examples can be found in the `examples` directory.
 
-
 ## Supported peripherals
 
 ### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
