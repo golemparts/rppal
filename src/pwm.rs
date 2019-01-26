@@ -214,7 +214,7 @@ impl Pwm {
     /// `with_frequency` is a convenience method that converts `frequency` to a period,
     /// and calculates the duty cycle as a percentage of the frequency.
     ///
-    /// `frequency` is specified in herz (Hz).
+    /// `frequency` is specified in hertz (Hz).
     ///
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     ///
@@ -309,7 +309,7 @@ impl Pwm {
 
     /// Returns the frequency.
     ///
-    /// `frequency` is a convenience method that calculates the frequency in herz (Hz)
+    /// `frequency` is a convenience method that calculates the frequency in hertz (Hz)
     /// based on the configured period.
     pub fn frequency(&self) -> Result<f64> {
         let period = sysfs::period(self.channel as u8)? as f64;
@@ -326,7 +326,7 @@ impl Pwm {
     /// `set_frequency` is a convenience method that converts `frequency` to a period,
     /// and calculates the duty cycle as a percentage of the frequency.
     ///
-    /// `frequency` is specified in herz (Hz).
+    /// `frequency` is specified in hertz (Hz).
     ///
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_frequency(&self, frequency: f64, duty_cycle: f64) -> Result<()> {

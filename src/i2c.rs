@@ -49,7 +49,7 @@
 //! 1 bit takes 1 clock cycle. You can change the
 //! transfer rate by adding `dtparam=i2c_arm_baudrate=X` to
 //! `/boot/config.txt`, where `X` should be replaced with the
-//! clock frequency in herz (Hz). Remember to reboot
+//! clock frequency in hertz (Hz). Remember to reboot
 //! the Raspberry Pi afterwards.
 //!
 //! ## Not supported
@@ -258,7 +258,7 @@ impl I2c {
         self.bus
     }
 
-    /// Returns the clock frequency in herz (Hz).
+    /// Returns the clock frequency in hertz (Hz).
     pub fn clock_speed(&self) -> Result<u32> {
         let mut buffer = [0u8; 4];
 

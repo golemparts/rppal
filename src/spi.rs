@@ -317,7 +317,7 @@ impl Spi {
     /// `bus` and `slave_select` specify the selected SPI bus and one of its
     /// associated Slave Select pins.
     ///
-    /// `clock_speed` defines the maximum clock frequency in herz (Hz). The SPI driver
+    /// `clock_speed` defines the maximum clock frequency in hertz (Hz). The SPI driver
     /// will automatically round down to the closest valid frequency.
     ///
     /// `mode` selects the clock polarity and phase.
@@ -415,7 +415,7 @@ impl Spi {
         }
     }
 
-    /// Gets the clock frequency in herz (Hz).
+    /// Gets the clock frequency in hertz (Hz).
     pub fn clock_speed(&self) -> Result<u32> {
         let mut clock_speed: u32 = 0;
         ioctl::clock_speed(self.spidev.as_raw_fd(), &mut clock_speed)?;
@@ -423,7 +423,7 @@ impl Spi {
         Ok(clock_speed)
     }
 
-    /// Sets the clock frequency in herz (Hz).
+    /// Sets the clock frequency in hertz (Hz).
     ///
     /// The SPI driver will automatically round down to the closest valid frequency.
     pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
