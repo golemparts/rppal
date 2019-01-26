@@ -250,7 +250,7 @@ impl Pwm {
         let period = if frequency == 0.0 {
             0.0
         } else {
-            (1.0f64 / frequency) * 1_000_000_000f64
+            (1.0 / frequency) * 1_000_000_000.0
         };
         let pulse_width = period * duty_cycle.max(0.0).min(1.0);
 
@@ -317,7 +317,7 @@ impl Pwm {
         Ok(if period == 0.0 {
             0.0
         } else {
-            1.0f64 / (period / 1_000_000_000f64)
+            1.0 / (period / 1_000_000_000.0)
         })
     }
 
@@ -337,7 +337,7 @@ impl Pwm {
         let period = if frequency == 0.0 {
             0.0
         } else {
-            (1.0f64 / frequency) * 1_000_000_000f64
+            (1.0 / frequency) * 1_000_000_000.0
         };
         let pulse_width = period * duty_cycle.max(0.0).min(1.0);
 
