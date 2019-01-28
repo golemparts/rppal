@@ -178,6 +178,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             "9000c1" => Model::RaspberryPiZeroW,
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
+            "a02100" => Model::RaspberryPiComputeModule3Plus,
             _ => return Err(Error::UnknownModel),
         }
     } else {
