@@ -81,6 +81,7 @@ pub enum Model {
     RaspberryPi3APlus,
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
+    RaspberryPiComputeModule3Plus,
     RaspberryPiZero,
     RaspberryPiZeroW,
 }
@@ -99,6 +100,7 @@ impl fmt::Display for Model {
             Model::RaspberryPi3APlus => write!(f, "Raspberry Pi 3 A+"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
+            Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
         }
@@ -171,8 +173,8 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             "900032" => Model::RaspberryPiBPlus,
             "a01040" | "a01041" | "a21041" | "a22042" => Model::RaspberryPi2B,
             "a02082" | "a22082" | "a32082" | "a52082" => Model::RaspberryPi3B,
-            "900092" | "920092" | "900093" | "920093" => Model::RaspberryPiZero,
-            "a020a0" => Model::RaspberryPiComputeModule3,
+            "900092" | "900093" | "920092" | "920093" => Model::RaspberryPiZero,
+            "a020a0" | "a220a0" => Model::RaspberryPiComputeModule3,
             "9000c1" => Model::RaspberryPiZeroW,
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
@@ -206,6 +208,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-model-b" => Model::RaspberryPi3B,
             "raspberrypi,model-zero" => Model::RaspberryPiZero,
             "raspberrypi,3-compute-module" => Model::RaspberryPiComputeModule3,
+            "raspberrypi,3-compute-module-plus" => Model::RaspberryPiComputeModule3Plus,
             "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
             "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
@@ -260,6 +263,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi 3 Model B" => Model::RaspberryPi3B,
         "Raspberry Pi Zero" => Model::RaspberryPiZero,
         "Raspberry Pi Compute Module 3" => Model::RaspberryPiComputeModule3,
+        "Raspberry Pi Compute Module 3 Plus" => Model::RaspberryPiComputeModule3Plus,
         "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
         "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
@@ -317,7 +321,9 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi3BPlus | Model::RaspberryPi3APlus => Ok(DeviceInfo {
+            Model::RaspberryPi3BPlus
+            | Model::RaspberryPi3APlus
+            | Model::RaspberryPiComputeModule3Plus => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2837B0,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
