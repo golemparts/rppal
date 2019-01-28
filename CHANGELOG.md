@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.0 (TBD)
+
+* **DeviceInfo**: (Breaking change) Add support for Raspberry Pi Compute Module 3+.
+
 ## 0.10.0 (January 18, 2019)
 
 * (Breaking change) Transition to Rust 2018, requiring rustc v1.31.0 or newer to compile the library.
