@@ -84,6 +84,8 @@ pub enum Model {
     RaspberryPiComputeModule3Plus,
     RaspberryPiZero,
     RaspberryPiZeroW,
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 impl fmt::Display for Model {
@@ -103,6 +105,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
+            Model::__Nonexhaustive => write!(f, "__Nonexhaustive"),
         }
     }
 }
@@ -114,6 +117,8 @@ pub enum SoC {
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 impl fmt::Display for SoC {
@@ -123,6 +128,7 @@ impl fmt::Display for SoC {
             SoC::Bcm2836 => write!(f, "BCM2836"),
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
+            SoC::__Nonexhaustive => write!(f, "__Nonexhaustive"),
         }
     }
 }
@@ -330,6 +336,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
+            Model::__Nonexhaustive => unreachable!(),
         }
     }
 
