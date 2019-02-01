@@ -43,13 +43,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Retrieve the GPIO pin and configure it as an output.
     let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
-    // Clone running, so we can safely access it from within the signal handler.
     let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
 
     // When a SIGINT (Ctrl-C) or SIGTERM signal is caught, atomically set running to false.
-    simple_signal::set_handler(&[Signal::Int, Signal::Term], move |_| {
-        r.store(false, Ordering::SeqCst);
+    simple_signal::set_handler(&[Signal::Int, Signal::Term], {
+        let running = running.clone();
+        move |_| {
+            running.store(false, Ordering::SeqCst);
+        }
     });
 
     // Blink the LED until running is set to false.
