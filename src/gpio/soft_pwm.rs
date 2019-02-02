@@ -29,7 +29,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use libc::{self, CLOCK_MONOTONIC};
+use libc::{self, sched_param, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHED_RR};
 
 use super::{Error, GpioState, Result};
 
@@ -67,19 +67,19 @@ impl SoftPwm {
             // Set the scheduling policy to real-time round robin at the highest priority. This
             // will silently fail if we're not running as root.
             #[cfg(target_env = "gnu")]
-            let params = libc::sched_param {
-                sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_RR) },
+            let params = sched_param {
+                sched_priority: unsafe { libc::sched_get_priority_max(SCHED_RR) },
             };
 
             #[cfg(target_env = "musl")]
-            let params = libc::sched_param {
-                sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_RR) },
+            let params = sched_param {
+                sched_priority: unsafe { libc::sched_get_priority_max(SCHED_RR) },
                 sched_ss_low_priority: 0,
-                sched_ss_repl_period: libc::timespec {
+                sched_ss_repl_period: timespec {
                     tv_sec: 0,
                     tv_nsec: 0,
                 },
-                sched_ss_init_budget: libc::timespec {
+                sched_ss_init_budget: timespec {
                     tv_sec: 0,
                     tv_nsec: 0,
                 },
@@ -87,13 +87,13 @@ impl SoftPwm {
             };
 
             unsafe {
-                libc::sched_setscheduler(0, libc::SCHED_RR, &params);
+                libc::sched_setscheduler(0, SCHED_RR, &params);
             }
 
             // Set timer slack to 1 ns (default = 50 µs). This is only relevant if we're unable
             // to set a real-time scheduling policy.
             unsafe {
-                libc::prctl(libc::PR_SET_TIMERSLACK, 1);
+                libc::prctl(PR_SET_TIMERSLACK, 1);
             }
 
             let mut period_ns =
@@ -214,7 +214,7 @@ impl Drop for SoftPwm {
 
 #[inline(always)]
 fn get_time_ns() -> i64 {
-    let mut ts = libc::timespec {
+    let mut ts = timespec {
         tv_sec: 0,
         tv_nsec: 0,
     };
@@ -228,12 +228,12 @@ fn get_time_ns() -> i64 {
 
 #[inline(always)]
 fn sleep_ns(ns: i64) {
-    let ts = libc::timespec {
+    let ts = timespec {
         tv_sec: (ns / 1_000_000_000) as i32,
         tv_nsec: (ns % 1_000_000_000) as i32,
     };
 
     unsafe {
-        libc::clock_nanosleep(libc::CLOCK_MONOTONIC, 0, &ts, ptr::null_mut());
+        libc::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, ptr::null_mut());
     }
 }

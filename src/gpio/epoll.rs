@@ -24,8 +24,9 @@ use std::io;
 use std::result;
 use std::time::Duration;
 
-use libc;
-use libc::c_int;
+use libc::{
+    self, c_int, c_void, EFD_NONBLOCK, EFD_SEMAPHORE, EPOLL_CTL_ADD, EPOLL_CTL_DEL, EPOLL_CTL_MOD,
+};
 
 pub use libc::{epoll_event, EPOLLERR, EPOLLET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLLPRI};
 
@@ -41,18 +42,14 @@ pub struct EventFd {
 impl EventFd {
     pub fn new() -> Result<EventFd> {
         Ok(EventFd {
-            fd: parse_retval!(unsafe {
-                libc::eventfd(0, libc::EFD_NONBLOCK | libc::EFD_SEMAPHORE)
-            })?,
+            fd: parse_retval!(unsafe { libc::eventfd(0, EFD_NONBLOCK | EFD_SEMAPHORE) })?,
         })
     }
 
     pub fn notify(&self) -> Result<()> {
         let buffer: u64 = 1;
 
-        parse_retval!(unsafe {
-            libc::write(self.fd, &buffer as *const u64 as *const libc::c_void, 8)
-        })?;
+        parse_retval!(unsafe { libc::write(self.fd, &buffer as *const u64 as *const c_void, 8) })?;
 
         Ok(())
     }
@@ -72,7 +69,7 @@ impl Drop for EventFd {
 
 #[derive(Debug)]
 pub struct Epoll {
-    fd: libc::c_int,
+    fd: c_int,
 }
 
 impl Epoll {
@@ -83,40 +80,36 @@ impl Epoll {
     }
 
     pub fn add(&self, fd: i32, id: u64, event_mask: i32) -> Result<()> {
-        let mut event = libc::epoll_event {
+        let mut event = epoll_event {
             events: event_mask as u32,
             u64: id as u64,
         };
 
-        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_ADD, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, EPOLL_CTL_ADD, fd, &mut event) })?;
 
         Ok(())
     }
 
     pub fn modify(&self, fd: i32, id: u64, event_mask: i32) -> Result<()> {
-        let mut event = libc::epoll_event {
+        let mut event = epoll_event {
             events: event_mask as u32,
             u64: id as u64,
         };
 
-        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_MOD, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, EPOLL_CTL_MOD, fd, &mut event) })?;
 
         Ok(())
     }
 
     pub fn delete(&self, fd: i32) -> Result<()> {
-        let mut event = libc::epoll_event { events: 0, u64: 0 };
+        let mut event = epoll_event { events: 0, u64: 0 };
 
-        parse_retval!(unsafe { libc::epoll_ctl(self.fd, libc::EPOLL_CTL_DEL, fd, &mut event) })?;
+        parse_retval!(unsafe { libc::epoll_ctl(self.fd, EPOLL_CTL_DEL, fd, &mut event) })?;
 
         Ok(())
     }
 
-    pub fn wait(
-        &self,
-        events: &mut [libc::epoll_event],
-        timeout: Option<Duration>,
-    ) -> Result<usize> {
+    pub fn wait(&self, events: &mut [epoll_event], timeout: Option<Duration>) -> Result<usize> {
         if events.is_empty() {
             return Ok(0);
         }

@@ -18,16 +18,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use libc;
+use libc::{self, c_char, group, passwd};
 use std::ffi::CString;
 use std::ptr;
 
 // Find user ID for specified user
 pub fn user_to_uid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0 as libc::c_char; 4096];
-        let mut res: *mut libc::passwd = ptr::null_mut();
-        let mut pwd = libc::passwd {
+        let buf = &mut [0 as c_char; 4096];
+        let mut res: *mut passwd = ptr::null_mut();
+        let mut pwd = passwd {
             pw_name: ptr::null_mut(),
             pw_passwd: ptr::null_mut(),
             pw_uid: 0,
@@ -58,9 +58,9 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 // Find group ID for specified group
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0 as libc::c_char; 4096];
-        let mut res: *mut libc::group = ptr::null_mut();
-        let mut grp = libc::group {
+        let buf = &mut [0 as c_char; 4096];
+        let mut res: *mut group = ptr::null_mut();
+        let mut grp = group {
             gr_name: ptr::null_mut(),
             gr_passwd: ptr::null_mut(),
             gr_gid: 0,

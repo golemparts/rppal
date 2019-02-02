@@ -20,7 +20,7 @@
 
 #![allow(dead_code)]
 
-use libc::{self, c_int, c_ulong, c_void, ioctl, read, ENOENT};
+use libc::{self, c_int, c_ulong, c_void, ENOENT};
 use std::ffi::CString;
 use std::fmt;
 use std::fs::{File, OpenOptions};
@@ -100,7 +100,7 @@ impl ChipInfo {
             lines: 0,
         };
 
-        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_CHIP_INFO, &mut chip_info) })?;
+        parse_retval!(unsafe { libc::ioctl(cdev_fd, REQ_GET_CHIP_INFO, &mut chip_info) })?;
 
         Ok(chip_info)
     }
@@ -197,7 +197,7 @@ impl HandleRequest {
         handle_request.consumer_label[0..CONSUMER_LABEL.len()]
             .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
-        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
+        parse_retval!(unsafe { libc::ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
 
         // If the handle fd is zero or negative, an error occurred
         if handle_request.fd <= 0 {
@@ -210,7 +210,7 @@ impl HandleRequest {
     pub fn levels(&self) -> Result<HandleData> {
         let mut handle_data = HandleData::new();
 
-        parse_retval!(unsafe { ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
+        parse_retval!(unsafe { libc::ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
 
         Ok(handle_data)
     }
@@ -227,7 +227,7 @@ impl HandleRequest {
             handle_data.values[idx] = *level as u8;
         }
 
-        parse_retval!(unsafe { ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
+        parse_retval!(unsafe { libc::ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
 
         Ok(())
     }
@@ -317,7 +317,7 @@ impl EventRequest {
         event_request.consumer_label[0..CONSUMER_LABEL.len()]
             .copy_from_slice(CONSUMER_LABEL.as_bytes());
 
-        parse_retval!(unsafe { ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
+        parse_retval!(unsafe { libc::ioctl(cdev_fd, REQ_GET_LINE_EVENT, &mut event_request) })?;
 
         // If the event fd is zero or negative, an error occurred
         if event_request.fd <= 0 {
@@ -374,7 +374,7 @@ impl EventData {
         };
 
         let bytes_read = parse_retval!(unsafe {
-            read(
+            libc::read(
                 event_fd,
                 &mut event_data as *mut EventData as *mut c_void,
                 size_of::<EventData>(),

@@ -28,7 +28,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use libc;
+use libc::{self, c_void, off_t, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 
 use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
 use crate::system::DeviceInfo;
@@ -98,7 +98,7 @@ impl GpioMem {
         let gpiomem_file = OpenOptions::new()
             .read(true)
             .write(true)
-            .custom_flags(libc::O_SYNC)
+            .custom_flags(O_SYNC)
             .open(PATH_DEV_GPIOMEM)?;
 
         // Memory-map /dev/gpiomem at offset 0
@@ -106,14 +106,14 @@ impl GpioMem {
             libc::mmap(
                 ptr::null_mut(),
                 GPIO_MEM_SIZE,
-                libc::PROT_READ | libc::PROT_WRITE,
-                libc::MAP_SHARED,
+                PROT_READ | PROT_WRITE,
+                MAP_SHARED,
                 gpiomem_file.as_raw_fd(),
                 0,
             )
         };
 
-        if gpiomem_ptr == libc::MAP_FAILED {
+        if gpiomem_ptr == MAP_FAILED {
             return Err(Error::Io(io::Error::last_os_error()));
         }
 
@@ -127,7 +127,7 @@ impl GpioMem {
         let mem_file = OpenOptions::new()
             .read(true)
             .write(true)
-            .custom_flags(libc::O_SYNC)
+            .custom_flags(O_SYNC)
             .open(PATH_DEV_MEM)?;
 
         // Memory-map /dev/mem at the appropriate offset for our SoC
@@ -135,14 +135,14 @@ impl GpioMem {
             libc::mmap(
                 ptr::null_mut(),
                 GPIO_MEM_SIZE,
-                libc::PROT_READ | libc::PROT_WRITE,
-                libc::MAP_SHARED,
+                PROT_READ | PROT_WRITE,
+                MAP_SHARED,
                 mem_file.as_raw_fd(),
-                (device_info.peripheral_base() + device_info.gpio_offset()) as libc::off_t,
+                (device_info.peripheral_base() + device_info.gpio_offset()) as off_t,
             )
         };
 
-        if mem_ptr == libc::MAP_FAILED {
+        if mem_ptr == MAP_FAILED {
             return Err(Error::Io(io::Error::last_os_error()));
         }
 
@@ -257,10 +257,7 @@ impl GpioMem {
 impl Drop for GpioMem {
     fn drop(&mut self) {
         unsafe {
-            libc::munmap(
-                self.mem_ptr as *mut libc::c_void,
-                GPIO_MEM_SIZE as libc::size_t,
-            );
+            libc::munmap(self.mem_ptr as *mut c_void, GPIO_MEM_SIZE as size_t);
         }
     }
 }
