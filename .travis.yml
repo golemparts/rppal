@@ -6,7 +6,7 @@ rust:
   - beta
   - nightly
 install:
-  - cargo install cross
+  - cargo install cross || true
   - source ~/.cargo/env || true
 script:
   - cross build --target $TARGET
