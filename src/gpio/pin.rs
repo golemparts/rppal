@@ -70,13 +70,13 @@ macro_rules! impl_input {
 
 macro_rules! impl_output {
     () => {
-        /// Sets the pin's logic level.
+        /// Sets the pin's output state.
         #[inline]
         pub fn write(&mut self, level: Level) {
             self.pin.write(level)
         }
 
-        /// Sets the pin's logic level to [`Low`].
+        /// Sets the pin's output state to [`Low`].
         ///
         /// [`Low`]: enum.Level.html#variant.Low
         #[inline]
@@ -84,7 +84,7 @@ macro_rules! impl_output {
             self.pin.set_low()
         }
 
-        /// Sets the pin's logic level to [`High`].
+        /// Sets the pin's output state to [`High`].
         ///
         /// [`High`]: enum.Level.html#variant.High
         #[inline]
@@ -92,7 +92,7 @@ macro_rules! impl_output {
             self.pin.set_high()
         }
 
-        /// Toggles the pin's logic level between [`Low`] and [`High`].
+        /// Toggles the pin's output state between [`Low`] and [`High`].
         ///
         /// [`Low`]: enum.Level.html#variant.Low
         /// [`High`]: enum.Level.html#variant.High
@@ -542,7 +542,7 @@ impl_eq!(InputPin);
 /// `OutputPin`s are constructed by converting a [`Pin`] using [`Pin::into_output`].
 /// The pin's mode is automatically set to [`Output`].
 ///
-/// An `OutputPin` can be used to change a pin's logic level.
+/// An `OutputPin` can be used to change a pin's output state.
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Output`]: enum.Mode.html#variant.Output
@@ -578,6 +578,23 @@ impl OutputPin {
 
     impl_pin!();
     impl_output!();
+
+    /// Returns `true` if the pin's output state is set to [`Low`].
+    ///
+    /// [`Low`]: enum.Level.html#variant.Low
+    #[inline]
+    pub fn is_set_low(&self) -> bool {
+        self.pin.read() == Level::Low
+    }
+
+    /// Returns `true` if the pin's output state is set to [`High`].
+    ///
+    /// [`High`]: enum.Level.html#variant.High
+    #[inline]
+    pub fn is_set_high(&self) -> bool {
+        self.pin.read() == Level::High
+    }
+
     impl_reset_on_drop!();
 }
 
@@ -591,7 +608,7 @@ impl_eq!(OutputPin);
 ///
 /// An `IoPin` can be reconfigured for any available mode. Depending on the
 /// mode, some methods may not have any effect. For instance, using a method that
-/// alters the pin's logic level won't cause any changes when the pin's mode is set
+/// alters the pin's output state won't cause any changes when the pin's mode is set
 /// to [`Input`].
 ///
 /// [`Pin`]: struct.Pin.html
