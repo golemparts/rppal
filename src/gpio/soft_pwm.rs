@@ -23,7 +23,7 @@
 #![allow(dead_code)]
 
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -40,7 +40,7 @@ const BUSYWAIT_MAX: i64 = 200_000;
 // Subtract from the remaining busy wait time to account for get_time_ns() overhead
 const BUSYWAIT_REMAINDER: i64 = 100;
 
-static mut MSG_WAITING: AtomicBool = ATOMIC_BOOL_INIT;
+static mut MSG_WAITING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
 enum Msg {
