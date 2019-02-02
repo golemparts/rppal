@@ -106,7 +106,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sy
 #### Features
 
 * Up to two hardware PWM channels
-* Configurable frequency/period, duty cycle and polarity
+* Configurable frequency, duty cycle and polarity
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
