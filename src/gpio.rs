@@ -134,6 +134,7 @@ mod interrupt;
 mod ioctl;
 mod mem;
 mod pin;
+mod soft_pwm;
 
 use crate::system;
 

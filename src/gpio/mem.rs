@@ -149,30 +149,33 @@ impl GpioMem {
         Ok(mem_ptr as *mut u32)
     }
 
-    #[inline]
+    #[inline(always)]
     fn read(&self, offset: usize) -> u32 {
         unsafe { ptr::read_volatile(self.mem_ptr.add(offset)) }
     }
 
-    #[inline]
+    #[inline(always)]
     fn write(&self, offset: usize, value: u32) {
         unsafe {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
     }
 
+    #[inline(always)]
     pub(crate) fn set_high(&self, pin: u8) {
         let offset = GPSET0 + pin as usize / 32;
         let shift = pin % 32;
         self.write(offset, 1 << shift);
     }
 
+    #[inline(always)]
     pub(crate) fn set_low(&self, pin: u8) {
         let offset = GPCLR0 + pin as usize / 32;
         let shift = pin % 32;
         self.write(offset, 1 << shift);
     }
 
+    #[inline(always)]
     pub(crate) fn level(&self, pin: u8) -> Level {
         let offset = GPLEV0 + pin as usize / 32;
         let shift = pin % 32;
@@ -210,7 +213,6 @@ impl GpioMem {
         self.locks[offset].store(false, Ordering::SeqCst);
     }
 
-    /// Configures the built-in GPIO pull-up/pull-down resistors.
     pub(crate) fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
         let offset = GPPUDCLK0 + pin as usize / 32;
         let shift = pin % 32;
