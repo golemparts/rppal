@@ -104,6 +104,81 @@ macro_rules! impl_output {
                 self.set_low();
             }
         }
+
+        /// Configures a software-based PWM signal.
+        ///
+        /// `period` specifies the time it takes to complete one cycle.
+        ///
+        /// `pulse_width` specifies the amount of time the PWM signal is active during a
+        /// single period.
+        ///
+        /// TODO: Move most of the text below to a section in the gpio module documentation.
+        ///
+        /// `set_pwm` emulates a PWM signal by toggling the pin's logic level on a separate
+        /// thread combined with sleep and busy-waiting. Software-based PWM is inherently
+        /// inaccurate on a multi-threaded OS due to scheduling/preemption. If an accurate
+        /// or faster PWM signal is required, use the hardware [`Pwm`] peripheral instead.
+        ///
+        /// The PWM thread may occasionally sleep longer than needed. If the active or
+        /// inactive part of the signal is shorter than 250 µs, it will forgo sleep and only use
+        /// busy-waiting, which will increase CPU usage. Due to function call overhead,
+        /// typical jitter is expected to be up to 10 µs on debug builds, and
+        /// up to 2 µs on release builds.
+        ///
+        /// If `set_pwm` is called when a PWM thread is already running, the existing thread
+        /// will be reconfigured at the end of the current cycle.
+        ///
+        /// [`Pwm`]: ../pwm/struct.Pwm.html
+        pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
+            if let Some(ref mut soft_pwm) = self.soft_pwm {
+                soft_pwm.reconfigure(period, pulse_width);
+            } else {
+                self.soft_pwm = Some(SoftPwm::new(
+                    self.pin.pin,
+                    self.pin.gpio_state.clone(),
+                    period,
+                    pulse_width,
+                ));
+            }
+
+            Ok(())
+        }
+
+        /// Configures a software-based PWM signal.
+        ///
+        /// `set_pwm_frequency` is a convenience method that converts `frequency` to a period and
+        /// `duty_cycle` to a pulse width, and then calls [`set_pwm`].
+        ///
+        /// `frequency` is specified in hertz (Hz).
+        ///
+        /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
+        ///
+        /// [`set_pwm`]: #method.set_pwm
+        pub fn set_pwm_frequency(&mut self, frequency: f64, duty_cycle: f64) -> Result<()> {
+            let period = if frequency <= 0.0 {
+                0.0
+            } else {
+                (1.0 / frequency) * 1_000_000_000.0
+            };
+            let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+
+            self.set_pwm(
+                Duration::from_nanos(period as u64),
+                Duration::from_nanos(pulse_width as u64),
+            )
+        }
+
+        /// Stops a previously configured software-based PWM signal.
+        ///
+        /// The thread responsible for emulating the PWM signal is stopped at the end
+        /// of the current cycle.
+        pub fn clear_pwm(&mut self) -> Result<()> {
+            if let Some(mut soft_pwm) = self.soft_pwm.take() {
+                soft_pwm.stop()?;
+            }
+
+            Ok(())
+        }
     }
 }
 
@@ -503,84 +578,6 @@ impl OutputPin {
 
     impl_pin!();
     impl_output!();
-
-    /// Configures a software-based PWM signal.
-    ///
-    /// `period` specifies the time it takes to complete one cycle.
-    ///
-    /// `pulse_width` specifies the amount of time the PWM signal is active during a
-    /// single period.
-    ///
-    /// TODO: Move most of the text below to a section in the gpio module documentation.
-    ///
-    /// `set_pwm` emulates a PWM signal by toggling the pin's logic level on a separate
-    /// thread combined with sleep and busy-waiting. Software-based PWM is inherently
-    /// inaccurate on a multi-threaded OS due to scheduling/preemption. If an accurate
-    /// or faster PWM signal is required, use the hardware [`Pwm`] peripheral instead.
-    ///
-    /// The PWM thread may occasionally sleep longer than needed. If the active or
-    /// inactive part of the signal is shorter than 250 µs, it will forgo sleep and only use
-    /// busy-waiting, which will increase CPU usage. Due to function call overhead,
-    /// typical jitter is expected to be up to 10 µs on debug builds, and
-    /// up to 2 µs on release builds.
-    ///
-    /// If `set_pwm` is called when a PWM thread is already running, the existing thread
-    /// will be reconfigured at the end of the current cycle.
-    ///
-    /// [`Pwm`]: ../pwm/struct.Pwm.html
-    pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
-        // TODO: Move pwm methods to the impl_output macro
-
-        if let Some(ref mut soft_pwm) = self.soft_pwm {
-            soft_pwm.reconfigure(period, pulse_width);
-        } else {
-            self.soft_pwm = Some(SoftPwm::new(
-                self.pin.pin,
-                self.pin.gpio_state.clone(),
-                period,
-                pulse_width,
-            ));
-        }
-
-        Ok(())
-    }
-
-    /// Configures a software-based PWM signal.
-    ///
-    /// `set_pwm_frequency` is a convenience method that converts `frequency` to a period and
-    /// `duty_cycle` to a pulse width, and then calls [`set_pwm`].
-    ///
-    /// `frequency` is specified in hertz (Hz).
-    ///
-    /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
-    ///
-    /// [`set_pwm`]: #method.set_pwm
-    pub fn set_pwm_frequency(&mut self, frequency: f64, duty_cycle: f64) -> Result<()> {
-        let period = if frequency <= 0.0 {
-            0.0
-        } else {
-            (1.0 / frequency) * 1_000_000_000.0
-        };
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
-
-        self.set_pwm(
-            Duration::from_nanos(period as u64),
-            Duration::from_nanos(pulse_width as u64),
-        )
-    }
-
-    /// Stops a previously configured software-based PWM signal.
-    ///
-    /// The thread responsible for emulating the PWM signal is stopped at the end
-    /// of the current cycle.
-    pub fn clear_pwm(&mut self) -> Result<()> {
-        if let Some(mut soft_pwm) = self.soft_pwm.take() {
-            soft_pwm.stop()?;
-        }
-
-        Ok(())
-    }
-
     impl_reset_on_drop!();
 }
 
