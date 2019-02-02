@@ -577,7 +577,6 @@ impl OutputPin {
     }
 
     impl_pin!();
-    impl_output!();
 
     /// Returns `true` if the pin's output state is set to [`Low`].
     ///
@@ -595,6 +594,7 @@ impl OutputPin {
         self.pin.read() == Level::High
     }
 
+    impl_output!();
     impl_reset_on_drop!();
 }
 
