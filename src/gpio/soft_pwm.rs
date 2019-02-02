@@ -66,8 +66,24 @@ impl SoftPwm {
         let pwm_thread = thread::spawn(move || -> Result<()> {
             // Set the scheduling policy to real-time round robin at the highest priority. This
             // will silently fail if we're not running as root.
+            #[cfg(target_env = "gnu")]
             let params = libc::sched_param {
                 sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_RR) },
+            };
+
+            #[cfg(target_env = "musl")]
+            let params = libc::sched_param {
+                sched_priority: unsafe { libc::sched_get_priority_max(libc::SCHED_RR) },
+                sched_ss_low_priority: 0,
+                sched_ss_repl_period: libc::timespec {
+                    tv_sec: 0,
+                    tv_nsec: 0,
+                },
+                sched_ss_init_budget: libc::timespec {
+                    tv_sec: 0,
+                    tv_nsec: 0,
+                },
+                sched_ss_max_repl: 0,
             };
 
             unsafe {
