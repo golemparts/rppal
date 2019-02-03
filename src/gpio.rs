@@ -136,6 +136,8 @@ mod mem;
 mod pin;
 mod soft_pwm;
 
+pub mod hal;
+
 use crate::system;
 
 pub use self::pin::{InputPin, IoPin, OutputPin, Pin};
