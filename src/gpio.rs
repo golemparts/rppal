@@ -130,13 +130,12 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 
 mod epoll;
+mod hal;
 mod interrupt;
 mod ioctl;
 mod mem;
 mod pin;
 mod soft_pwm;
-
-pub mod hal;
 
 use crate::system;
 
