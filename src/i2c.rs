@@ -158,12 +158,6 @@ impl From<system::Error> for Error {
     }
 }
 
-impl From<Error> for nb::Error<Error> {
-    fn from(err: Error) -> nb::Error<Error> {
-        nb::Error::Other(err)
-    }
-}
-
 /// Result type returned from methods that can have `i2c::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
