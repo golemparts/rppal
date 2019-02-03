@@ -23,6 +23,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
+use embedded_hal::digital::OutputPin as hal_outputpin;
+
 use super::soft_pwm::SoftPwm;
 use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown, Result, Trigger};
 
@@ -601,6 +603,16 @@ impl OutputPin {
 impl_drop!(OutputPin);
 impl_eq!(OutputPin);
 
+impl hal_outputpin for OutputPin {
+    fn set_low(&mut self) {
+        OutputPin::set_low(self);
+    }
+
+    fn set_high(&mut self) {
+        OutputPin::set_high(self);
+    }
+}
+
 /// GPIO pin that can be (re)configured for any mode or alternate function.
 ///
 /// `IoPin`s are constructed by converting a [`Pin`] using [`Pin::into_io`].
@@ -681,3 +693,13 @@ impl IoPin {
 
 impl_drop!(IoPin);
 impl_eq!(IoPin);
+
+impl hal_outputpin for IoPin {
+    fn set_low(&mut self) {
+        IoPin::set_low(self);
+    }
+
+    fn set_high(&mut self) {
+        IoPin::set_high(self);
+    }
+}
