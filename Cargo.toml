@@ -14,6 +14,8 @@ keywords = ["raspberry","pi","gpio","spi","i2c"]
 [dependencies]
 libc = "0.2"
 lazy_static = "1.2"
+nb = "0.1"
+embedded-hal = "0.2"
 
 [dev-dependencies]
 simple-signal = "1.1"

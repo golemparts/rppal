@@ -93,6 +93,7 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
+use embedded_hal::blocking::i2c as hal_blocking_i2c;
 use libc::c_ulong;
 
 use crate::system;
@@ -154,6 +155,12 @@ impl From<io::Error> for Error {
 impl From<system::Error> for Error {
     fn from(_err: system::Error) -> Error {
         Error::UnknownModel
+    }
+}
+
+impl From<Error> for nb::Error<Error> {
+    fn from(err: Error) -> nb::Error<Error> {
+        nb::Error::Other(err)
     }
 }
 
@@ -645,3 +652,36 @@ impl I2c {
 // Send is safe for I2c, but we're marked !Send because of the dummy pointer that's
 // needed to force !Sync.
 unsafe impl Send for I2c {}
+
+impl hal_blocking_i2c::Write for I2c {
+    type Error = Error;
+
+    fn write(&mut self, address: u8, bytes: &[u8]) -> Result<()> {
+        self.set_slave_address(u16::from(address))?;
+        I2c::write(self, bytes)?;
+
+        Ok(())
+    }
+}
+
+impl hal_blocking_i2c::Read for I2c {
+    type Error = Error;
+
+    fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<()> {
+        self.set_slave_address(u16::from(address))?;
+        I2c::read(self, buffer)?;
+
+        Ok(())
+    }
+}
+
+impl hal_blocking_i2c::WriteRead for I2c {
+    type Error = Error;
+
+    fn write_read(&mut self, address: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<()> {
+        self.set_slave_address(u16::from(address))?;
+        I2c::write_read(self, bytes, buffer)?;
+
+        Ok(())
+    }
+}
