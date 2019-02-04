@@ -25,9 +25,9 @@
 
 use super::{Error, I2c, Result};
 
-use embedded_hal::blocking::i2c as hal_blocking_i2c;
+use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
 
-impl hal_blocking_i2c::Write for I2c {
+impl Write for I2c {
     type Error = Error;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<()> {
@@ -38,7 +38,7 @@ impl hal_blocking_i2c::Write for I2c {
     }
 }
 
-impl hal_blocking_i2c::Read for I2c {
+impl Read for I2c {
     type Error = Error;
 
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<()> {
@@ -49,7 +49,7 @@ impl hal_blocking_i2c::Read for I2c {
     }
 }
 
-impl hal_blocking_i2c::WriteRead for I2c {
+impl WriteRead for I2c {
     type Error = Error;
 
     fn write_read(&mut self, address: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<()> {

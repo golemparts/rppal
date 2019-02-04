@@ -18,11 +18,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use embedded_hal::digital::OutputPin as hal_outputpin;
+use embedded_hal::digital;
 
 use super::{IoPin, OutputPin};
 
-impl hal_outputpin for OutputPin {
+impl digital::OutputPin for OutputPin {
     fn set_low(&mut self) {
         OutputPin::set_low(self);
     }
@@ -32,7 +32,7 @@ impl hal_outputpin for OutputPin {
     }
 }
 
-impl hal_outputpin for IoPin {
+impl digital::OutputPin for IoPin {
     fn set_low(&mut self) {
         IoPin::set_low(self);
     }
