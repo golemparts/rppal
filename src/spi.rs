@@ -110,6 +110,7 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
+mod hal;
 mod ioctl;
 mod segment;
 
@@ -305,6 +306,8 @@ pub enum BitOrder {
 /// [here]: index.html
 pub struct Spi {
     spidev: File,
+    // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
+    last_read: u8,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
     // #![feature(optin_builtin_traits)] to manually add impl !Sync for Spi.
@@ -348,6 +351,7 @@ impl Spi {
 
         let spi = Spi {
             spidev,
+            last_read: 0,
             not_sync: PhantomData,
         };
 
