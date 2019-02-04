@@ -18,14 +18,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Implements `embedded_hal` traits.
-//!
-//! Include this module in your `use` statement to add the required traits
-//! needed to use `I2c` with `embedded_hal` drivers.
+use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
 
 use super::{Error, I2c, Result};
-
-use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
 
 impl Write for I2c {
     type Error = Error;
