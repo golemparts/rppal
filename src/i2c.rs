@@ -98,6 +98,7 @@ use libc::c_ulong;
 use crate::system;
 use crate::system::{DeviceInfo, Model};
 
+#[cfg(feature = "hal")]
 mod hal;
 mod ioctl;
 

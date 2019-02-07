@@ -130,6 +130,7 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 
 mod epoll;
+#[cfg(feature = "hal")]
 mod hal;
 mod interrupt;
 mod ioctl;
