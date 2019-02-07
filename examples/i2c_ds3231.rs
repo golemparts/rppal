@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &[dec2bcd(50), dec2bcd(59), dec2bcd(11) | (1 << 6)],
     )?;
 
-    let mut reg: [u8; 3] = [0; 3];
+    let mut reg = [0u8; 3];
     loop {
         // Start at register address 0x00 (Seconds) and read the values of the
         // next 3 registers (Seconds, Minutes, Hours) into the reg variable.
