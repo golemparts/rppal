@@ -43,7 +43,7 @@ let pwm = Pwm::new(Channel::Pwm0)?;
 let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0)?;
 ```
 
-Some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
+Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
 
 ## Examples
 
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut pin = Gpio::new()?.get(GPIO_LED)?.into_output();
 
-    // Blink the LED by setting the pin's logic level high for 500ms.
+    // Blink the LED by setting the pin's logic level high for 500 ms.
     pin.set_high();
     thread::sleep(Duration::from_millis(500));
     pin.set_low();
