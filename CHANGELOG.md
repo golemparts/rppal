@@ -3,8 +3,8 @@
 ## 0.11.0 (TBD)
 
 * **DeviceInfo**: (Breaking change) Add support for Raspberry Pi Compute Module 3+.
-* **DeviceInfo**: (Breaking change) Add hidden `Model::__Nonexhaustive` and `SoC::__Nonexhaustive` variants, indicating `Model` and `SoC` shouldn't be exhaustively matched. After this change, adding new variants to these enums won't be considered a breaking change anymore, using minor updates whenever possible. This is a hack that can still be circumvented, but anyone that does so should be aware of the repercussions. This will be replaced once `#[non_exhaustive]` stabilizes.
-* **Gpio**: Add software-based PWM to `OutputPin` and `IoPin` through `set_pwm()`, `set_pwm_frequency()` and `clear_pwm()` .
+* **DeviceInfo**: (Breaking change) Add hidden `Model::__Nonexhaustive` and `SoC::__Nonexhaustive` variants, indicating `Model` and `SoC` shouldn't be exhaustively matched. After this change, adding new variants to these enums when a new Raspberry Pi model is released won't be considered a breaking change anymore. This is a hack that can still be circumvented, but anyone that does so should be aware of the repercussions. This will be replaced once `#[non_exhaustive]` stabilizes.
+* **Gpio**: Add software-based PWM to `OutputPin` and `IoPin` through `set_pwm()`, `set_pwm_frequency()` and `clear_pwm()`.
 * **Gpio**: Add `is_set_low()` and `is_set_high()` to `OutputPin` to check the pin's output state.
 * **Gpio**: Implement `embedded-hal` trait `OutputPin` for `OutputPin` and `IoPin`.
 * **I2c**: Implement `embedded-hal` traits `Read`, `Write` and `WriteRead` for `I2c`.
