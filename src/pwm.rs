@@ -85,6 +85,8 @@ use std::io;
 use std::result;
 use std::time::Duration;
 
+#[cfg(feature = "hal")]
+mod hal;
 mod sysfs;
 
 /// Errors that can occur when accessing the PWM peripheral.
