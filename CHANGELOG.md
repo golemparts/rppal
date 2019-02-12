@@ -8,6 +8,7 @@
 * **Gpio**: Add `is_set_low()` and `is_set_high()` to `OutputPin` to check the pin's output state.
 * **Gpio**: Implement `embedded-hal` trait `OutputPin` for `OutputPin` and `IoPin`.
 * **I2c**: Implement `embedded-hal` traits `Read`, `Write` and `WriteRead` for `I2c`.
+* **Pwm**: Implement `embedded-hal` trait `PwmPin` for `Pwm`.
 * **Spi**: Implement `embedded-hal` traits `FullDuplex`, `Transfer` and `Write` for `Spi`.
 
 ## 0.10.0 (January 18, 2019)
