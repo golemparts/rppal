@@ -55,7 +55,21 @@
 //! for synchronous interrupt triggers, and need to be polled simultaneously.
 //!
 //! Asynchronous interrupt triggers are configured using [`InputPin::set_async_interrupt`]. The
-//! specified callback function will get executed on a separate thread when a trigger event occurs.
+//! specified callback function will be executed on a separate thread when a trigger event occurs.
+//!
+//! ## Software-based PWM
+//!
+//! [`OutputPin`] and [`IoPin`] feature a software-based PWM implementation. The PWM signal is
+//! emulated by toggling the pin's output state on a separate thread, combined with sleep and
+//! busy-waiting.
+//!
+//! Software-based PWM is inherently inaccurate on a multi-threaded OS due to scheduling/preemption.
+//! If an accurate or faster PWM signal is required, use the hardware [`Pwm`] peripheral instead.
+//!
+//! PWM threads may occasionally sleep longer than needed. If the active or inactive part of the
+//! signal is shorter than 250 µs, only busy-waiting is used, which will increase CPU usage. Due to
+//! function call overhead, typical jitter is expected to be up to 10 µs on debug builds, and up to
+//! 2 µs on release builds.
 //!
 //! ## Examples
 //!
@@ -116,6 +130,7 @@
 //! [`OutputPin::set_reset_on_drop(false)`]: struct.OutputPin.html#method.set_reset_on_drop
 //! [`IoPin`]: struct.IoPin.html
 //! [`IoPin::set_reset_on_drop(false)`]: struct.IoPin.html#method.set_reset_on_drop
+//! [`Pwm`]: ../pwm/struct.Pwm.html
 
 use std::error;
 use std::fmt;
@@ -177,7 +192,7 @@ pub enum Error {
     PermissionDenied(String),
     /// I/O error.
     Io(io::Error),
-    /// Interrupt polling thread panicked.
+    /// Thread panicked.
     ThreadPanic,
 }
 
@@ -188,7 +203,7 @@ impl fmt::Display for Error {
             Error::PinNotAvailable(pin) => write!(f, "Pin {} is not available", pin),
             Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
-            Error::ThreadPanic => write!(f, "Interrupt polling thread panicked"),
+            Error::ThreadPanic => write!(f, "Thread panicked"),
         }
     }
 }

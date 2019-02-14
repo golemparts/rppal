@@ -112,23 +112,15 @@ macro_rules! impl_output {
         /// `pulse_width` specifies the amount of time the PWM signal is active during a
         /// single period.
         ///
-        /// TODO: Move most of the text below to a section in the gpio module documentation.
+        /// Software-based PWM is inherently inaccurate on a multi-threaded OS due to
+        /// scheduling/preemption. If an accurate or faster PWM signal is required, use the
+        /// hardware [`Pwm`] peripheral instead. More information can be found [here].
         ///
-        /// `set_pwm` emulates a PWM signal by toggling the pin's logic level on a separate
-        /// thread combined with sleep and busy-waiting. Software-based PWM is inherently
-        /// inaccurate on a multi-threaded OS due to scheduling/preemption. If an accurate
-        /// or faster PWM signal is required, use the hardware [`Pwm`] peripheral instead.
-        ///
-        /// The PWM thread may occasionally sleep longer than needed. If the active or
-        /// inactive part of the signal is shorter than 250 µs, it will forgo sleep and only use
-        /// busy-waiting, which will increase CPU usage. Due to function call overhead,
-        /// typical jitter is expected to be up to 10 µs on debug builds, and
-        /// up to 2 µs on release builds.
-        ///
-        /// If `set_pwm` is called when a PWM thread is already running, the existing thread
+        /// If `set_pwm` is called when a PWM thread is already active, the existing thread
         /// will be reconfigured at the end of the current cycle.
         ///
         /// [`Pwm`]: ../pwm/struct.Pwm.html
+        /// [here]: index.html#software-based-pwm
         pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
             if let Some(ref mut soft_pwm) = self.soft_pwm {
                 soft_pwm.reconfigure(period, pulse_width);

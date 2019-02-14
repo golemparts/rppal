@@ -68,6 +68,10 @@ impl error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 /// Identifiable Raspberry Pi models.
+///
+/// `Model` might be extended with additional variants in a minor or
+/// patch revision, and must not be exhaustively matched against.
+/// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Model {
     RaspberryPiA,
@@ -84,6 +88,9 @@ pub enum Model {
     RaspberryPiComputeModule3Plus,
     RaspberryPiZero,
     RaspberryPiZeroW,
+    /// `Model` might be extended with additional variants in a minor or
+    /// patch revision, and must not be exhaustively matched against.
+    /// Instead, add a `_` catch-all arm to match future variants.
     #[doc(hidden)]
     __Nonexhaustive,
 }
@@ -111,12 +118,19 @@ impl fmt::Display for Model {
 }
 
 /// Identifiable Raspberry Pi SoCs.
+///
+/// `SoC` might be extended with additional variants in a minor or
+/// patch revision, and must not be exhaustively matched against.
+/// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SoC {
     Bcm2835,
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
+    /// `SoC` might be extended with additional variants in a minor or
+    /// patch revision, and must not be exhaustively matched against.
+    /// Instead, add a `_` catch-all arm to match future variants.
     #[doc(hidden)]
     __Nonexhaustive,
 }
