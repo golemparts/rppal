@@ -63,7 +63,11 @@ impl PwmPin for OutputPin {
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.set_pwm_frequency(self.frequency, duty);
+        self.duty_cycle = duty.max(0.0).min(1.0);
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 }
 
@@ -87,6 +91,10 @@ impl PwmPin for IoPin {
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.set_pwm_frequency(self.frequency, duty);
+        self.duty_cycle = duty.max(0.0).min(1.0);
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 }

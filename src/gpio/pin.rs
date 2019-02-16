@@ -571,7 +571,7 @@ pub struct OutputPin {
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
     pud_mode: PullUpDown,
-    soft_pwm: Option<SoftPwm>,
+    pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
     #[cfg(feature = "hal")]
     pub(crate) frequency: f64,
@@ -649,7 +649,7 @@ pub struct IoPin {
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
     pud_mode: PullUpDown,
-    soft_pwm: Option<SoftPwm>,
+    pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
     #[cfg(feature = "hal")]
     pub(crate) frequency: f64,
