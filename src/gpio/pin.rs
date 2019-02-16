@@ -121,6 +121,32 @@ macro_rules! impl_output {
         ///
         /// [`Pwm`]: ../pwm/struct.Pwm.html
         /// [here]: index.html#software-based-pwm
+        #[cfg(feature = "hal")]
+        pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
+            if let Some(ref mut soft_pwm) = self.soft_pwm {
+                soft_pwm.reconfigure(period, pulse_width);
+            } else {
+                self.soft_pwm = Some(SoftPwm::new(
+                    self.pin.pin,
+                    self.pin.gpio_state.clone(),
+                    period,
+                    pulse_width,
+                ));
+            }
+
+            // Store frequency/duty cycle for the embedded-hal PwmPin implementation.
+            let period_s =
+                period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0);
+            let pulse_width_s = pulse_width.as_secs() as f64
+                + (f64::from(pulse_width.subsec_nanos()) / 1_000_000_000.0);
+
+            self.frequency = if period_s > 0.0 { 1.0 / period_s } else { 0.0 };
+            self.duty_cycle = (pulse_width_s / period_s).min(1.0);
+
+            Ok(())
+        }
+
+        #[cfg(not(feature = "hal"))]
         pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
             if let Some(ref mut soft_pwm) = self.soft_pwm {
                 soft_pwm.reconfigure(period, pulse_width);
@@ -546,6 +572,12 @@ pub struct OutputPin {
     reset_on_drop: bool,
     pud_mode: PullUpDown,
     soft_pwm: Option<SoftPwm>,
+    // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
+    #[cfg(feature = "hal")]
+    pub(crate) frequency: f64,
+    // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
+    #[cfg(feature = "hal")]
+    pub(crate) duty_cycle: f64,
 }
 
 impl OutputPin {
@@ -565,6 +597,10 @@ impl OutputPin {
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
             soft_pwm: None,
+            #[cfg(feature = "hal")]
+            frequency: 0.0,
+            #[cfg(feature = "hal")]
+            duty_cycle: 0.0,
         }
     }
 
@@ -614,6 +650,12 @@ pub struct IoPin {
     reset_on_drop: bool,
     pud_mode: PullUpDown,
     soft_pwm: Option<SoftPwm>,
+    // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
+    #[cfg(feature = "hal")]
+    pub(crate) frequency: f64,
+    // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
+    #[cfg(feature = "hal")]
+    pub(crate) duty_cycle: f64,
 }
 
 impl IoPin {
@@ -634,6 +676,10 @@ impl IoPin {
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
             soft_pwm: None,
+            #[cfg(feature = "hal")]
+            frequency: 0.0,
+            #[cfg(feature = "hal")]
+            duty_cycle: 0.0,
         }
     }
 

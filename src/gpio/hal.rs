@@ -19,6 +19,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 use embedded_hal::digital;
+use embedded_hal::PwmPin;
 
 use super::{IoPin, OutputPin};
 
@@ -39,5 +40,53 @@ impl digital::OutputPin for IoPin {
 
     fn set_high(&mut self) {
         IoPin::set_high(self);
+    }
+}
+
+impl PwmPin for OutputPin {
+    type Duty = f64;
+
+    fn disable(&mut self) {
+        let _ = self.clear_pwm();
+    }
+
+    fn enable(&mut self) {
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+    }
+
+    fn get_duty(&self) -> Self::Duty {
+        self.duty_cycle
+    }
+
+    fn get_max_duty(&self) -> Self::Duty {
+        1.0
+    }
+
+    fn set_duty(&mut self, duty: Self::Duty) {
+        let _ = self.set_pwm_frequency(self.frequency, duty);
+    }
+}
+
+impl PwmPin for IoPin {
+    type Duty = f64;
+
+    fn disable(&mut self) {
+        let _ = self.clear_pwm();
+    }
+
+    fn enable(&mut self) {
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+    }
+
+    fn get_duty(&self) -> Self::Duty {
+        self.duty_cycle
+    }
+
+    fn get_max_duty(&self) -> Self::Duty {
+        1.0
+    }
+
+    fn set_duty(&mut self, duty: Self::Duty) {
+        let _ = self.set_pwm_frequency(self.frequency, duty);
     }
 }
