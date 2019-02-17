@@ -121,7 +121,6 @@ macro_rules! impl_output {
         ///
         /// [`Pwm`]: ../pwm/struct.Pwm.html
         /// [here]: index.html#software-based-pwm
-        #[cfg(feature = "hal")]
         pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
             if let Some(ref mut soft_pwm) = self.soft_pwm {
                 soft_pwm.reconfigure(period, pulse_width);
@@ -135,28 +134,15 @@ macro_rules! impl_output {
             }
 
             // Store frequency/duty cycle for the embedded-hal PwmPin implementation.
-            let period_s =
-                period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0);
-            let pulse_width_s = pulse_width.as_secs() as f64
-                + (f64::from(pulse_width.subsec_nanos()) / 1_000_000_000.0);
+            #[cfg(feature = "hal")]
+            {
+                let period_s =
+                    period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0);
+                let pulse_width_s = pulse_width.as_secs() as f64
+                    + (f64::from(pulse_width.subsec_nanos()) / 1_000_000_000.0);
 
-            self.frequency = if period_s > 0.0 { 1.0 / period_s } else { 0.0 };
-            self.duty_cycle = (pulse_width_s / period_s).min(1.0);
-
-            Ok(())
-        }
-
-        #[cfg(not(feature = "hal"))]
-        pub fn set_pwm(&mut self, period: Duration, pulse_width: Duration) -> Result<()> {
-            if let Some(ref mut soft_pwm) = self.soft_pwm {
-                soft_pwm.reconfigure(period, pulse_width);
-            } else {
-                self.soft_pwm = Some(SoftPwm::new(
-                    self.pin.pin,
-                    self.pin.gpio_state.clone(),
-                    period,
-                    pulse_width,
-                ));
+                self.frequency = if period_s > 0.0 { 1.0 / period_s } else { 0.0 };
+                self.duty_cycle = (pulse_width_s / period_s).min(1.0);
             }
 
             Ok(())
