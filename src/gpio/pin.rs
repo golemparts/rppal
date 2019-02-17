@@ -141,8 +141,13 @@ macro_rules! impl_output {
                 let pulse_width_s = pulse_width.as_secs() as f64
                     + (f64::from(pulse_width.subsec_nanos()) / 1_000_000_000.0);
 
-                self.frequency = if period_s > 0.0 { 1.0 / period_s } else { 0.0 };
-                self.duty_cycle = (pulse_width_s / period_s).min(1.0);
+                if period_s > 0.0 {
+                    self.frequency = 1.0 / period_s;
+                    self.duty_cycle = (pulse_width_s / period_s).min(1.0);
+                } else {
+                    self.frequency = 0.0;
+                    self.duty_cycle = 0.0;
+                }
             }
 
             Ok(())
