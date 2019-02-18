@@ -5,12 +5,13 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
+RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates.
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W.
+In addition to providing a user-friendly interface for the above-mentioned peripherals, RPPAL can also be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
-Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
+RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
 
-RPPAL is currently under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+RPPAL is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
 ## Documentation
 
@@ -27,6 +28,13 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 ```toml
 [dependencies]
 rppal = "0.11"
+```
+
+If your project requires `embedded-hal` trait implementations, specify the `hal` feature in the dependency declaration.
+
+```toml
+[dependencies]
+rppal = { version = "0.11", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
@@ -76,6 +84,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 Additional examples can be found in the `examples` directory.
 
+## Optional features
+
+By default, all optional features are disabled. You can enable a feature by specifying the relevant feature name(s) in the dependency declaration for the `rppal` crate.
+
+* `hal` - Adds `embedded-hal` trait implementations for all supported peripherals. Doesn't include unproven traits.
+
 ## Supported peripherals
 
 ### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
@@ -88,6 +102,8 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Read/write pin logic levels
 * Activate built-in pull-up/pull-down resistors
 * Configure synchronous and asynchronous interrupt handlers
+* Software-based PWM implementation
+* Optional `embedded-hal` trait implementations (`OutputPin`, `PwmPin`)
 
 ### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
@@ -98,6 +114,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * Single master, 7-bit slave addresses, transfer rates up to 400kbit/s (Fast-mode)
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
+* Optional `embedded-hal` trait implementations (`Read`, `Write`, `WriteRead`)
 
 ### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
@@ -107,6 +124,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `/sys/class/pwm` sy
 
 * Up to two hardware PWM channels
 * Configurable frequency, duty cycle and polarity
+* Optional `embedded-hal` trait implementations (`PwmPin`)
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
@@ -119,6 +137,7 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
+* Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
 
 ## Caution
 
