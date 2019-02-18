@@ -26,7 +26,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.10"
+rppal = "0.11"
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.

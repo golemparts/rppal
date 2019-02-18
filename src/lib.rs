@@ -24,7 +24,7 @@
 //! A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W.
 
 // Used by rustdoc to link other crates to rppal's docs
-#![doc(html_root_url = "https://docs.rs/rppal/0.10.0")]
+#![doc(html_root_url = "https://docs.rs/rppal/0.11.0")]
 
 mod user;
 
