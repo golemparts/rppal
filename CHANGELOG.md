@@ -2,7 +2,7 @@
 
 ## 0.11.0 (TBD)
 
-* Add optional 'hal' feature (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
+* Add optional `hal` feature (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
 * **DeviceInfo**: (Breaking change) Add support for Raspberry Pi Compute Module 3+.
 * **DeviceInfo**: (Breaking change) Add hidden `Model::__Nonexhaustive` and `SoC::__Nonexhaustive` variants, indicating `Model` and `SoC` shouldn't be exhaustively matched. After this change, adding new variants to these enums when a new Raspberry Pi model is released won't be considered a breaking change anymore. This is a hack that can still be circumvented, but anyone that does so should be aware of the repercussions. This will be replaced once `#[non_exhaustive]` stabilizes.
 * **Gpio**: Add software-based PWM to `OutputPin` and `IoPin` through `set_pwm()`, `set_pwm_frequency()` and `clear_pwm()`.
