@@ -9,9 +9,9 @@ RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PW
 
 In addition to providing a user-friendly interface for the above-mentioned peripherals, RPPAL can also be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
-RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until the library reaches v1.0.0.
+RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
-RPPAL is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+This library is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
 ## Documentation
 
