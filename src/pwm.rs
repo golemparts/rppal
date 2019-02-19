@@ -142,6 +142,7 @@ pub enum Polarity {
 /// [here]: index.html
 pub struct Pwm {
     channel: Channel,
+    reset_on_drop: bool,
 }
 
 impl Pwm {
@@ -154,7 +155,7 @@ impl Pwm {
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel };
+        let pwm = Pwm { channel, reset_on_drop: true };
 
         // Always reset "enable" to 0. The sysfs interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
@@ -191,7 +192,7 @@ impl Pwm {
     ) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel };
+        let pwm = Pwm { channel, reset_on_drop: true };
 
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
@@ -238,7 +239,7 @@ impl Pwm {
     ) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel };
+        let pwm = Pwm { channel, reset_on_drop: true };
 
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
@@ -416,11 +417,32 @@ impl Pwm {
 
         Ok(())
     }
+
+    /// Returns the value of `reset_on_drop`.
+    pub fn reset_on_drop(&self) -> bool {
+        self.reset_on_drop
+    }
+
+    /// When enabled, disables the PWM channel when the Pwm instance
+    /// goes out of scope.  By default, this is set to `true`.
+    ///
+    /// ## Note
+    ///
+    /// Drop methods aren't called when a process is abnormally terminated, for
+    /// instance when a user presses <kbd>Ctrl</kbd> + <kbd>C</kbd>, and the `SIGINT` signal
+    /// isn't caught. You can catch those using crates such as [`simple_signal`].
+    ///
+    /// [`simple_signal`]: https://crates.io/crates/simple-signal
+    pub fn set_reset_on_drop(&mut self, reset_on_drop: bool) {
+        self.reset_on_drop = reset_on_drop;
+    }
 }
 
 impl Drop for Pwm {
     fn drop(&mut self) {
-        let _ = sysfs::set_enabled(self.channel as u8, false);
+        if self.reset_on_drop {
+            let _ = sysfs::set_enabled(self.channel as u8, false);
+        }
         let _ = sysfs::unexport(self.channel as u8);
     }
 }
