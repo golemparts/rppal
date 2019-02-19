@@ -14,4 +14,4 @@ Before running any examples that interface with external components, read throug
 
 `pwm_servo.rs` - Rotates a servo using PWM.
 
-`spi_24aa1024.rs` - Transfers data to a Microchip 24AA1024 serial EEPROM using SPI.
+`spi_25aa1024.rs` - Transfers data to a Microchip 25AA1024 serial EEPROM using SPI.
