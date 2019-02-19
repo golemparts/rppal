@@ -442,7 +442,7 @@ impl Drop for Pwm {
     fn drop(&mut self) {
         if self.reset_on_drop {
             let _ = sysfs::set_enabled(self.channel as u8, false);
+            let _ = sysfs::unexport(self.channel as u8);
         }
-        let _ = sysfs::unexport(self.channel as u8);
     }
 }
