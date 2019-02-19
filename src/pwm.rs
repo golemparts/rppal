@@ -155,7 +155,10 @@ impl Pwm {
     pub fn new(channel: Channel) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel, reset_on_drop: true };
+        let pwm = Pwm {
+            channel,
+            reset_on_drop: true,
+        };
 
         // Always reset "enable" to 0. The sysfs interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
@@ -192,7 +195,10 @@ impl Pwm {
     ) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel, reset_on_drop: true };
+        let pwm = Pwm {
+            channel,
+            reset_on_drop: true,
+        };
 
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
@@ -239,7 +245,10 @@ impl Pwm {
     ) -> Result<Pwm> {
         sysfs::export(channel as u8)?;
 
-        let pwm = Pwm { channel, reset_on_drop: true };
+        let pwm = Pwm {
+            channel,
+            reset_on_drop: true,
+        };
 
         // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
         // export may have left "enable" as 1 after unexporting. On the next export,
