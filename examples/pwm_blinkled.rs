@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// pwm_blinkled.rs - Blinks an LED connected to a GPIO pin using PWM.
+// pwm_blinkled.rs - Blinks an LED connected to a GPIO pin using hardware PWM.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.

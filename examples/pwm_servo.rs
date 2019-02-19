@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-// pwm_servo.rs - Rotates a servo using PWM.
+// pwm_servo.rs - Rotates a servo using hardware PWM.
 //
 // Calibrate your servo beforehand, and change the values listed below to fall
 // within your servo's safe limits to prevent potential damage. Don't power the
