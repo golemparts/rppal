@@ -9,6 +9,7 @@
 * **Gpio**: Add `is_set_low()` and `is_set_high()` to `OutputPin` to check the pin's output state.
 * **Gpio**: Implement `embedded-hal` traits `OutputPin` and `PwmPin` for `OutputPin` and `IoPin`.
 * **I2c**: Implement `embedded-hal` traits `Read`, `Write` and `WriteRead` for `I2c`.
+* **Pwm**: Add `reset_on_drop()` and `set_reset_on_drop()` to `Pwm` to optionally keep the PWM channel enabled on drop (contributed by @benkard).
 * **Pwm**: Implement `embedded-hal` trait `PwmPin` for `Pwm`.
 * **Spi**: Implement `embedded-hal` traits `FullDuplex`, `Transfer` and `Write` for `Spi`.
 
