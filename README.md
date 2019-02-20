@@ -145,7 +145,38 @@ Always be careful when working with the Raspberry Pi's peripherals, especially i
 
 ## Cross compilation
 
-If you're not working directly on a Raspberry Pi, you'll likely need to cross compile your code for the appropriate ARM architecture. Check out [this guide](https://github.com/japaric/rust-cross) for more information, or try the [cross](https://github.com/japaric/cross) project for "zero setup" cross compilation.
+If you're not working directly on a Raspberry Pi, you'll have to cross-compile your code for the appropriate ARM architecture. Check out [this guide](https://github.com/japaric/rust-cross) for more information, or try the [cross](https://github.com/japaric/cross) project for "zero setup" cross compilation.
+
+### Cargo
+
+While additional steps may be necessary to cross-compile binaries on your platform, checking your code with `cargo check` only requires the installation of an appropriate target. Most Raspberry Pi models need the `armv7-unknown-linux-gnueabihf` target. For some models, like the Raspberry Pi Zero, a different target triple is required.
+
+Install the relevant target using `rustup`.
+
+```
+rustup target install armv7-unknown-linux-gnueabihf
+```
+
+In the root directory of your project, create a `.cargo` subdirectory, and then save the following snippet to `.cargo/config`.
+
+```toml
+[build]
+target = "armv7-unknown-linux-gnueabihf"
+```
+
+### RLS
+
+RLS needs to be made aware of the target platform by setting the `rust.target` configuration option. The location of this option is IDE-specific.
+
+#### Visual Studio Code
+
+In the root directory of your project, create a `.vscode` subdirectory, and then save the following snippet to `.vscode/settings.json`.
+
+```json
+{
+    "rust.target": "armv7-unknown-linux-gnueabihf"
+}
+```
 
 ## Copyright and license
 
