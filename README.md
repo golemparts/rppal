@@ -13,6 +13,23 @@ RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` a
 
 This library is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
+## Table of contents
+
+- [Documentation](#documentation)
+- [Usage](#usage)
+- [Examples](#examples)
+- [Optional features](#optional-features)
+- [Supported peripherals](#supported-peripherals)
+  - [GPIO](#gpio)
+  - [I2C](#i2c)
+  - [PWM](#pwm)
+  - [SPI](#spi)
+- [Cross compilation](#cross-compilation)
+  - [Cargo](#cargo)
+  - [RLS](#rls)
+- [Caution](#caution)
+- [Copyright and license](#copyright-and-license)
+
 ## Documentation
 
 Online documentation is available for the latest release, older releases, and the version currently in development.
@@ -139,10 +156,6 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
 
-## Caution
-
-Always be careful when working with the Raspberry Pi's peripherals, especially if you attach any external components to the GPIO pins. Improper use can lead to permanent damage.
-
 ## Cross compilation
 
 If you're not working directly on a Raspberry Pi, you'll have to cross-compile your code for the appropriate ARM architecture. Check out [this guide](https://github.com/japaric/rust-cross) for more information, or try the [cross](https://github.com/japaric/cross) project for "zero setup" cross compilation.
@@ -153,7 +166,7 @@ While additional steps may be necessary to cross-compile binaries on your platfo
 
 Install the relevant target using `rustup`.
 
-```
+```bash
 rustup target install armv7-unknown-linux-gnueabihf
 ```
 
@@ -177,6 +190,10 @@ In the root directory of your project, create a `.vscode` subdirectory, and then
     "rust.target": "armv7-unknown-linux-gnueabihf"
 }
 ```
+
+## Caution
+
+Always be careful when working with the Raspberry Pi's peripherals, especially if you attach any external components to the GPIO pins. Improper use can lead to permanent damage.
 
 ## Copyright and license
 
