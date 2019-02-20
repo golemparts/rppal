@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11.0 (TBD)
+## 0.11.0 (February 20, 2019)
 
 * Add optional `hal` feature (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
 * Add `Gpio` example demonstrating software-based PWM.
