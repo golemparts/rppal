@@ -437,8 +437,8 @@ impl Pwm {
         self.reset_on_drop
     }
 
-    /// When enabled, disables the PWM channel when the Pwm instance
-    /// goes out of scope.  By default, this is set to `true`.
+    /// When enabled, disables the PWM channel when the `Pwm` instance
+    /// goes out of scope. By default, this is set to `true`.
     ///
     /// ## Note
     ///
