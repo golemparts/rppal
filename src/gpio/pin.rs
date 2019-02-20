@@ -268,7 +268,7 @@ macro_rules! impl_eq {
 /// An unconfigured `Pin` can be used to read the pin's mode and logic level.
 /// Converting the `Pin` to an [`InputPin`], [`OutputPin`] or [`IoPin`] through the
 /// various `into_` methods available on `Pin` configures the appropriate mode, and
-/// provides access to additional methods depending on the pin's mode.
+/// provides access to additional methods relevant to the selected pin mode.
 ///
 /// [`Gpio::get`]: struct.Gpio.html#method.get
 /// [`InputPin`]: struct.InputPin.html
@@ -403,7 +403,7 @@ impl_eq!(Pin);
 /// GPIO pin configured as input.
 ///
 /// `InputPin`s are constructed by converting a [`Pin`] using [`Pin::into_input`],
-/// [`Pin::into_input_pullup`] and [`Pin::into_input_pulldown`]. The pin's mode is
+/// [`Pin::into_input_pullup`] or [`Pin::into_input_pulldown`]. The pin's mode is
 /// automatically set to [`Input`].
 ///
 /// An `InputPin` can be used to read a pin's logic level, or (a)synchronously poll for
@@ -553,9 +553,15 @@ impl_eq!(InputPin);
 ///
 /// An `OutputPin` can be used to change a pin's output state.
 ///
+/// The `embedded-hal` [`OutputPin`] and [`PwmPin`] trait implementations for `OutputPin`
+/// can be enabled by specifying the optional `hal` feature in the dependency
+/// declaration for the `rppal` crate.
+///
 /// [`Pin`]: struct.Pin.html
 /// [`Output`]: enum.Mode.html#variant.Output
 /// [`Pin::into_output`]: struct.Pin.html#method.into_output
+/// [`OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
+/// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]
 pub struct OutputPin {
     pin: Pin,
@@ -626,13 +632,19 @@ impl_eq!(OutputPin);
 /// The pin's mode is automatically set to the specified mode.
 ///
 /// An `IoPin` can be reconfigured for any available mode. Depending on the
-/// mode, some methods may not have any effect. For instance, using a method that
+/// mode, some methods may not have any effect. For instance, calling a method that
 /// alters the pin's output state won't cause any changes when the pin's mode is set
 /// to [`Input`].
+///
+/// The `embedded-hal` [`OutputPin`] and [`PwmPin`] trait implementations for `IoPin`
+/// can be enabled by specifying the optional `hal` feature in the dependency
+/// declaration for the `rppal` crate.
 ///
 /// [`Pin`]: struct.Pin.html
 /// [`Input`]: enum.Mode.html#variant.Input
 /// [`Pin::into_io`]: struct.Pin.html#method.into_io
+/// [`OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
+/// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,

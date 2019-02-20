@@ -139,7 +139,12 @@ pub enum Polarity {
 /// Before using `Pwm`, make sure the selected PWM channel has been configured
 /// and activated. More information can be found [here].
 ///
+/// The `embedded-hal` [`PwmPin`] trait implementation for `Pwm` can be enabled
+/// by specifying the optional `hal` feature in the dependency declaration for
+/// the `rppal` crate.
+///
 /// [here]: index.html
+/// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 pub struct Pwm {
     channel: Channel,
     reset_on_drop: bool,

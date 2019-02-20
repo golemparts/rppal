@@ -30,7 +30,7 @@
 //! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's
 //! mode and logic level. Converting the [`Pin`] to an [`InputPin`], [`OutputPin`] or
 //! [`IoPin`] through the various `into_` methods available on [`Pin`] configures the
-//! appropriate mode, and provides access to additional methods depending on the pin's mode.
+//! appropriate mode, and provides access to additional methods relevant to the selected pin mode.
 //!
 //! Retrieving a GPIO pin with [`Gpio::get`] grants access to the pin through an owned [`Pin`]
 //! instance. If the pin is already in use, or the GPIO peripheral doesn't expose a pin with
@@ -46,7 +46,7 @@
 //!
 //! ## Interrupts
 //!
-//! [`InputPin`] supports both synchronous and asynchronous interrupts.
+//! [`InputPin`] supports both synchronous and asynchronous interrupt handlers.
 //!
 //! Synchronous (blocking) interrupt triggers are configured using [`InputPin::set_interrupt`].
 //! An interrupt trigger for a single pin can be polled with [`InputPin::poll_interrupt`],

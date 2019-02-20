@@ -173,8 +173,15 @@ pub type Result<T> = result::Result<T, Error>;
 /// through its various protocols. More details can be found in the latest SMBus
 /// [specification].
 ///
+/// The `embedded-hal` [`Read`], [`Write`] and [`WriteRead`] trait
+/// implementations for `Spi` can be enabled by specifying the optional `hal`
+/// feature in the dependency declaration for the `rppal` crate.
+///
 /// [here]: index.html#i2c-buses
 /// [specification]: http://smbus.org/specs/SMBus_3_1_20180319.pdf
+/// [`Read`]: ../../embedded_hal/blocking/i2c/trait.Read.html
+/// [`Write`]: ../../embedded_hal/blocking/i2c/trait.Write.html
+/// [`WriteRead`]: ../../embedded_hal/blocking/i2c/trait.WriteRead.html
 #[derive(Debug)]
 pub struct I2c {
     bus: u8,
