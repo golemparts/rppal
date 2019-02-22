@@ -284,6 +284,26 @@ pub fn ignore_carrier_detect(fd: c_int) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Return RTS/CTS flow control setting
+pub fn hardware_flow_control(fd: c_int) -> Result<bool> {
+    let attr = attributes(fd)?;
+
+    Ok((attr.c_cflag & CRTSCTS) > 0)
+}
+
+// Set RTS/CTS flow control
+pub fn set_hardware_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    if flow_control {
+        attr.c_cflag |= CRTSCTS;
+    } else {
+        attr.c_cflag &= !CRTSCTS;
+    }
+
+    set_attributes(fd, &attr)
+}
+
 // Set XON/XOFF flow control
 pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
     let mut attr = attributes(fd)?;

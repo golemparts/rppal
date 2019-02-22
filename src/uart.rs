@@ -211,7 +211,7 @@ impl Uart {
             .open(path)?;
 
         // Enables character input mode, disables echoing and any special processing,
-        // sets read() to non-blocking (VMIN) and timeout to 0 (VTIME).
+        // sets read() to non-blocking (VMIN=0) and timeout to 0 (VTIME=0).
         termios::set_raw_mode(device.as_raw_fd())?;
 
         // Ignore modem control lines (CLOCAL)
@@ -222,6 +222,9 @@ impl Uart {
 
         // Disable software flow control (XON/XOFF)
         termios::set_software_flow_control(device.as_raw_fd(), false)?;
+
+        // Disable hardware flow control (RTS/CTS)
+        termios::set_hardware_flow_control(device.as_raw_fd(), false)?;
 
         termios::set_line_speed(device.as_raw_fd(), line_speed)?;
         termios::set_parity(device.as_raw_fd(), parity)?;
@@ -234,7 +237,7 @@ impl Uart {
         Ok(Uart { device })
     }
 
-    /// Gets the line speed in baud (Bd).
+    /// Returns the line speed in baud (Bd).
     pub fn line_speed(&self) -> Result<u32> {
         termios::line_speed(self.device.as_raw_fd())
     }
@@ -251,7 +254,7 @@ impl Uart {
         termios::set_line_speed(self.device.as_raw_fd(), line_speed)
     }
 
-    /// Gets the parity bit.
+    /// Returns the parity bit.
     pub fn parity(&self) -> Result<Parity> {
         termios::parity(self.device.as_raw_fd())
     }
@@ -263,7 +266,7 @@ impl Uart {
         termios::set_parity(self.device.as_raw_fd(), parity)
     }
 
-    /// Gets the number of data bits.
+    /// Returns the number of data bits.
     pub fn data_bits(&self) -> Result<u8> {
         termios::data_bits(self.device.as_raw_fd())
     }
@@ -289,20 +292,20 @@ impl Uart {
 
     /// Returns the status of the RTS/CTS hardware flow control setting.
     pub fn hardware_flow_control(&self) -> Result<bool> {
-        unimplemented!()
+        termios::hardware_flow_control(self.device.as_raw_fd())
     }
 
     /// Enables or disables RTS/CTS hardware flow control.
     ///
-    /// Enabling flow control will configure the corresponding GPIO pins.
-    /// More information on the GPIO pin numbers associated with RTS and
-    /// CTS can be found [here].
+    /// Enabling hardware flow control will configure the corresponding GPIO
+    /// pins. By default, hardware flow control is disabled.
     ///
-    /// Support for RTS/CTS is device-dependent.
+    /// Support for RTS/CTS is device-dependent. More information on the GPIO
+    /// pin numbers associated with the RTS and CTS lines can be found [here].
     ///
     /// [here]: index.html
-    pub fn set_hardware_flow_control(&self, _enabled: bool) -> Result<()> {
-        unimplemented!()
+    pub fn set_hardware_flow_control(&self, enabled: bool) -> Result<()> {
+        termios::set_hardware_flow_control(self.device.as_raw_fd(), enabled)
     }
 
     /// Receives incoming data from the device and stores it in `buffer`.
