@@ -175,9 +175,9 @@ impl Pwm {
 
     /// Constructs a new `Pwm` using the specified settings.
     ///
-    /// `period` specifies the time it takes for the PWM channel to complete one cycle.
+    /// `period` indicates the time it takes for the PWM channel to complete one cycle.
     ///
-    /// `pulse_width` specifies the amount of time the PWM channel is active during a
+    /// `pulse_width` indicates the amount of time the PWM channel is active during a
     /// single period.
     ///
     /// `polarity` configures the active logic level as either high ([`Normal`])
@@ -288,7 +288,7 @@ impl Pwm {
 
     /// Sets the period.
     ///
-    /// `period` specifies the time it takes for the PWM channel to complete one cycle.
+    /// `period` indicates the time it takes for the PWM channel to complete one cycle.
     ///
     /// This method will fail if `period` is shorter than the current pulse width.
     pub fn set_period(&self, period: Duration) -> Result<()> {
@@ -310,7 +310,7 @@ impl Pwm {
 
     /// Sets the pulse width.
     ///
-    /// `pulse_width` specifies the amount of time the PWM channel is active during a
+    /// `pulse_width` indicates the amount of time the PWM channel is active during a
     /// single period.
     ///
     /// This method will fail if `pulse_width` is longer than the current period.

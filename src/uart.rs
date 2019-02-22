@@ -342,23 +342,20 @@ impl Uart {
 
     /// Blocks while waiting for incoming data, and then stores it in `buffer`.
     ///
-    /// `min_length` specifies the minimum number of requested bytes. This value
+    /// `min_length` indicates the minimum number of requested bytes. This value
     /// may differ from the actual `buffer` length. Maximum value: 255 bytes.
     ///
     /// `timeout` indicates how long the call will block while waiting
-    /// for incoming data. `timeout` uses a 0.1 s resolution. Maximum value: 25.5 s.
+    /// for incoming data. `timeout` uses a 0.1 second resolution. Maximum value: 25.5 seconds.
     ///
     /// `poll` operates in one of four modes, depending on the specified arguments:
     ///
-    /// **`min_length` = 0, `timeout` = 0**: Non-blocking read. `poll` behaves similarly to [`read`].
-    ///
-    /// **`min_length` > 0, `timeout` = 0**: Blocking read. `poll` blocks until at least
+    /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). `poll` behaves similarly to [`read`].
+    /// * **Blocking read** (`min_length` > 0, `timeout` = 0). `poll` blocks until at least
     /// `min_length` bytes are available.
-    ///
-    /// **`min_length` = 0, `timeout` > 0**: Read with timeout. `poll` blocks until at least
+    /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). `poll` blocks until at least
     /// 1 byte is available, or the `timeout` duration elapses.
-    ///
-    /// **`min_length` > 0, `timeout` > 0**: Read with inter-byte timeout. `poll` blocks until at least
+    /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0). `poll` blocks until at least
     /// `min_length` bytes are available, or the `timeout` duration elapses after receiving 1 or more bytes.
     /// The timer is started after an initial byte becomes available, and is restarted after each additional
     /// byte. That means `poll` will block indefinitely until at least 1 byte is available.

@@ -107,9 +107,9 @@ macro_rules! impl_output {
 
         /// Configures a software-based PWM signal.
         ///
-        /// `period` specifies the time it takes to complete one cycle.
+        /// `period` indicates the time it takes to complete one cycle.
         ///
-        /// `pulse_width` specifies the amount of time the PWM signal is active during a
+        /// `pulse_width` indicates the amount of time the PWM signal is active during a
         /// single period.
         ///
         /// Software-based PWM is inherently inaccurate on a multi-threaded OS due to

@@ -274,7 +274,7 @@ pub fn configure_read(fd: c_int, min_length: usize, timeout: Duration) -> Result
     attr.c_cc[VMIN] = min_length.min(255) as u8;
     // Specified in deciseconds
     attr.c_cc[VTIME] = (timeout.as_secs() * 10)
-        .saturating_add((timeout.subsec_micros() / 100000) as u64)
+        .saturating_add(u64::from(timeout.subsec_micros() / 100_000))
         .min(255) as u8;
 
     set_attributes(fd, &attr)
