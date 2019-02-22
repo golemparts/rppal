@@ -268,7 +268,17 @@ pub fn set_raw_mode(fd: c_int) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
-pub fn configure_read(fd: c_int, min_length: usize, timeout: Duration) -> Result<()> {
+pub fn read_mode(fd: c_int) -> Result<(usize, Duration)> {
+    let attr = attributes(fd)?;
+
+    Ok((
+        attr.c_cc[VMIN] as usize,
+        // Converted from deciseconds
+        Duration::from_millis(u64::from(attr.c_cc[VTIME]) * 100),
+    ))
+}
+
+pub fn set_read_mode(fd: c_int, min_length: usize, timeout: Duration) -> Result<()> {
     let mut attr = attributes(fd)?;
 
     attr.c_cc[VMIN] = min_length.min(255) as u8;

@@ -216,7 +216,7 @@ impl Uart {
         termios::set_raw_mode(device.as_raw_fd())?;
 
         // Non-blocking reads
-        termios::configure_read(device.as_raw_fd(), 0, Duration::default())?;
+        termios::set_read_mode(device.as_raw_fd(), 0, Duration::default())?;
 
         // Ignore modem control lines (CLOCAL)
         termios::ignore_carrier_detect(device.as_raw_fd())?;
@@ -312,15 +312,49 @@ impl Uart {
         termios::set_hardware_flow_control(self.device.as_raw_fd(), enabled)
     }
 
+    /// Returns a tuple containing the configured `min_length` and `timeout` values.
+    pub fn blocking_mode(&self) -> Result<(usize, Duration)> {
+        termios::read_mode(self.device.as_raw_fd())
+    }
+
+    /// Sets the blocking mode for subsequent calls to [`read`].
+    ///
+    /// `min_length` indicates the minimum number of requested bytes. This value
+    /// may differ from the actual buffer length. Maximum value: 255 bytes.
+    ///
+    /// `timeout` indicates how long the `read` call will block while waiting
+    /// for incoming data. `timeout` uses a 0.1 second resolution. Maximum value: 25.5 seconds.
+    ///
+    /// `read` operates in one of four modes, depending on the specified `min_length` and `timeout`:
+    ///
+    /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). `read` stores any available data and
+    /// returns immediately.
+    /// * **Blocking read** (`min_length` > 0, `timeout` = 0). `read` blocks until at least
+    /// `min_length` bytes are available.
+    /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). `read` blocks until at least
+    /// one byte is available, or the `timeout` duration elapses.
+    /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0). `read` blocks until at least
+    /// `min_length` bytes are available, or the `timeout` duration elapses after receiving one or more bytes.
+    /// The timer is started after an initial byte becomes available, and is restarted after each additional
+    /// byte. That means `read` will block indefinitely until at least one byte is available.
+    ///
+    /// By default, `read` is configured for non-blocking reads.
+    ///
+    /// [`read`]: #method.read
+    pub fn set_blocking_mode(&mut self, min_length: usize, timeout: Duration) -> Result<()> {
+        termios::set_read_mode(self.device.as_raw_fd(), min_length, timeout)?;
+
+        Ok(())
+    }
+
     /// Receives incoming data from the device and stores it in `buffer`.
     ///
-    /// `read` immediately returns after storing any available incoming data,
-    /// which could be 0 bytes. Use [`poll`] instead for situations where the
-    /// call should block while waiting for data.
+    /// `read` operates in one of four (non)blocking modes, depending on the settings configured by
+    /// [`set_blocking_mode`].
     ///
     /// Returns how many bytes were read.
     ///
-    /// [`poll`]: #method.poll
+    /// [`set_blocking_mode`]: #method.set_blocking_mode
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         match self.device.read(buffer) {
             Ok(bytes_read) => Ok(bytes_read),
@@ -338,50 +372,6 @@ impl Uart {
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
             Err(e) => Err(Error::Io(e)),
         }
-    }
-
-    /// Blocks while waiting for incoming data, and then stores it in `buffer`.
-    ///
-    /// `min_length` indicates the minimum number of requested bytes. This value
-    /// may differ from the actual `buffer` length. Maximum value: 255 bytes.
-    ///
-    /// `timeout` indicates how long the call will block while waiting
-    /// for incoming data. `timeout` uses a 0.1 second resolution. Maximum value: 25.5 seconds.
-    ///
-    /// `poll` operates in one of four modes, depending on the specified arguments:
-    ///
-    /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). `poll` behaves similarly to [`read`].
-    /// * **Blocking read** (`min_length` > 0, `timeout` = 0). `poll` blocks until at least
-    /// `min_length` bytes are available.
-    /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). `poll` blocks until at least
-    /// 1 byte is available, or the `timeout` duration elapses.
-    /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0). `poll` blocks until at least
-    /// `min_length` bytes are available, or the `timeout` duration elapses after receiving 1 or more bytes.
-    /// The timer is started after an initial byte becomes available, and is restarted after each additional
-    /// byte. That means `poll` will block indefinitely until at least 1 byte is available.
-    ///
-    /// Returns how many bytes were read.
-    ///
-    /// [`read`]: #method.read
-    pub fn poll(
-        &mut self,
-        buffer: &mut [u8],
-        min_length: usize,
-        timeout: Duration,
-    ) -> Result<usize> {
-        // Configure read
-        termios::configure_read(self.device.as_raw_fd(), min_length, timeout)?;
-
-        let return_value = match self.device.read(buffer) {
-            Ok(bytes_read) => Ok(bytes_read),
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
-            Err(e) => Err(Error::Io(e)),
-        };
-
-        // Reset read to non-blocking mode
-        termios::configure_read(self.device.as_raw_fd(), 0, Duration::default())?;
-
-        return_value
     }
 
     /// Discards all waiting incoming and outgoing data.
