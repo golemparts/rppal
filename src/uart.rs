@@ -228,6 +228,9 @@ impl Uart {
         termios::set_data_bits(device.as_raw_fd(), data_bits)?;
         termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
 
+        // Flush the incoming and outgoing buffer
+        termios::flush(device.as_raw_fd())?;
+
         Ok(Uart { device })
     }
 
@@ -324,15 +327,13 @@ impl Uart {
         }
     }
 
-    /// .
-    pub fn flush(&self) {
-        unimplemented!()
+    /// Discards all waiting incoming and outgoing data.
+    pub fn flush(&self) -> Result<()> {
+        termios::flush(self.device.as_raw_fd())
     }
 
-    /// .
-    pub fn drain(&self) {
-        unimplemented!()
+    /// Blocks until all waiting outgoing data has been transmitted.
+    pub fn drain(&self) -> Result<()> {
+        termios::drain(self.device.as_raw_fd())
     }
-
-    // TODO: Enable available error detection (parity?) through termios
 }

@@ -30,7 +30,7 @@ use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
-use libc::{IXANY, IXOFF, IXON, VMIN, VTIME};
+use libc::{IXANY, IXOFF, IXON, TCIOFLUSH, VMIN, VTIME};
 
 use crate::uart::{Error, Parity, Result};
 
@@ -284,6 +284,7 @@ pub fn ignore_carrier_detect(fd: c_int) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Set XON/XOFF flow control
 pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
     let mut attr = attributes(fd)?;
 
@@ -294,4 +295,18 @@ pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
     }
 
     set_attributes(fd, &attr)
+}
+
+// Discard all waiting incoming and outgoing data
+pub fn flush(fd: c_int) -> Result<()> {
+    parse_retval!(unsafe { libc::tcflush(fd, TCIOFLUSH) })?;
+
+    Ok(())
+}
+
+// Wait until all outgoing data has been transmitted
+pub fn drain(fd: c_int) -> Result<()> {
+    parse_retval!(unsafe { libc::tcdrain(fd) })?;
+
+    Ok(())
 }
