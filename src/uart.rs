@@ -220,6 +220,9 @@ impl Uart {
         // Enable receiver (CREAD)
         termios::enable_read(device.as_raw_fd())?;
 
+        // Disable software flow control (XON/XOFF)
+        termios::set_software_flow_control(device.as_raw_fd(), false)?;
+
         termios::set_line_speed(device.as_raw_fd(), line_speed)?;
         termios::set_parity(device.as_raw_fd(), parity)?;
         termios::set_data_bits(device.as_raw_fd(), data_bits)?;

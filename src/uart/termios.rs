@@ -28,10 +28,9 @@ use libc::{B1000000, B1152000, B460800, B500000, B576000, B921600};
 use libc::{B115200, B19200, B230400, B38400, B57600};
 use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
-
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
-use libc::{VMIN, VTIME};
+use libc::{IXANY, IXOFF, IXON, VMIN, VTIME};
 
 use crate::uart::{Error, Parity, Result};
 
@@ -153,9 +152,8 @@ pub fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
     let mut attr = attributes(fd)?;
     parse_retval!(unsafe { libc::cfsetispeed(&mut attr, baud) })?;
     parse_retval!(unsafe { libc::cfsetospeed(&mut attr, baud) })?;
-    set_attributes(fd, &attr)?;
 
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 pub fn parity(fd: c_int) -> Result<Parity> {
@@ -206,9 +204,7 @@ pub fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
         }
     }
 
-    set_attributes(fd, &attr)?;
-
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 pub fn data_bits(fd: c_int) -> Result<u8> {
@@ -235,9 +231,7 @@ pub fn set_data_bits(fd: c_int, data_bits: u8) -> Result<()> {
         _ => return Err(Error::InvalidValue),
     }
 
-    set_attributes(fd, &attr)?;
-
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 pub fn stop_bits(fd: c_int) -> Result<u8> {
@@ -259,9 +253,7 @@ pub fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
         _ => return Err(Error::InvalidValue),
     }
 
-    set_attributes(fd, &attr)?;
-
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 pub fn set_raw_mode(fd: c_int) -> Result<()> {
@@ -272,25 +264,34 @@ pub fn set_raw_mode(fd: c_int) -> Result<()> {
     }
     attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
     attr.c_cc[VTIME] = 0; // No timeout needed
-    set_attributes(fd, &attr)?;
 
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 // If CREAD isn't set, all input is discarded
 pub fn enable_read(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
     attr.c_cflag |= CREAD;
-    set_attributes(fd, &attr)?;
 
-    Ok(())
+    set_attributes(fd, &attr)
 }
 
 // Ignore carrier detect signal
 pub fn ignore_carrier_detect(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
     attr.c_cflag |= CLOCAL;
-    set_attributes(fd, &attr)?;
 
-    Ok(())
+    set_attributes(fd, &attr)
+}
+
+pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    if flow_control {
+        attr.c_iflag |= IXON | IXOFF | IXANY;
+    } else {
+        attr.c_iflag &= !(IXON | IXOFF | IXANY);
+    }
+
+    set_attributes(fd, &attr)
 }
