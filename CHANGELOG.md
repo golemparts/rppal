@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.1 (TBD)
+
+* Fix incorrect data type conversion on 64-bit OSes when `libc` uses 64-bit `timespec` fields.
+
 ## 0.11.0 (February 20, 2019)
 
 * Add optional `hal` feature (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
