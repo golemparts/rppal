@@ -29,7 +29,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use libc::{self, sched_param, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHED_RR};
+use libc::{
+    self, c_long, sched_param, time_t, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHED_RR,
+};
 
 use super::{Error, GpioState, Result};
 
@@ -229,8 +231,8 @@ fn get_time_ns() -> i64 {
 #[inline(always)]
 fn sleep_ns(ns: i64) {
     let ts = timespec {
-        tv_sec: (ns / 1_000_000_000) as i32,
-        tv_nsec: (ns % 1_000_000_000) as i32,
+        tv_sec: (ns / 1_000_000_000) as time_t,
+        tv_nsec: (ns % 1_000_000_000) as c_long,
     };
 
     unsafe {
