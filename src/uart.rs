@@ -93,8 +93,9 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::result;
+use std::time::Duration;
 
-use libc::{O_NDELAY, O_NOCTTY, O_NONBLOCK};
+use libc::O_NOCTTY;
 
 mod termios;
 
@@ -207,12 +208,15 @@ impl Uart {
         let device = OpenOptions::new()
             .read(true)
             .write(true)
-            .custom_flags(O_NOCTTY | O_NDELAY | O_NONBLOCK)
+            .custom_flags(O_NOCTTY)
             .open(path)?;
 
         // Enables character input mode, disables echoing and any special processing,
         // sets read() to non-blocking (VMIN=0) and timeout to 0 (VTIME=0).
         termios::set_raw_mode(device.as_raw_fd())?;
+
+        // Non-blocking reads
+        termios::configure_read(device.as_raw_fd(), 0, Duration::default())?;
 
         // Ignore modem control lines (CLOCAL)
         termios::ignore_carrier_detect(device.as_raw_fd())?;
@@ -310,7 +314,13 @@ impl Uart {
 
     /// Receives incoming data from the device and stores it in `buffer`.
     ///
+    /// `read` immediately returns after storing any available incoming data,
+    /// which could be 0 bytes. Use [`poll`] instead for situations where the
+    /// call should block while waiting for data.
+    ///
     /// Returns how many bytes were read.
+    ///
+    /// [`poll`]: #method.poll
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         match self.device.read(buffer) {
             Ok(bytes_read) => Ok(bytes_read),
@@ -328,6 +338,53 @@ impl Uart {
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
             Err(e) => Err(Error::Io(e)),
         }
+    }
+
+    /// Blocks while waiting for incoming data, and then stores it in `buffer`.
+    ///
+    /// `min_length` specifies the minimum number of requested bytes. This value
+    /// may differ from the actual `buffer` length. Maximum value: 255 bytes.
+    ///
+    /// `timeout` indicates how long the call will block while waiting
+    /// for incoming data. `timeout` uses a 0.1 s resolution. Maximum value: 25.5 s.
+    ///
+    /// `poll` operates in one of four modes, depending on the specified arguments:
+    ///
+    /// **`min_length` = 0, `timeout` = 0**: Non-blocking read. `poll` behaves similarly to [`read`].
+    ///
+    /// **`min_length` > 0, `timeout` = 0**: Blocking read. `poll` blocks until at least
+    /// `min_length` bytes are available.
+    ///
+    /// **`min_length` = 0, `timeout` > 0**: Read with timeout. `poll` blocks until at least
+    /// 1 byte is available, or the `timeout` duration elapses.
+    ///
+    /// **`min_length` > 0, `timeout` > 0**: Read with inter-byte timeout. `poll` blocks until at least
+    /// `min_length` bytes are available, or the `timeout` duration elapses after receiving 1 or more bytes.
+    /// The timer is started after an initial byte becomes available, and is restarted after each additional
+    /// byte. That means `poll` will block indefinitely until at least 1 byte is available.
+    ///
+    /// Returns how many bytes were read.
+    ///
+    /// [`read`]: #method.read
+    pub fn poll(
+        &mut self,
+        buffer: &mut [u8],
+        min_length: usize,
+        timeout: Duration,
+    ) -> Result<usize> {
+        // Configure read
+        termios::configure_read(self.device.as_raw_fd(), min_length, timeout)?;
+
+        let return_value = match self.device.read(buffer) {
+            Ok(bytes_read) => Ok(bytes_read),
+            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
+            Err(e) => Err(Error::Io(e)),
+        };
+
+        // Reset read to non-blocking mode
+        termios::configure_read(self.device.as_raw_fd(), 0, Duration::default())?;
+
+        return_value
     }
 
     /// Discards all waiting incoming and outgoing data.

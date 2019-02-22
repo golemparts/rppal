@@ -21,6 +21,7 @@
 #![allow(unused_imports)]
 
 use std::io;
+use std::time::Duration;
 
 use libc::{c_int, termios};
 use libc::{B0, B110, B134, B150, B200, B300, B50, B75};
@@ -258,12 +259,23 @@ pub fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
 
 pub fn set_raw_mode(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
+
     // Change flags to enable non-canonical mode
     unsafe {
         libc::cfmakeraw(&mut attr);
     }
-    attr.c_cc[VMIN] = 0; // Don't block read() when there's no waiting data
-    attr.c_cc[VTIME] = 0; // No timeout needed
+
+    set_attributes(fd, &attr)
+}
+
+pub fn configure_read(fd: c_int, min_length: usize, timeout: Duration) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    attr.c_cc[VMIN] = min_length.min(255) as u8;
+    // Specified in deciseconds
+    attr.c_cc[VTIME] = (timeout.as_secs() * 10)
+        .saturating_add((timeout.subsec_micros() / 100000) as u64)
+        .min(255) as u8;
 
     set_attributes(fd, &attr)
 }
