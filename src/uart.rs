@@ -21,9 +21,9 @@
 //! Interface for the UART peripherals and USB serial devices.
 //!
 //! RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals
-//! through the ttyAMA0 and ttyS0 device interfaces. In addition to the built-in
-//! UARTs, communicating with USB serial devices is supported through ttyUSBx
-//! and ttyACMx.
+//! through the `ttyAMA0` and `ttyS0` device interfaces. In addition to the built-in
+//! UARTs, communicating with USB serial devices is supported through `ttyUSBx`
+//! and `ttyACMx`.
 //!
 //! ## UART peripherals
 //!
@@ -53,7 +53,7 @@
 //! By default, TX (outgoing data) for both UARTs is configured as BCM GPIO 14 (physical pin 8). RX (incoming data) for
 //! both UARTs is configured as BCM GPIO 15 (physical pin 10). You can move these to different pins using the `uart0`
 //! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
-//! current Raspberry Pi models. They are only available through the Compute Module and Compute Module 3's SO-DIMM pads.
+//! current Raspberry Pi models. They are only available through the Compute Module's SO-DIMM pads.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes. More information on `enable_uart`, `pi3-disable-bt`,
 //! `pi3-miniuart-bt`, `uart0` and `uart1` can be found in `/boot/overlays/README`.
@@ -91,6 +91,7 @@ use std::io;
 use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
+use std::path::Path;
 use std::result;
 
 use libc::{O_NDELAY, O_NOCTTY, O_NONBLOCK};
@@ -166,7 +167,7 @@ pub enum Parity {
     Space,
 }
 
-/// Provides access to the Raspberry Pi's UART peripherals, and USB serial devices.
+/// Provides access to the Raspberry Pi's UART peripherals and any USB serial devices.
 #[derive(Debug)]
 pub struct Uart {
     device: File,
@@ -181,20 +182,44 @@ impl Uart {
         data_bits: u8,
         stop_bits: u8,
     ) -> Result<Uart> {
-        let device = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .custom_flags(O_NOCTTY | O_NDELAY | O_NONBLOCK)
-            .open(match device {
+        Self::with_path(
+            match device {
                 Device::Uart0 => "/dev/ttyAMA0".to_owned(),
                 Device::Uart1 => "/dev/ttyS0".to_owned(),
                 Device::Acm(idx) => format!("/dev/ttyACM{}", idx),
                 Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
-            })?;
+            },
+            line_speed,
+            parity,
+            data_bits,
+            stop_bits,
+        )
+    }
 
+    /// Constructs a new `Uart` connected to the serial device specified by `path`.
+    pub fn with_path<P: AsRef<Path>>(
+        path: P,
+        line_speed: u32,
+        parity: Parity,
+        data_bits: u8,
+        stop_bits: u8,
+    ) -> Result<Uart> {
+        let device = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .custom_flags(O_NOCTTY | O_NDELAY | O_NONBLOCK)
+            .open(path)?;
+
+        // Enables character input mode, disables echoing and any special processing,
+        // sets read() to non-blocking (VMIN) and timeout to 0 (VTIME).
         termios::set_raw_mode(device.as_raw_fd())?;
+
+        // Ignore modem control lines (CLOCAL)
         termios::ignore_carrier_detect(device.as_raw_fd())?;
+
+        // Enable receiver (CREAD)
         termios::enable_read(device.as_raw_fd())?;
+
         termios::set_line_speed(device.as_raw_fd(), line_speed)?;
         termios::set_parity(device.as_raw_fd(), parity)?;
         termios::set_data_bits(device.as_raw_fd(), data_bits)?;
@@ -205,7 +230,7 @@ impl Uart {
 
     /// Gets the line speed in baud (Bd).
     pub fn line_speed(&self) -> Result<u32> {
-        Ok(termios::line_speed(self.device.as_raw_fd())?)
+        termios::line_speed(self.device.as_raw_fd())
     }
 
     /// Sets the line speed in baud (Bd).
@@ -217,51 +242,43 @@ impl Uart {
     /// 2_500_000, 3_000_000, 3_500_000 and 4_000_000,
     /// but support is device-dependent.
     pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
-        termios::set_line_speed(self.device.as_raw_fd(), line_speed)?;
-
-        Ok(())
+        termios::set_line_speed(self.device.as_raw_fd(), line_speed)
     }
 
     /// Gets the parity bit.
     pub fn parity(&self) -> Result<Parity> {
-        Ok(termios::parity(self.device.as_raw_fd())?)
+        termios::parity(self.device.as_raw_fd())
     }
 
     /// Sets the parity bit.
     ///
     /// Support for parity is device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
-        termios::set_parity(self.device.as_raw_fd(), parity)?;
-
-        Ok(())
+        termios::set_parity(self.device.as_raw_fd(), parity)
     }
 
     /// Gets the number of data bits.
     pub fn data_bits(&self) -> Result<u8> {
-        Ok(termios::data_bits(self.device.as_raw_fd())?)
+        termios::data_bits(self.device.as_raw_fd())
     }
 
     /// Sets the number of data bits.
     ///
     /// Valid values are 5, 6, 7 or 8, but support is device-dependent.
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
-        termios::set_data_bits(self.device.as_raw_fd(), data_bits)?;
-
-        Ok(())
+        termios::set_data_bits(self.device.as_raw_fd(), data_bits)
     }
 
     /// Gets the number of stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
-        Ok(termios::stop_bits(self.device.as_raw_fd())?)
+        termios::stop_bits(self.device.as_raw_fd())
     }
 
     /// Sets the number of stop bits.
     ///
     /// Valid values are 1 or 2, but support is device-dependent.
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
-        termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)?;
-
-        Ok(())
+        termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)
     }
 
     /// Returns the status of the RTS/CTS hardware flow control setting.
