@@ -21,6 +21,7 @@
 #![allow(unused_imports)]
 
 use std::io;
+use std::mem::size_of;
 use std::time::Duration;
 
 use libc::{c_int, termios};
@@ -32,6 +33,7 @@ use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VTIME};
+use libc::{TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
 
 use crate::uart::{Buffer, Error, Parity, Result};
 
@@ -358,6 +360,41 @@ pub fn flush(fd: c_int, buffer_type: Buffer) -> Result<()> {
 // Wait until all outgoing data has been transmitted
 pub fn drain(fd: c_int) -> Result<()> {
     parse_retval!(unsafe { libc::tcdrain(fd) })?;
+
+    Ok(())
+}
+
+// Return CTS state
+pub fn cts(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_CTS > 0)
+}
+
+// Return RTS state
+pub fn rts(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_RTS > 0)
+}
+
+// Assert / release RTS line
+pub fn set_rts(fd: c_int, enabled: bool) -> Result<()> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    if enabled {
+        tiocm |= TIOCM_RTS;
+    } else {
+        tiocm &= !TIOCM_RTS;
+    }
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;
 
     Ok(())
 }

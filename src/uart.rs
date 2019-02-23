@@ -44,7 +44,7 @@
 //! On Raspberry Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
 //! `ttyAMA0` becomes available for serial communication, or tie the Bluetooth module to `ttyS0`.
 //!
-//! To disable Bluetooth, add 'dtoverlay=pi3-disable-bt' to `/boot/config.txt`. You'll also
+//! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/config.txt`. You'll also
 //! need to disable the service that initializes Bluetooth with `sudo systemctl disable hciuart`.
 //!
 //! To move the Bluetooth module to `ttyS0`, instead of the above-mentioned steps, add
@@ -337,8 +337,8 @@ impl Uart {
 
     /// Enables or disables RTS/CTS hardware flow control.
     ///
-    /// If `Uart` is connected to either the `Uart0` or `Uart1` device, enabling
-    /// hardware flow control will also configure the corresponding GPIO pins.
+    /// If `Uart` is controlling a UART peripheral, enabling
+    /// hardware flow control will also configure the appropriate GPIO pins.
     ///
     /// By default, hardware flow control is disabled.
     ///
@@ -352,9 +352,9 @@ impl Uart {
             // mode is automatically reset when Uart goes out of scope.
             if let Some((rts_mode, cts_mode)) = self.rts_cts_mode {
                 let gpio = Gpio::new()?;
-
                 let pin_rts = gpio.get(UART_RTS_GPIO)?.into_io(rts_mode);
                 let pin_cts = gpio.get(UART_CTS_GPIO)?.into_io(cts_mode);
+
                 self.rts_cts = Some((pin_rts, pin_cts));
             }
         } else if !enabled {
@@ -362,6 +362,26 @@ impl Uart {
         }
 
         termios::set_hardware_flow_control(self.fd, enabled)
+    }
+
+    /// Returns `true` if CTS (clear to send) is asserted.
+    pub fn cts(&self) -> Result<bool> {
+        termios::cts(self.fd)
+    }
+
+    /// Returns `true` if RTS (request to send) is asserted.
+    pub fn rts(&self) -> Result<bool> {
+        termios::rts(self.fd)
+    }
+
+    /// Asserts or releases the RTS (request to send) line.
+    ///
+    /// Setting RTS has no effect when [`hardware_flow_control`]
+    /// is disabled.
+    ///
+    /// [`hardware_flow_control`]: #method.hardware_flow_control
+    pub fn set_rts(&self, enabled: bool) -> Result<()> {
+        termios::set_rts(self.fd, enabled)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout` values.
@@ -417,7 +437,13 @@ impl Uart {
 
     /// Sends the contents of `buffer` to the device.
     ///
+    /// `write` returns immediately after copying the contents of `buffer`
+    /// to an internal outgoing buffer. You can call [`drain`] to wait until
+    /// all outgoing data has been transmitted.
+    ///
     /// Returns how many bytes were written.
+    ///
+    /// [`drain`]: #method.drain
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         match self.device.write(buffer) {
             Ok(bytes_written) => Ok(bytes_written),
