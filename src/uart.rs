@@ -21,62 +21,71 @@
 //! Interface for the UART peripherals and USB serial devices.
 //!
 //! RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals
-//! through the `ttyAMA0` and `ttyS0` device interfaces. In addition to the built-in
-//! UARTs, communicating with USB serial devices is supported through `ttyUSBx`
-//! and `ttyACMx`.
+//! through the `ttyAMA0` and `ttyS0` device interfaces. Communicating with
+//! USB serial devices is supported through `ttyUSBx` and `ttyACMx`.
 //!
 //! ## UART peripherals
 //!
-//! On earlier Pi models without Bluetooth, UART0 is used as a Linux serial console
-//! On more recent models with Bluetooth (3B, 3B+, Zero W), UART0
-//! is connected to the Bluetooth module, and UART1 is used as a serial console.
-//! Due to the limitations of UART1, in most cases you'll want to use UART0 for serial
-//! communication. More details on the differences between UART0 and UART1 can be found
-//! in the official Raspberry Pi [documentation].
+//! The Raspberry Pi's BCM283x SoC features two UART peripherals. `ttyAMA0` represents the primary (PL011)
+//! UART, which offers a full set of features. `ttyS0` represents an auxiliary
+//! peripheral that's referred to as mini UART, with limited capabilities.
 //!
-//! To disable the serial console, either deactivate it through `sudo raspi-config`, or
-//! remove the line `enable_uart=1` from `/boot/config.txt`. You'll also want to remove
-//! the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//! On earlier Raspberry Pi models without Bluetooth, `ttyAMA0` is configured as a Linux serial console.
+//! On more recent models with Bluetooth (3A+, 3B, 3B+, Zero W), `ttyAMA0` is connected to the Bluetooth
+//! module, and `ttyS0` is used as a serial console instead. Due to the limitations of `ttyS0` and
+//! the requirement for a fixed core frequency, in most cases you'll want to use `ttyAMA0` for serial communication.
+//! More details on the differences between `ttyAMA0` and `ttyS0` can be found in the official Raspberry Pi [documentation].
 //!
-//! On Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
-//! UART0 becomes available for serial communication, or tie UART1 to the Bluetooth module
-//! instead of UART0.
+//! ## Configure `ttyAMA0` for serial communication (recommended)
+//!
+//! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
+//! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//!
+//! On Raspberry Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
+//! `ttyAMA0` becomes available for serial communication, or tie the Bluetooth module to `ttyS0`.
 //!
 //! To disable Bluetooth, add 'dtoverlay=pi3-disable-bt' to `/boot/config.txt`. You'll also
-//! need to disable the service that initializes the modem with `sudo systemctl disable hciuart`.
+//! need to disable the service that initializes Bluetooth with `sudo systemctl disable hciuart`.
 //!
-//! To move the Bluetooth module to UART1, instead of the above-mentioned steps, add
+//! To move the Bluetooth module to `ttyS0`, instead of the above-mentioned steps, add
 //! `dtoverlay=pi3-miniuart-bt` to `/boot/config.txt`. You'll also need to edit `/lib/systemd/system/hciuart.service`
 //! and replace `ttyAMA0` with `ttyS0`, and set a fixed core frequency by adding `core_freq=250` to
 //! `/boot/config.txt`.
 //!
-//! By default, TX (outgoing data) for both UARTs is configured as BCM GPIO 14 (physical pin 8). RX (incoming data) for
-//! both UARTs is configured as BCM GPIO 15 (physical pin 10). You can move these to different pins using the `uart0`
+//! Remember to reboot the Raspberry Pi after making any changes.
+//!
+//! ## Configure `ttyS0` for serial communication
+//!
+//! If you prefer to leave the Bluetooth module on `ttyAMA0`, you can configure `ttyS0` for serial communication instead.
+//!
+//! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
+//! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//!
+//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial communication and set a fixed
+//! core frequency.
+//!
+//! Remember to reboot the Raspberry Pi after making any changes.
+//!
+//! ## Pins
+//!
+//! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and RX (incoming data) is tied
+//! to BCM GPIO 15 (physical pin 10). You can move these lines to different pins using the `uart0`
 //! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
-//! current Raspberry Pi models. They are only available through the Compute Module's SO-DIMM pads.
+//! current Raspberry Pi models. They are only available on the Compute Module's SO-DIMM pads.
 //!
-//! Remember to reboot the Raspberry Pi after making any changes. More information on `enable_uart`, `pi3-disable-bt`,
-//! `pi3-miniuart-bt`, `uart0` and `uart1` can be found in `/boot/overlays/README`.
-//!
-//! ### UART0 (`/dev/ttyAMA0`)
-//!
-//! PL011
-//!
-//! * TX: BCM GPIO 14 Alt0 (physical pin 8)
-//! * RX: BCM GPIO 15 Alt0 (physical pin 10)
-//! * CTS: BCM GPIO 16 Alt3 (physical pin 36)
-//! * RTS: BCM GPIO 17 Alt3 (physical pin 11)
-//!
-//! ### UART1 (`/dev/ttyS0`)
-//!
-//! Mini UART
-//!
-//! * TX: BCM GPIO 14 Alt5 (physical pin 8)
-//! * RX: BCM GPIO 15 Alt5 (physical pin 10)
-//! * CTS: BCM GPIO 16 Alt5 (physical pin 36)
-//! * RTS: BCM GPIO 17 Alt5 (physical pin 11)
+//! For hardware flow control, RTS (request to send) is tied to BCM GPIO 17 (physical pin 11) and
+//! CTS (clear to send) is tied to BCM GPIO 16 (physical pin 36).
 //!
 //! ## USB serial devices
+//!
+//! In addition to the built-in UARTs, `Uart` also supports USB devices
+//! with a serial interface. Depending on the type of device, these
+//! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
+//! is an index starting at `0`. The numbering is based on the order
+//! in which the devices are discovered by the kernel, so you'll need to find
+//! a way to uniquely identify them when you have multiple devices connected
+//! at the same time. For instance, you can find the assigned tty device name
+//! based on the device id in `/dev/serial/by-id`.
 //!
 //! ## Troubleshooting
 //!
@@ -86,24 +95,37 @@
 
 use std::error;
 use std::fmt;
-use std::fs::{File, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt;
-use std::os::unix::io::AsRawFd;
+use std::os::unix::io::{AsRawFd, RawFd};
 use std::path::Path;
 use std::result;
 use std::time::Duration;
 
 use libc::O_NOCTTY;
 
+use crate::gpio::{self, Gpio, IoPin, Mode};
+
 mod termios;
+
+const UART_RTS_GPIO: u8 = 17;
+const UART_CTS_GPIO: u8 = 16;
+
+const UART0_RTS_MODE: Mode = Mode::Alt3;
+const UART0_CTS_MODE: Mode = Mode::Alt3;
+
+const UART1_RTS_MODE: Mode = Mode::Alt5;
+const UART1_CTS_MODE: Mode = Mode::Alt5;
 
 /// Errors that can occur when accessing the UART peripheral.
 #[derive(Debug)]
 pub enum Error {
     /// I/O error.
     Io(io::Error),
+    /// GPIO error.
+    Gpio(gpio::Error),
     /// Invalid value.
     InvalidValue,
 }
@@ -112,6 +134,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
+            Error::Gpio(ref err) => write!(f, "GPIO error: {}", err),
             Error::InvalidValue => write!(f, "Invalid value"),
         }
     }
@@ -125,34 +148,14 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<gpio::Error> for Error {
+    fn from(err: gpio::Error) -> Error {
+        Error::Gpio(err)
+    }
+}
+
 /// Result type returned from methods that can have `uart::Error`s.
 pub type Result<T> = result::Result<T, Error>;
-
-/// Serial devices.
-///
-/// The BCM283x SoC includes two UARTs. `Uart0` is the primary (PL011)
-/// UART, which offers a full set of features. `Uart1` is an auxiliary
-/// peripheral that's referred to as mini UART, with limited capabilities.
-/// More information on the differences between the two UARTs, and how to
-/// enable them, can be found [here].
-///
-/// In addition to the built-in UARTs, `Uart` also supports USB devices
-/// with a serial interface. Depending on the type of device, these
-/// can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
-/// is an index starting at `0`. The numbering is based on the order
-/// in which the devices are discovered by the kernel, so you'll need to find
-/// a way to uniquely identify them when you have multiple devices connected
-/// at the same time. For instance, you can find the assigned tty device name
-/// based on the device id in `/dev/serial/by-id`.
-///
-/// [here]: index.html
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum Device {
-    Uart0,
-    Uart1,
-    Acm(u8),
-    Usb(u8),
-}
 
 /// Parity modes.
 ///
@@ -181,36 +184,29 @@ pub enum Buffer {
 #[derive(Debug)]
 pub struct Uart {
     device: File,
+    fd: RawFd,
+    rts_cts_mode: Option<(Mode, Mode)>,
+    rts_cts: Option<(IoPin, IoPin)>,
 }
 
 impl Uart {
     /// Constructs a new `Uart`.
     ///
-    /// When a new `Uart` is constructed, the specified `device` is configured for
-    /// non-canonical mode which processes input per character, ignores any special
-    /// terminal input or output characters and disables local echo.
-    pub fn new(
-        device: Device,
-        line_speed: u32,
-        parity: Parity,
-        data_bits: u8,
-        stop_bits: u8,
-    ) -> Result<Uart> {
-        Self::with_path(
-            match device {
-                Device::Uart0 => "/dev/ttyAMA0".to_owned(),
-                Device::Uart1 => "/dev/ttyS0".to_owned(),
-                Device::Acm(idx) => format!("/dev/ttyACM{}", idx),
-                Device::Usb(idx) => format!("/dev/ttyUSB{}", idx),
-            },
-            line_speed,
-            parity,
-            data_bits,
-            stop_bits,
-        )
+    /// `new` attempts to identify the UART peripheral tied to BCM GPIO 14 and 15, and
+    /// then calls [`with_path`] with the appropriate device path.
+    ///
+    /// [`with_path`]: #method.with_path
+    pub fn new(line_speed: u32, parity: Parity, data_bits: u8, stop_bits: u8) -> Result<Uart> {
+        Self::with_path("/dev/serial0", line_speed, parity, data_bits, stop_bits)
     }
 
     /// Constructs a new `Uart` connected to the serial device specified by `path`.
+    ///
+    /// `with_path` can be used to connect to either a UART peripheral or a USB serial device.
+    ///
+    /// When a new `Uart` is constructed, the specified device is configured for
+    /// non-canonical mode which processes input per character, ignores any special
+    /// terminal input or output characters and disables local echo.
     pub fn with_path<P: AsRef<Path>>(
         path: P,
         line_speed: u32,
@@ -218,45 +214,66 @@ impl Uart {
         data_bits: u8,
         stop_bits: u8,
     ) -> Result<Uart> {
+        // Follow symbolic links
+        let path = fs::canonicalize(path)?;
+
+        // Check if we're using /dev/ttyAMA0 or /dev/ttyS0 so we can set the correct
+        // RTS/CTS pin modes when needed.
+        let rts_cts_mode = if let Some(path_str) = path.to_str() {
+            match path_str {
+                "/dev/ttyAMA0" => Some((UART0_RTS_MODE, UART0_CTS_MODE)),
+                "/dev/ttyS0" => Some((UART1_RTS_MODE, UART1_CTS_MODE)),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
         let device = OpenOptions::new()
             .read(true)
             .write(true)
             .custom_flags(O_NOCTTY)
             .open(path)?;
 
-        // Enables character input mode, disables echoing and any special processing,
-        // sets read() to non-blocking (VMIN=0) and timeout to 0 (VTIME=0).
-        termios::set_raw_mode(device.as_raw_fd())?;
+        let fd = device.as_raw_fd();
+
+        // Enables character input mode, disables echoing and any special processing
+        termios::set_raw_mode(fd)?;
 
         // Non-blocking reads
-        termios::set_read_mode(device.as_raw_fd(), 0, Duration::default())?;
+        termios::set_read_mode(fd, 0, Duration::default())?;
 
         // Ignore modem control lines (CLOCAL)
-        termios::ignore_carrier_detect(device.as_raw_fd())?;
+        termios::ignore_carrier_detect(fd)?;
 
         // Enable receiver (CREAD)
-        termios::enable_read(device.as_raw_fd())?;
+        termios::enable_read(fd)?;
 
         // Disable software flow control (XON/XOFF)
-        termios::set_software_flow_control(device.as_raw_fd(), false)?;
+        termios::set_software_flow_control(fd, false)?;
 
         // Disable hardware flow control (RTS/CTS)
-        termios::set_hardware_flow_control(device.as_raw_fd(), false)?;
+        termios::set_hardware_flow_control(fd, false)?;
 
-        termios::set_line_speed(device.as_raw_fd(), line_speed)?;
-        termios::set_parity(device.as_raw_fd(), parity)?;
-        termios::set_data_bits(device.as_raw_fd(), data_bits)?;
-        termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
+        termios::set_line_speed(fd, line_speed)?;
+        termios::set_parity(fd, parity)?;
+        termios::set_data_bits(fd, data_bits)?;
+        termios::set_stop_bits(fd, stop_bits)?;
 
         // Flush the incoming and outgoing buffer
-        termios::flush(device.as_raw_fd(), Buffer::Both)?;
+        termios::flush(fd, Buffer::Both)?;
 
-        Ok(Uart { device })
+        Ok(Uart {
+            device,
+            fd,
+            rts_cts_mode,
+            rts_cts: None,
+        })
     }
 
     /// Returns the line speed in bits per second (bps).
     pub fn line_speed(&self) -> Result<u32> {
-        termios::line_speed(self.device.as_raw_fd())
+        termios::line_speed(self.fd)
     }
 
     /// Sets the line speed in bits per second (bps).
@@ -270,24 +287,24 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
-        termios::set_line_speed(self.device.as_raw_fd(), line_speed)
+        termios::set_line_speed(self.fd, line_speed)
     }
 
     /// Returns the parity bit mode.
     pub fn parity(&self) -> Result<Parity> {
-        termios::parity(self.device.as_raw_fd())
+        termios::parity(self.fd)
     }
 
     /// Sets the parity bit mode.
     ///
     /// Support for some modes may be device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
-        termios::set_parity(self.device.as_raw_fd(), parity)
+        termios::set_parity(self.fd, parity)
     }
 
     /// Returns the number of data bits.
     pub fn data_bits(&self) -> Result<u8> {
-        termios::data_bits(self.device.as_raw_fd())
+        termios::data_bits(self.fd)
     }
 
     /// Sets the number of data bits.
@@ -296,12 +313,12 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
-        termios::set_data_bits(self.device.as_raw_fd(), data_bits)
+        termios::set_data_bits(self.fd, data_bits)
     }
 
     /// Returns the number of stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
-        termios::stop_bits(self.device.as_raw_fd())
+        termios::stop_bits(self.fd)
     }
 
     /// Sets the number of stop bits.
@@ -310,32 +327,46 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
-        termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)
+        termios::set_stop_bits(self.fd, stop_bits)
     }
 
     /// Returns the status of the RTS/CTS hardware flow control setting.
     pub fn hardware_flow_control(&self) -> Result<bool> {
-        termios::hardware_flow_control(self.device.as_raw_fd())
+        termios::hardware_flow_control(self.fd)
     }
 
     /// Enables or disables RTS/CTS hardware flow control.
     ///
-    /// Enabling hardware flow control will configure the corresponding GPIO
-    /// pins. By default, hardware flow control is disabled.
+    /// If `Uart` is connected to either the `Uart0` or `Uart1` device, enabling
+    /// hardware flow control will also configure the corresponding GPIO pins.
+    ///
+    /// By default, hardware flow control is disabled.
     ///
     /// Support for RTS/CTS is device-dependent. More information on the GPIO
     /// pin numbers associated with the RTS and CTS lines can be found [here].
     ///
     /// [here]: index.html
     pub fn set_hardware_flow_control(&mut self, enabled: bool) -> Result<()> {
-        termios::set_hardware_flow_control(self.device.as_raw_fd(), enabled)
+        if enabled && self.rts_cts.is_none() {
+            // Configure and store RTS/CTS GPIO pins for UART0/UART1, so their
+            // mode is automatically reset when Uart goes out of scope.
+            if let Some((rts_mode, cts_mode)) = self.rts_cts_mode {
+                let gpio = Gpio::new()?;
 
-        // TODO: Configure pins using Gpio
+                let pin_rts = gpio.get(UART_RTS_GPIO)?.into_io(rts_mode);
+                let pin_cts = gpio.get(UART_CTS_GPIO)?.into_io(cts_mode);
+                self.rts_cts = Some((pin_rts, pin_cts));
+            }
+        } else if !enabled {
+            self.rts_cts = None;
+        }
+
+        termios::set_hardware_flow_control(self.fd, enabled)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout` values.
     pub fn blocking_mode(&self) -> Result<(usize, Duration)> {
-        termios::read_mode(self.device.as_raw_fd())
+        termios::read_mode(self.fd)
     }
 
     /// Sets the blocking mode for subsequent calls to [`read`].
@@ -363,7 +394,7 @@ impl Uart {
     ///
     /// [`read`]: #method.read
     pub fn set_blocking_mode(&self, min_length: usize, timeout: Duration) -> Result<()> {
-        termios::set_read_mode(self.device.as_raw_fd(), min_length, timeout)?;
+        termios::set_read_mode(self.fd, min_length, timeout)?;
 
         Ok(())
     }
@@ -397,11 +428,11 @@ impl Uart {
 
     /// Blocks until all waiting outgoing data has been transmitted.
     pub fn drain(&self) -> Result<()> {
-        termios::drain(self.device.as_raw_fd())
+        termios::drain(self.fd)
     }
 
     /// Discards all waiting data in the internal incoming and/or outgoing buffer.
     pub fn flush(&self, buffer_type: Buffer) -> Result<()> {
-        termios::flush(self.device.as_raw_fd(), buffer_type)
+        termios::flush(self.fd, buffer_type)
     }
 }
