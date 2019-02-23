@@ -62,7 +62,7 @@ use rppal::gpio::Gpio;
 use rppal::i2c::I2c;
 use rppal::pwm::{Channel, Pwm};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
-use rppal::uart::{Device, Parity, Uart};
+use rppal::uart::{Parity, Uart};
 
 let gpio = Gpio::new()?;
 let i2c = I2c::new()?;
