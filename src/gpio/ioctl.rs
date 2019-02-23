@@ -25,7 +25,7 @@ use std::ffi::CString;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
-use std::mem::size_of;
+use std::mem;
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
@@ -59,11 +59,11 @@ const NR_SET_LINE_VALUES: IoctlLong = 0x09 << NRSHIFT;
 
 const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << TYPESHIFT;
 
-const SIZE_CHIP_INFO: IoctlLong = (size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
-const SIZE_LINE_INFO: IoctlLong = (size_of::<LineInfo>() as IoctlLong) << SIZESHIFT;
-const SIZE_HANDLE_REQUEST: IoctlLong = (size_of::<HandleRequest>() as IoctlLong) << SIZESHIFT;
-const SIZE_EVENT_REQUEST: IoctlLong = (size_of::<EventRequest>() as IoctlLong) << SIZESHIFT;
-const SIZE_HANDLE_DATA: IoctlLong = (size_of::<HandleData>() as IoctlLong) << SIZESHIFT;
+const SIZE_CHIP_INFO: IoctlLong = (mem::size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
+const SIZE_LINE_INFO: IoctlLong = (mem::size_of::<LineInfo>() as IoctlLong) << SIZESHIFT;
+const SIZE_HANDLE_REQUEST: IoctlLong = (mem::size_of::<HandleRequest>() as IoctlLong) << SIZESHIFT;
+const SIZE_EVENT_REQUEST: IoctlLong = (mem::size_of::<EventRequest>() as IoctlLong) << SIZESHIFT;
+const SIZE_HANDLE_DATA: IoctlLong = (mem::size_of::<HandleData>() as IoctlLong) << SIZESHIFT;
 
 const DIR_NONE: c_ulong = 0;
 const DIR_WRITE: IoctlLong = 1 << DIRSHIFT;
@@ -377,11 +377,11 @@ impl EventData {
             libc::read(
                 event_fd,
                 &mut event_data as *mut EventData as *mut c_void,
-                size_of::<EventData>(),
+                mem::size_of::<EventData>(),
             )
         })?;
 
-        if bytes_read < size_of::<EventData>() as isize {
+        if bytes_read < mem::size_of::<EventData>() as isize {
             Err(std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
                 "failed to fill whole buffer",

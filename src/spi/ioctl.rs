@@ -22,7 +22,7 @@
 
 use libc::{self, c_int, ioctl};
 use std::io;
-use std::mem::size_of;
+use std::mem;
 use std::result;
 
 use super::segment::Segment;
@@ -53,8 +53,8 @@ const NR_MODE32: IoctlLong = 5 << NRSHIFT;
 
 const TYPE_SPI: IoctlLong = (b'k' as IoctlLong) << TYPESHIFT;
 
-const SIZE_U8: IoctlLong = (size_of::<u8>() as IoctlLong) << SIZESHIFT;
-const SIZE_U32: IoctlLong = (size_of::<u32>() as IoctlLong) << SIZESHIFT;
+const SIZE_U8: IoctlLong = (mem::size_of::<u8>() as IoctlLong) << SIZESHIFT;
+const SIZE_U32: IoctlLong = (mem::size_of::<u32>() as IoctlLong) << SIZESHIFT;
 
 const DIR_NONE: IoctlLong = 0;
 const DIR_WRITE: IoctlLong = 1 << DIRSHIFT;
@@ -137,7 +137,8 @@ pub fn transfer(fd: c_int, segments: &[Segment<'_, '_>]) -> Result<i32> {
         ioctl(
             fd,
             REQ_WR_MESSAGE
-                | (((segments.len() * size_of::<Segment<'_, '_>>()) as IoctlLong) << SIZESHIFT),
+                | (((segments.len() * mem::size_of::<Segment<'_, '_>>()) as IoctlLong)
+                    << SIZESHIFT),
             segments,
         )
     })
