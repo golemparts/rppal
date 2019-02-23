@@ -31,9 +31,9 @@ use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
-use libc::{IXANY, IXOFF, IXON, TCIOFLUSH, VMIN, VTIME};
+use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VTIME};
 
-use crate::uart::{Error, Parity, Result};
+use crate::uart::{Buffer, Error, Parity, Result};
 
 #[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {
@@ -340,8 +340,17 @@ pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
 }
 
 // Discard all waiting incoming and outgoing data
-pub fn flush(fd: c_int) -> Result<()> {
-    parse_retval!(unsafe { libc::tcflush(fd, TCIOFLUSH) })?;
+pub fn flush(fd: c_int, buffer_type: Buffer) -> Result<()> {
+    parse_retval!(unsafe {
+        libc::tcflush(
+            fd,
+            match buffer_type {
+                Buffer::Incoming => TCIFLUSH,
+                Buffer::Outgoing => TCOFLUSH,
+                Buffer::Both => TCIOFLUSH,
+            },
+        )
+    })?;
 
     Ok(())
 }

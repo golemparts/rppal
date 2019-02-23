@@ -28,8 +28,8 @@
 //! ## UART peripherals
 //!
 //! On earlier Pi models without Bluetooth, UART0 is used as a Linux serial console
-//! if that feature is enabled. On more recent models with Bluetooth (3B, 3B+, Zero W), UART0
-//! is connected to the Bluetooth module, and UART1 is used as a serial console if enabled.
+//! On more recent models with Bluetooth (3B, 3B+, Zero W), UART0
+//! is connected to the Bluetooth module, and UART1 is used as a serial console.
 //! Due to the limitations of UART1, in most cases you'll want to use UART0 for serial
 //! communication. More details on the differences between UART0 and UART1 can be found
 //! in the official Raspberry Pi [documentation].
@@ -168,7 +168,16 @@ pub enum Parity {
     Space,
 }
 
-/// Provides access to the Raspberry Pi's UART peripherals and any USB serial devices.
+/// Buffer types.
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Buffer {
+    Incoming,
+    Outgoing,
+    Both,
+}
+
+/// Provides access to the Raspberry Pi's UART peripherals and any connected USB serial
+/// devices.
 #[derive(Debug)]
 pub struct Uart {
     device: File,
@@ -176,6 +185,10 @@ pub struct Uart {
 
 impl Uart {
     /// Constructs a new `Uart`.
+    ///
+    /// When a new `Uart` is constructed, the specified `device` is configured for
+    /// non-canonical mode which processes input per character, ignores any special
+    /// terminal input or output characters and disables local echo.
     pub fn new(
         device: Device,
         line_speed: u32,
@@ -236,17 +249,17 @@ impl Uart {
         termios::set_stop_bits(device.as_raw_fd(), stop_bits)?;
 
         // Flush the incoming and outgoing buffer
-        termios::flush(device.as_raw_fd())?;
+        termios::flush(device.as_raw_fd(), Buffer::Both)?;
 
         Ok(Uart { device })
     }
 
-    /// Returns the line speed in bits-per-second (bps).
+    /// Returns the line speed in bits per second (bps).
     pub fn line_speed(&self) -> Result<u32> {
         termios::line_speed(self.device.as_raw_fd())
     }
 
-    /// Sets the line speed in bits-per-second (bps).
+    /// Sets the line speed in bits per second (bps).
     ///
     /// Accepted values:
     /// `0`, `50`, `75`, `110`, `134`, `150`, `200`, `300`, `600`,
@@ -260,14 +273,14 @@ impl Uart {
         termios::set_line_speed(self.device.as_raw_fd(), line_speed)
     }
 
-    /// Returns the parity bit value.
+    /// Returns the parity bit mode.
     pub fn parity(&self) -> Result<Parity> {
         termios::parity(self.device.as_raw_fd())
     }
 
-    /// Sets the parity bit.
+    /// Sets the parity bit mode.
     ///
-    /// Support for parity is device-dependent.
+    /// Support for some modes may be device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
         termios::set_parity(self.device.as_raw_fd(), parity)
     }
@@ -314,8 +327,10 @@ impl Uart {
     /// pin numbers associated with the RTS and CTS lines can be found [here].
     ///
     /// [here]: index.html
-    pub fn set_hardware_flow_control(&self, enabled: bool) -> Result<()> {
+    pub fn set_hardware_flow_control(&mut self, enabled: bool) -> Result<()> {
         termios::set_hardware_flow_control(self.device.as_raw_fd(), enabled)
+
+        // TODO: Configure pins using Gpio
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout` values.
@@ -347,7 +362,7 @@ impl Uart {
     /// By default, `read` is configured for non-blocking reads.
     ///
     /// [`read`]: #method.read
-    pub fn set_blocking_mode(&mut self, min_length: usize, timeout: Duration) -> Result<()> {
+    pub fn set_blocking_mode(&self, min_length: usize, timeout: Duration) -> Result<()> {
         termios::set_read_mode(self.device.as_raw_fd(), min_length, timeout)?;
 
         Ok(())
@@ -380,13 +395,13 @@ impl Uart {
         }
     }
 
-    /// Discards all waiting incoming and outgoing data.
-    pub fn flush(&self) -> Result<()> {
-        termios::flush(self.device.as_raw_fd())
-    }
-
     /// Blocks until all waiting outgoing data has been transmitted.
     pub fn drain(&self) -> Result<()> {
         termios::drain(self.device.as_raw_fd())
+    }
+
+    /// Discards all waiting data in the internal incoming and/or outgoing buffer.
+    pub fn flush(&self, buffer_type: Buffer) -> Result<()> {
+        termios::flush(self.device.as_raw_fd(), buffer_type)
     }
 }
