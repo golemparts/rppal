@@ -241,24 +241,26 @@ impl Uart {
         Ok(Uart { device })
     }
 
-    /// Returns the line speed in baud (Bd).
+    /// Returns the line speed in bits-per-second (bps).
     pub fn line_speed(&self) -> Result<u32> {
         termios::line_speed(self.device.as_raw_fd())
     }
 
-    /// Sets the line speed in baud (Bd).
+    /// Sets the line speed in bits-per-second (bps).
     ///
-    /// Valid values are
-    /// 0, 50, 75, 110, 134, 150, 200, 300, 600, 1_200, 1_800, 2_400, 4_800,
-    /// 9_600, 19_200, 38_400, 57_600, 115_200, 230_400, 460_800, 500_000,
-    /// 576_000, 921_600, 1_000_000, 1_152_000, 1_500_000, 2_000_000,
-    /// 2_500_000, 3_000_000, 3_500_000 and 4_000_000,
-    /// but support is device-dependent.
+    /// Accepted values:
+    /// `0`, `50`, `75`, `110`, `134`, `150`, `200`, `300`, `600`,
+    /// `1_200`, `1_800`, `2_400`, `4_800`, `9_600`, `19_200`,
+    /// `38_400`, `57_600`, `115_200`, `230_400`, `460_800`, `500_000`,
+    /// `576_000`, `921_600`, `1_000_000`, `1_152_000`, `1_500_000`,
+    /// `2_000_000`, `2_500_000`, `3_000_000`, `3_500_000`, `4_000_000`.
+    ///
+    /// Support for some values may be device-dependent.
     pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
         termios::set_line_speed(self.device.as_raw_fd(), line_speed)
     }
 
-    /// Returns the parity bit.
+    /// Returns the parity bit value.
     pub fn parity(&self) -> Result<Parity> {
         termios::parity(self.device.as_raw_fd())
     }
@@ -277,19 +279,23 @@ impl Uart {
 
     /// Sets the number of data bits.
     ///
-    /// Valid values are 5, 6, 7 or 8, but support is device-dependent.
+    /// Accepted values: `5`, `6`, `7`, `8`.
+    ///
+    /// Support for some values may be device-dependent.
     pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
         termios::set_data_bits(self.device.as_raw_fd(), data_bits)
     }
 
-    /// Gets the number of stop bits.
+    /// Returns the number of stop bits.
     pub fn stop_bits(&self) -> Result<u8> {
         termios::stop_bits(self.device.as_raw_fd())
     }
 
     /// Sets the number of stop bits.
     ///
-    /// Valid values are 1 or 2, but support is device-dependent.
+    /// Accepted values: `1`, `2`.
+    ///
+    /// Support for some values may be device-dependent.
     pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
         termios::set_stop_bits(self.device.as_raw_fd(), stop_bits)
     }
