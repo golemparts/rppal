@@ -5,7 +5,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates.
+RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates.
 
 In addition to providing a user-friendly interface for the above-mentioned peripherals, RPPAL can also be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
@@ -24,6 +24,7 @@ This library is under active development on the [master branch](https://github.c
   - [I2C](#i2c)
   - [PWM](#pwm)
   - [SPI](#spi)
+  - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
   - [RLS](#rls)
@@ -61,11 +62,13 @@ use rppal::gpio::Gpio;
 use rppal::i2c::I2c;
 use rppal::pwm::{Channel, Pwm};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
+use rppal::uart::{Device, Parity, Uart};
 
 let gpio = Gpio::new()?;
 let i2c = I2c::new()?;
 let pwm = Pwm::new(Channel::Pwm0)?;
 let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0)?;
+let uart = Uart::new(115_200, Parity::None, 8, 1)?;
 ```
 
 Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
@@ -155,6 +158,14 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
+
+### [UART](https://docs.golemparts.com/rppal/latest/uart)
+
+TODO: Add Uart implementation details for release 0.11.1.
+
+#### Features
+
+* TODO: Add Uart feature list for release 0.11.1.
 
 ## Cross compilation
 

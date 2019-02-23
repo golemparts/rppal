@@ -19,8 +19,8 @@
 // DEALINGS IN THE SOFTWARE.
 
 //! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C,
-//! PWM and SPI peripherals. Support for [additional peripherals] will be added
-//! in future updates.
+//! PWM, SPI and UART peripherals. Support for [additional peripherals] will be
+//! added in future updates.
 //!
 //! In addition to providing a user-friendly interface for the above-mentioned
 //! peripherals, RPPAL can also be used in conjunction with a variety of

@@ -41,6 +41,8 @@
 //! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
 //! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
+//! Remove any lines containing `enable_uart=0` or `enable_uart=1` from `/boot/config.txt`.
+//!
 //! On Raspberry Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
 //! `ttyAMA0` becomes available for serial communication, or tie the Bluetooth module to `ttyS0`.
 //!
@@ -61,7 +63,7 @@
 //! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
 //! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
-//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial communication and set a fixed
+//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial communication on `ttyS0`, which also sets a fixed
 //! core frequency.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
@@ -90,6 +92,9 @@
 //! ## Troubleshooting
 //!
 //! ### Permission denied
+//!
+//! The current user should be a member of the group that owns the specified
+//! device. Usually the group is set to either `dialout` or `tty`.
 //!
 //! [documentation]: https://www.raspberrypi.org/documentation/configuration/uart.md
 

@@ -21,7 +21,6 @@
 #![allow(unused_imports)]
 
 use std::io;
-use std::mem::size_of;
 use std::time::Duration;
 
 use libc::{c_int, termios};
