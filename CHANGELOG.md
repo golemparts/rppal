@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11.1 (TBD)
+## 0.11.1 (February 24, 2019)
 
 * Fix incorrect data type conversion on 64-bit OSes when libc uses 64-bit `timespec` fields.
 
