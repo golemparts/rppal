@@ -26,50 +26,63 @@
 //!
 //! ## UART peripherals
 //!
-//! The Raspberry Pi's BCM283x SoC features two UART peripherals. `ttyAMA0` represents the primary (PL011)
-//! UART, which offers a full set of features. `ttyS0` represents an auxiliary
-//! peripheral that's referred to as mini UART, with limited capabilities.
+//! The Raspberry Pi's BCM283x SoC features two UART peripherals.
+//! `/dev/ttyAMA0` represents the primary (PL011) UART, which offers a full
+//! set of features. `/dev/ttyS0` represents an auxiliary peripheral that's
+//! referred to as mini UART, with limited capabilities.
 //!
-//! On earlier Raspberry Pi models without Bluetooth, `ttyAMA0` is configured as a Linux serial console.
-//! On more recent models with Bluetooth (3A+, 3B, 3B+, Zero W), `ttyAMA0` is connected to the Bluetooth
-//! module, and `ttyS0` is used as a serial console instead. Due to the limitations of `ttyS0` and
-//! the requirement for a fixed core frequency, in most cases you'll want to use `ttyAMA0` for serial communication.
-//! More details on the differences between `ttyAMA0` and `ttyS0` can be found in the official Raspberry Pi [documentation].
+//! On earlier Raspberry Pi models without Bluetooth, `/dev/ttyAMA0` is configured
+//! as a Linux serial console. On more recent models with Bluetooth (3A+, 3B,
+//! 3B+, Zero W), `/dev/ttyAMA0` is connected to the Bluetooth module, and `/dev/ttyS0`
+//! is used as a serial console instead. Due to the limitations of `/dev/ttyS0` and
+//! the requirement for a fixed core frequency, in most cases you'll want to
+//! use `/dev/ttyAMA0` for serial communication. More details on the differences
+//! between `/dev/ttyAMA0` and `/dev/ttyS0` can be found in the official Raspberry Pi
+//! [documentation].
 //!
-//! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and RX (incoming data) is tied
-//! to BCM GPIO 15 (physical pin 10). You can move these lines to different pins using the `uart0`
-//! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
-//! current Raspberry Pi models. They are only available on the Compute Module's SO-DIMM pads.
+//! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and
+//! RX (incoming data) is tied to BCM GPIO 15 (physical pin 10). You can move
+//! these lines to different pins using the `uart0` and `uart1` overlays,
+//! however none of the other pin options are exposed through the GPIO header
+//! on any of the current Raspberry Pi models. They are only available on the
+//! Compute Module's SO-DIMM pads.
 //!
-//! ## Configure `ttyAMA0` for serial communication (recommended)
+//! ## Configure `/dev/ttyAMA0` for serial communication (recommended)
 //!
-//! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
-//! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//! To disable the Linux serial console, either deactivate it through
+//! `sudo raspi-config`, or remove the parameter `console=serial0,115200` from
+//! `/boot/cmdline.txt`.
 //!
-//! Remove any lines containing `enable_uart=0` or `enable_uart=1` from `/boot/config.txt`.
+//! Remove any lines containing `enable_uart=0` or `enable_uart=1` from
+//! `/boot/config.txt`.
 //!
-//! On Raspberry Pi models with Bluetooth, an extra step is required to either disable Bluetooth so
-//! `ttyAMA0` becomes available for serial communication, or tie the Bluetooth module to `ttyS0`.
+//! On Raspberry Pi models with Bluetooth, an extra step is required to either
+//! disable Bluetooth so `/dev/ttyAMA0` becomes available for serial communication,
+//! or tie the Bluetooth module to `/dev/ttyS0`.
 //!
-//! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/config.txt`. You'll also
-//! need to disable the service that initializes Bluetooth with `sudo systemctl disable hciuart`.
+//! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/config.txt`.
+//! You'll also need to disable the service that initializes Bluetooth with
+//! `sudo systemctl disable hciuart`.
 //!
-//! To move the Bluetooth module to `ttyS0`, instead of the above-mentioned steps, add
-//! `dtoverlay=pi3-miniuart-bt` to `/boot/config.txt`. You'll also need to edit `/lib/systemd/system/hciuart.service`
-//! and replace `ttyAMA0` with `ttyS0`, and set a fixed core frequency by adding `core_freq=250` to
+//! To move the Bluetooth module to `/dev/ttyS0`, instead of the above-mentioned
+//! steps, add `dtoverlay=pi3-miniuart-bt` to `/boot/config.txt`. You'll also
+//! need to edit `/lib/systemd/system/hciuart.service` and replace `/dev/ttyAMA0`
+//! with `/dev/ttyS0`, and set a fixed core frequency by adding `core_freq=250` to
 //! `/boot/config.txt`.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
-//! ## Configure `ttyS0` for serial communication
+//! ## Configure `/dev/ttyS0` for serial communication
 //!
-//! If you prefer to leave the Bluetooth module on `ttyAMA0`, you can configure `ttyS0` for serial communication instead.
+//! If you prefer to leave the Bluetooth module on `/dev/ttyAMA0`, you can configure
+//! `/dev/ttyS0` for serial communication instead.
 //!
-//! To disable the Linux serial console, either deactivate it through `sudo raspi-config`, or
-//! remove the parameter `console=serial0,115200` from `/boot/cmdline.txt`.
+//! To disable the Linux serial console, either deactivate it through
+//! `sudo raspi-config`, or remove the parameter `console=serial0,115200` from
+//! `/boot/cmdline.txt`.
 //!
-//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial communication on `ttyS0`, which also sets a fixed
-//! core frequency.
+//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial
+//! communication on `/dev/ttyS0`, which also sets a fixed core frequency.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
@@ -80,21 +93,22 @@
 //! hardware flow control with [`set_hardware_flow_control`] will automatically
 //! configure these pins.
 //!
-//! The RTS and CTS pins are reset to their original state when [`Uart`] goes out of scope.
-//! Note that `drop` methods aren't called when a process is abnormally terminated, for
-//! instance when a user presses <kbd>Ctrl</kbd> + <kbd>C</kbd>, and the `SIGINT` signal
-//! isn't caught. You can catch those using crates such as [`simple_signal`].
+//! The RTS and CTS pins are reset to their original state when [`Uart`] goes
+//! out of scope. Note that `drop` methods aren't called when a process is
+//! abnormally terminated, for instance when a user presses <kbd>Ctrl</kbd> +
+//! <kbd>C</kbd>, and the `SIGINT` signal isn't caught. You can catch those
+//! using crates such as [`simple_signal`].
 //!
 //! ## USB serial devices
 //!
-//! In addition to the UART peripherals, `Uart` can also control USB devices
-//! with a serial interface. Depending on the type of device, these
-//! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
-//! is an index starting at `0`. The numbering is based on the order
-//! in which the devices are discovered by the kernel, so you'll need to find
+//! In addition to the hardware UART peripherals, `Uart` can also control USB
+//! serial devices. Depending on the type of device/USB controller chip,
+//! these can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`,
+//! where `x` is an index starting at `0`. The numbering is based on the order
+//! in which the devices are discovered by the kernel. You'll need to find
 //! a way to uniquely identify them when you have multiple devices connected
-//! at the same time. For instance, you can find the assigned tty device name
-//! based on the device id in `/dev/serial/by-id`.
+//! at the same time, for instance, by searching for the relevant name in
+//! the `/dev/serial/by-id` directory.
 //!
 //! ## Troubleshooting
 //!
