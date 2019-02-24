@@ -30,8 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // parity bit, 8 data bits and 1 stop bit.
     let mut uart = Uart::new(115_200, Parity::None, 8, 1)?;
 
-    // Configure read() to wait until at least 1 byte becomes available
-    // in the incoming buffer.
+    // Configure read() to block until at least 1 byte is received.
     uart.set_blocking_mode(1, Duration::default())?;
 
     let mut buffer = [0u8; 1];
