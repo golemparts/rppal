@@ -258,6 +258,9 @@ impl Uart {
             None
         };
 
+        // While it's tempting to set O_NONBLOCK here to prevent write()
+        // from blocking, that also prevents read() from working properly
+        // with the VMIN and VTIME settings.
         let device = OpenOptions::new()
             .read(true)
             .write(true)
@@ -431,13 +434,14 @@ impl Uart {
     /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). `read` stores any available data and
     /// returns immediately.
     /// * **Blocking read** (`min_length` > 0, `timeout` = 0). `read` blocks until at least
-    /// `min_length` bytes are available.
+    /// `min_length` bytes are available, or the provided buffer variable is full.
     /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). `read` blocks until at least
     /// one byte is available, or the `timeout` duration elapses.
     /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0). `read` blocks until at least
-    /// `min_length` bytes are available, or the `timeout` duration elapses after receiving one or more bytes.
-    /// The timer is started after an initial byte becomes available, and is restarted after each additional
-    /// byte. That means `read` will block indefinitely until at least one byte is available.
+    /// `min_length` bytes are available, the provided buffer variable is full, or the `timeout`
+    /// duration elapses after receiving one or more bytes. The timer is started after an initial byte
+    /// becomes available, and is restarted after each additional byte. That means `read` will block
+    /// indefinitely until at least one byte is available.
     ///
     /// By default, `read` is configured for non-blocking reads.
     ///
@@ -467,8 +471,11 @@ impl Uart {
     /// Sends the contents of `buffer` to the device.
     ///
     /// `write` returns immediately after copying the contents of `buffer`
-    /// to an internal outgoing buffer. You can call [`drain`] to wait until
-    /// all outgoing data has been transmitted.
+    /// to the internal outgoing buffer. If the internal buffer is full,
+    /// `write` blocks until the entire contents of `buffer` can be copied.
+    ///
+    /// You can call [`drain`] to wait until all data stored in the internal
+    /// outgoing buffer has been transmitted.
     ///
     /// Returns how many bytes were written.
     ///
