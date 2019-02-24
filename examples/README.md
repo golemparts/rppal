@@ -17,3 +17,5 @@ Before running any examples that interface with external components, read throug
 `pwm_servo.rs` - Rotates a servo using hardware PWM.
 
 `spi_25aa1024.rs` - Transfers data to a Microchip 25AA1024 serial EEPROM using SPI.
+
+`uart_blocking_read.rs` - Blocks while waiting for incoming serial data.
