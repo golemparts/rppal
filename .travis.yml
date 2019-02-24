@@ -15,7 +15,6 @@ env:
   - TARGET=armv7-unknown-linux-gnueabihf
   - TARGET=armv7-unknown-linux-musleabihf
   - TARGET=aarch64-unknown-linux-gnu
-  - TARGET=aarch64-unknown-linux-musl
 matrix:
   allow_failures:
     - rust: nightly
