@@ -18,7 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI
+//! RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART
 //! peripherals through a user-friendly interface. In addition to peripheral
 //! access, communicating with USB serial devices is supported as well. The library
 //! can be used in conjunction with a variety of platform-agnostic drivers through

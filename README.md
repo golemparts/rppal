@@ -5,7 +5,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
-RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals through a user-friendly interface. In addition to peripheral access, communicating with USB serial devices is supported as well. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
+RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, communicating with USB serial devices is supported as well. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
 RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
@@ -22,6 +22,7 @@ This library is under active development on the [master branch](https://github.c
   - [I2C](#i2c)
   - [PWM](#pwm)
   - [SPI](#spi)
+  - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
   - [RLS](#rls)
@@ -59,11 +60,13 @@ use rppal::gpio::Gpio;
 use rppal::i2c::I2c;
 use rppal::pwm::{Channel, Pwm};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
+use rppal::uart::{Parity, Uart};
 
 let gpio = Gpio::new()?;
 let i2c = I2c::new()?;
 let pwm = Pwm::new(Channel::Pwm0)?;
 let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0)?;
+let uart = Uart::new(115_200, Parity::None, 8, 1)?;
 ```
 
 Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
@@ -153,6 +156,15 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
+
+### [UART](https://docs.golemparts.com/rppal/latest/uart)
+
+RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals through the `ttyAMA0` and `ttyS0` device
+interfaces. Additionally, communicating with USB serial devices is supported through `ttyUSBx` and `ttyACMx`.
+
+#### Features
+
+* TODO: Add Uart feature list for release 0.11.1.
 
 ## Cross compilation
 
