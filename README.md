@@ -121,7 +121,7 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Activate built-in pull-up/pull-down resistors
 * Configure synchronous and asynchronous interrupt handlers
 * Software-based PWM implementation
-* Optional `embedded-hal` trait implementations (`OutputPin`, `PwmPin`)
+* Optional `embedded-hal` trait implementations (`digital::OutputPin`, `PwmPin`)
 
 ### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
@@ -132,7 +132,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * Single master, 7-bit slave addresses, transfer rates up to 400 kbit/s (Fast-mode)
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
-* Optional `embedded-hal` trait implementations (`Read`, `Write`, `WriteRead`)
+* Optional `embedded-hal` trait implementations (`blocking::i2c::{Read, Write, WriteRead}`)
 
 ### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
@@ -155,7 +155,7 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
-* Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
+* Optional `embedded-hal` trait implementations (`blocking::spi::{Transfer, Write}`, `spi::FullDuplex`)
 
 ### [UART](https://docs.golemparts.com/rppal/latest/uart)
 
@@ -164,7 +164,11 @@ interfaces. Additionally, communicating with USB serial devices is supported thr
 
 #### Features
 
-* TODO: Add Uart feature list for release 0.11.1.
+* Support for both UART peripherals (PL011, mini UART) and USB serial devices
+* None/Even/Odd/Mark/Space parity, 5-8 data bits, 1-2 stop bits
+* Transfer rates up to 4 Mbit/s (device-dependent)
+* Hardware flow control with automatic RTS/CTS pin configuration
+* Optional `embedded-hal` trait implementations (`blocking::serial::Write`, `serial::{Read, Write}`)
 
 ## Cross compilation
 
