@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut buffer = [0u8; 1];
     loop {
-        // Store any incoming data in buffer.
+        // Fill the buffer variable with any incoming data.
         if uart.read(&mut buffer)? > 0 {
             println!("Received byte: {}", buffer[0]);
         }
