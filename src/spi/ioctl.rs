@@ -29,10 +29,8 @@ use super::segment::Segment;
 
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
-#[cfg(all(target_env = "musl", target_pointer_width = "32"))]
-type IoctlLong = libc::c_long;
-#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
-type IoctlLong = i32;
+#[cfg(target_env = "musl")]
+type IoctlLong = c_int;
 
 pub type Result<T> = result::Result<T, io::Error>;
 
