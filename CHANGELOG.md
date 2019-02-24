@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 (TBD)
+
+* **Uart**: Add support for both the PL011 and mini UART, hardware flow control, and communication with USB serial devices.
+* **Uart**: Implement `embedded-hal` traits `serial::{Read, Write}` and `blocking::serial::Write` for `Uart`.
+
 ## 0.11.1 (February 24, 2019)
 
 * Fix incorrect data type conversion on 64-bit OSes when libc uses 64-bit `timespec` fields.
@@ -12,11 +17,11 @@
 * **DeviceInfo**: (Breaking change) Add hidden `Model::__Nonexhaustive` and `SoC::__Nonexhaustive` variants, indicating `Model` and `SoC` shouldn't be exhaustively matched. After this change, adding new variants to these enums when a new Raspberry Pi model is released won't be considered a breaking change anymore. This is a hack that can still be circumvented, but anyone that does so should be aware of the repercussions. This will be replaced once `#[non_exhaustive]` stabilizes.
 * **Gpio**: Add software-based PWM to `OutputPin` and `IoPin` through `set_pwm()`, `set_pwm_frequency()` and `clear_pwm()`.
 * **Gpio**: Add `is_set_low()` and `is_set_high()` to `OutputPin` to check the pin's output state.
-* **Gpio**: Implement `embedded-hal` traits `OutputPin` and `PwmPin` for `OutputPin` and `IoPin`.
-* **I2c**: Implement `embedded-hal` traits `Read`, `Write` and `WriteRead` for `I2c`.
+* **Gpio**: Implement `embedded-hal` traits `digital::OutputPin` and `PwmPin` for `OutputPin` and `IoPin`.
+* **I2c**: Implement `embedded-hal` traits `blocking::i2c::{Read, Write, WriteRead}` for `I2c`.
 * **Pwm**: Add `reset_on_drop()` and `set_reset_on_drop()` to `Pwm` to optionally keep the PWM channel enabled on drop (contributed by @benkard).
 * **Pwm**: Implement `embedded-hal` trait `PwmPin` for `Pwm`.
-* **Spi**: Implement `embedded-hal` traits `FullDuplex`, `Transfer` and `Write` for `Spi`.
+* **Spi**: Implement `embedded-hal` traits `spi::FullDuplex` and `blocking::spi::{Transfer, Write}` for `Spi`.
 
 ## 0.10.0 (January 18, 2019)
 
@@ -50,7 +55,7 @@
 
 ## 0.9.0 (November 15, 2018)
 
-* **DeviceInfo**: Add support for Raspberry Pi 3 A+.
+* **DeviceInfo**: (Breaking change) Add support for Raspberry Pi 3 A+.
 
 ## 0.8.1 (October 5, 2018)
 
@@ -105,14 +110,13 @@
 
 ## 0.3.0 (March 16, 2018)
 
-* **DeviceInfo**: Add support for Raspberry Pi 3 B+.
+* **DeviceInfo**: (Breaking change) Add support for Raspberry Pi 3 B+.
 * **DeviceInfo**: Set memory offsets based on model info rather than SoC.
 
 ## 0.2.0 (October 6, 2017)
 
-* To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU somewhere in their name have been changed to `Gpio`, `Io`, `Bcm` and `Cpu` respectively.
-* **Gpio**: GPIO has been added as a temporary (deprecated) type alias for `Gpio`.
-* Minor version bump due to incompatible API changes in a 0.x.x release.
+* (Breaking change) To adhere to Rust's naming conventions, several structs and enums that had GPIO, IO, BCM or CPU in their name have been changed to `Gpio`, `Io`, `Bcm` and `Cpu` respectively.
+* **Gpio**: Add GPIO as a temporary (deprecated) type alias for `Gpio`.
 
 ## 0.1.3 (May 27, 2017)
 
