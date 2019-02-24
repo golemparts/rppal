@@ -18,22 +18,22 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C,
-//! PWM, SPI and UART peripherals. Support for [additional peripherals] will be
-//! added in future updates.
+//! RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI
+//! peripherals through a user-friendly interface. In addition to peripheral
+//! access, communicating with USB serial devices is supported as well. The library
+//! can be used in conjunction with a variety of platform-agnostic drivers through
+//! its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 //!
-//! In addition to providing a user-friendly interface for the above-mentioned
-//! peripherals, RPPAL can also be used in conjunction with a variety of
-//! platform-agnostic drivers through its `embedded-hal` trait implementations
-//! by enabling the optional `hal` feature.
+//! RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu`
+//! and `musl` libc targets are supported. RPPAL is compatible with the Raspberry
+//! Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards
+//! compatibility for minor revisions isn't guaranteed until v1.0.0.
 //!
 //! RPPAL requires Raspbian or any similar, recent, Linux distribution. Both
 //! `gnu` and `musl` libc targets are supported. The library is compatible with
 //! the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and
 //! Zero W. Backwards compatibility for minor revisions isn't guaranteed until
 //! v1.0.0.
-//!
-//! [additional peripherals]: https://github.com/golemparts/rppal/projects/1
 
 // Used by rustdoc to link other crates to rppal's docs
 #![doc(html_root_url = "https://docs.rs/rppal/0.11.0")]
@@ -48,4 +48,4 @@ pub mod i2c;
 pub mod pwm;
 pub mod spi;
 pub mod system;
-pub mod uart;
+// pub mod uart;

@@ -5,11 +5,9 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
-RPPAL is a Rust library that provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals. Support for [additional peripherals](https://github.com/golemparts/rppal/projects/1) will be added in future updates.
+RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM and SPI peripherals through a user-friendly interface. In addition to peripheral access, communicating with USB serial devices is supported as well. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
-In addition to providing a user-friendly interface for the above-mentioned peripherals, RPPAL can also be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
-
-RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. The library is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
+RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
 This library is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
@@ -24,7 +22,6 @@ This library is under active development on the [master branch](https://github.c
   - [I2C](#i2c)
   - [PWM](#pwm)
   - [SPI](#spi)
-  - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
   - [RLS](#rls)
@@ -62,13 +59,11 @@ use rppal::gpio::Gpio;
 use rppal::i2c::I2c;
 use rppal::pwm::{Channel, Pwm};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
-use rppal::uart::{Parity, Uart};
 
 let gpio = Gpio::new()?;
 let i2c = I2c::new()?;
 let pwm = Pwm::new(Channel::Pwm0)?;
 let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0)?;
-let uart = Uart::new(115_200, Parity::None, 8, 1)?;
 ```
 
 Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
@@ -131,7 +126,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 
 #### Features
 
-* Single master, 7-bit slave addresses, transfer rates up to 400kbit/s (Fast-mode)
+* Single master, 7-bit slave addresses, transfer rates up to 400 kbit/s (Fast-mode)
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 * Optional `embedded-hal` trait implementations (`Read`, `Write`, `WriteRead`)
@@ -158,14 +153,6 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`FullDuplex `, `Transfer `, `Write `)
-
-### [UART](https://docs.golemparts.com/rppal/latest/uart)
-
-TODO: Add Uart implementation details for release 0.11.1.
-
-#### Features
-
-* TODO: Add Uart feature list for release 0.11.1.
 
 ## Cross compilation
 
