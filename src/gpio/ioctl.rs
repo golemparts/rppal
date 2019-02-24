@@ -33,8 +33,10 @@ use crate::gpio::{Error, Level, Result, Trigger};
 
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
-#[cfg(target_env = "musl")]
+#[cfg(all(target_env = "musl", target_pointer_width = "32"))]
 type IoctlLong = libc::c_long;
+#[cfg(all(target_env = "musl", target_pointer_width = "64"))]
+type IoctlLong = i32;
 
 const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
