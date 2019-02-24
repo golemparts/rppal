@@ -20,7 +20,7 @@
 
 //! Interface for the UART peripherals and USB serial devices.
 //!
-//! RPPAL controls the Raspberry Pi's main and auxiliary UART peripherals
+//! RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals
 //! through the `ttyAMA0` and `ttyS0` device interfaces. Communicating with
 //! USB serial devices is supported through `ttyUSBx` and `ttyACMx`.
 //!
@@ -35,6 +35,11 @@
 //! module, and `ttyS0` is used as a serial console instead. Due to the limitations of `ttyS0` and
 //! the requirement for a fixed core frequency, in most cases you'll want to use `ttyAMA0` for serial communication.
 //! More details on the differences between `ttyAMA0` and `ttyS0` can be found in the official Raspberry Pi [documentation].
+//!
+//! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and RX (incoming data) is tied
+//! to BCM GPIO 15 (physical pin 10). You can move these lines to different pins using the `uart0`
+//! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
+//! current Raspberry Pi models. They are only available on the Compute Module's SO-DIMM pads.
 //!
 //! ## Configure `ttyAMA0` for serial communication (recommended)
 //!
@@ -68,19 +73,21 @@
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
-//! ## Pins
+//! ## Hardware flow control
 //!
-//! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and RX (incoming data) is tied
-//! to BCM GPIO 15 (physical pin 10). You can move these lines to different pins using the `uart0`
-//! and `uart1` overlays, however none of the other pin options are exposed through the GPIO header on any of the
-//! current Raspberry Pi models. They are only available on the Compute Module's SO-DIMM pads.
+//! RTS (request to send) is tied to BCM GPIO 17 (physical pin 11) and
+//! CTS (clear to send) is tied to BCM GPIO 16 (physical pin 36). Enabling
+//! hardware flow control with [`set_hardware_flow_control`] will automatically
+//! configure these pins.
 //!
-//! For hardware flow control, RTS (request to send) is tied to BCM GPIO 17 (physical pin 11) and
-//! CTS (clear to send) is tied to BCM GPIO 16 (physical pin 36).
+//! The RTS and CTS pins are reset to their original state when [`Uart`] goes out of scope.
+//! Note that `drop` methods aren't called when a process is abnormally terminated, for
+//! instance when a user presses <kbd>Ctrl</kbd> + <kbd>C</kbd>, and the `SIGINT` signal
+//! isn't caught. You can catch those using crates such as [`simple_signal`].
 //!
 //! ## USB serial devices
 //!
-//! In addition to the built-in UARTs, `Uart` also supports USB devices
+//! In addition to the UART peripherals, `Uart` can also control USB devices
 //! with a serial interface. Depending on the type of device, these
 //! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
 //! is an index starting at `0`. The numbering is based on the order
@@ -97,6 +104,7 @@
 //! device. Usually the group is set to either `dialout` or `tty`.
 //!
 //! [documentation]: https://www.raspberrypi.org/documentation/configuration/uart.md
+//! [`simple_signal`]: https://crates.io/crates/simple-signal
 
 use std::error;
 use std::fmt;
@@ -113,6 +121,8 @@ use libc::O_NOCTTY;
 
 use crate::gpio::{self, Gpio, IoPin, Mode};
 
+#[cfg(feature = "hal")]
+mod hal;
 mod termios;
 
 const UART_RTS_GPIO: u8 = 17;
@@ -276,12 +286,12 @@ impl Uart {
         })
     }
 
-    /// Returns the line speed in bits per second (bps).
+    /// Returns the line speed in bits per second (bit/s).
     pub fn line_speed(&self) -> Result<u32> {
         termios::line_speed(self.fd)
     }
 
-    /// Sets the line speed in bits per second (bps).
+    /// Sets the line speed in bits per second (bit/s).
     ///
     /// Accepted values:
     /// `0`, `50`, `75`, `110`, `134`, `150`, `200`, `300`, `600`,
