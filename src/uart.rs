@@ -421,10 +421,9 @@ impl Uart {
 
     /// Asserts or releases the RTS (request to send) line.
     ///
-    /// Setting `enabled` to `true` asserts the RTS line, which tells the remote
-    /// device that it should start transmitting data. Setting it to `false`
-    /// releases the RTS line, requesting the remote device to wait with
-    /// transmitting any more data.
+    /// Setting `enabled` to `true` asserts the RTS line, requesting the remote
+    /// device to resume transmitting data. Setting `enabled` to `false` releases
+    /// the RTS line, requesting the remote device to pause its data transmission.
     ///
     /// `set_rts` has no effect when [`hardware_flow_control`] is disabled.
     ///
@@ -458,7 +457,7 @@ impl Uart {
     /// Support for incoming and/or outgoing XON/XOFF software flow control is
     /// device-dependent. You can
     /// manually implement XON/XOFF by disabling software flow control, parsing
-    /// incoming XON/XOFF characters received from [`read`] calls, and sending
+    /// incoming XON/XOFF control characters received from [`read`] calls, and sending
     /// XON/XOFF characters when needed using [`send_xon`] and [`send_xoff`].
     ///
     /// [`read`]: #method.read
