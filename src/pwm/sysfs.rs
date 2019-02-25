@@ -18,23 +18,87 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use std::ffi::CString;
 use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
+use std::ptr;
 use std::result;
 use std::thread;
 use std::time::Duration;
 
-use libc;
+use libc::{c_char, group, passwd};
 
 use crate::pwm::Polarity;
-use crate::user;
 
 /// Result type returned from methods that can have `io::Error`s.
 pub type Result<T> = result::Result<T, io::Error>;
+
+// Find user ID for specified user
+pub fn user_to_uid(name: &str) -> Option<u32> {
+    if let Ok(name_cstr) = CString::new(name) {
+        let buf = &mut [0 as c_char; 4096];
+        let mut res: *mut passwd = ptr::null_mut();
+        let mut pwd = passwd {
+            pw_name: ptr::null_mut(),
+            pw_passwd: ptr::null_mut(),
+            pw_uid: 0,
+            pw_gid: 0,
+            pw_gecos: ptr::null_mut(),
+            pw_dir: ptr::null_mut(),
+            pw_shell: ptr::null_mut(),
+        };
+
+        unsafe {
+            if libc::getpwnam_r(
+                name_cstr.as_ptr(),
+                &mut pwd,
+                buf.as_mut_ptr(),
+                buf.len(),
+                &mut res,
+            ) == 0
+                && res as usize > 0
+            {
+                return Some((*res).pw_uid);
+            }
+        }
+    }
+
+    None
+}
+
+// Find group ID for specified group
+pub fn group_to_gid(name: &str) -> Option<u32> {
+    if let Ok(name_cstr) = CString::new(name) {
+        let buf = &mut [0 as c_char; 4096];
+        let mut res: *mut group = ptr::null_mut();
+        let mut grp = group {
+            gr_name: ptr::null_mut(),
+            gr_passwd: ptr::null_mut(),
+            gr_gid: 0,
+            gr_mem: ptr::null_mut(),
+        };
+
+        unsafe {
+            if libc::getgrnam_r(
+                name_cstr.as_ptr(),
+                &mut grp,
+                buf.as_mut_ptr(),
+                buf.len(),
+                &mut res,
+            ) == 0
+                && res as usize > 0
+            {
+                return Some((*res).gr_gid);
+            }
+        }
+    }
+
+    None
+}
 
 // Check file permissions and group ID
 fn check_permissions(path: &str, gid: u32) -> bool {
@@ -59,7 +123,7 @@ pub fn export(channel: u8) -> Result<()> {
     }
 
     // If we're logged in as root or effective root, skip the permission checks
-    if let Some(root_uid) = user::user_to_uid("root") {
+    if let Some(root_uid) = user_to_uid("root") {
         unsafe {
             if libc::getuid() == root_uid || libc::geteuid() == root_uid {
                 return Ok(());
@@ -73,7 +137,7 @@ pub fn export(channel: u8) -> Result<()> {
     // manually adding rules, since they don't seem to be part of the latest release yet. The
     // patched drivers/pwm/sysfs.c was included in raspberrypi-kernel_1.20180417-1 (4.14.34).
     // See: https://github.com/raspberrypi/linux/issues/1983
-    let gid_gpio = if let Some(gid) = user::group_to_gid("gpio") {
+    let gid_gpio = if let Some(gid) = group_to_gid("gpio") {
         gid
     } else {
         0

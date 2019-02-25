@@ -38,8 +38,6 @@
 // Used by rustdoc to link other crates to rppal's docs
 #![doc(html_root_url = "https://docs.rs/rppal/0.11.1")]
 
-mod user;
-
 #[macro_use]
 mod macros;
 
