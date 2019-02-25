@@ -22,7 +22,7 @@ use embedded_hal::blocking::serial::write::Default;
 use embedded_hal::serial::{Read, Write};
 use nb;
 
-use super::{Buffer, Error, Uart};
+use super::{Error, Queue, Uart};
 
 impl From<Error> for nb::Error<Error> {
     fn from(err: Error) -> nb::Error<Error> {
@@ -56,7 +56,7 @@ impl Write<u8> for Uart {
     }
 
     fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        Uart::flush(self, Buffer::Outgoing)?;
+        Uart::flush(self, Queue::Output)?;
 
         Ok(())
     }

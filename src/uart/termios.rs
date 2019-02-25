@@ -31,10 +31,10 @@ use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
-use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VTIME};
+use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
 
-use crate::uart::{Buffer, Error, Parity, Result};
+use crate::uart::{Error, Parity, Queue, Result, XOFF, XON};
 
 #[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {
@@ -315,10 +315,10 @@ pub fn hardware_flow_control(fd: c_int) -> Result<bool> {
 }
 
 // Set RTS/CTS flow control
-pub fn set_hardware_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
+pub fn set_hardware_flow_control(fd: c_int, enabled: bool) -> Result<()> {
     let mut attr = attributes(fd)?;
 
-    if flow_control {
+    if enabled {
         attr.c_cflag |= CRTSCTS;
     } else {
         attr.c_cflag &= !CRTSCTS;
@@ -327,28 +327,45 @@ pub fn set_hardware_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Return XON/XOFF flow control setting
+pub fn software_flow_control(fd: c_int) -> Result<(bool, bool)> {
+    let attr = attributes(fd)?;
+
+    Ok(((attr.c_iflag & IXOFF) > 0, (attr.c_iflag & IXON) > 0))
+}
+
 // Set XON/XOFF flow control
-pub fn set_software_flow_control(fd: c_int, flow_control: bool) -> Result<()> {
+pub fn set_software_flow_control(
+    fd: c_int,
+    incoming_enabled: bool,
+    outgoing_enabled: bool,
+) -> Result<()> {
     let mut attr = attributes(fd)?;
 
-    if flow_control {
-        attr.c_iflag |= IXON | IXOFF | IXANY;
-    } else {
-        attr.c_iflag &= !(IXON | IXOFF | IXANY);
+    attr.c_iflag &= !(IXON | IXOFF | IXANY);
+    attr.c_cc[VSTART] = XON;
+    attr.c_cc[VSTOP] = XOFF;
+
+    if incoming_enabled {
+        attr.c_iflag |= IXOFF;
+    }
+
+    if outgoing_enabled {
+        attr.c_iflag |= IXON;
     }
 
     set_attributes(fd, &attr)
 }
 
 // Discard all waiting incoming and outgoing data
-pub fn flush(fd: c_int, buffer_type: Buffer) -> Result<()> {
+pub fn flush(fd: c_int, queue_type: Queue) -> Result<()> {
     parse_retval!(unsafe {
         libc::tcflush(
             fd,
-            match buffer_type {
-                Buffer::Incoming => TCIFLUSH,
-                Buffer::Outgoing => TCOFLUSH,
-                Buffer::Both => TCIOFLUSH,
+            match queue_type {
+                Queue::Input => TCIFLUSH,
+                Queue::Output => TCOFLUSH,
+                Queue::Both => TCIOFLUSH,
             },
         )
     })?;
