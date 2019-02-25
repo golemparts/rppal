@@ -160,14 +160,15 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 ### [UART](https://docs.golemparts.com/rppal/latest/uart)
 
 RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals through the `ttyAMA0` and `ttyS0` device
-interfaces. Additionally, communicating with USB serial devices is supported through `ttyUSBx` and `ttyACMx`.
+interfaces. USB serial devices are controlled using `ttyUSBx` and `ttyACMx`.
 
 #### Features
 
-* Support for both UART peripherals (PL011, mini UART) and USB serial devices
+* Support for UART peripherals (PL011, mini UART) and USB serial devices
 * None/Even/Odd/Mark/Space parity, 5-8 data bits, 1-2 stop bits
 * Transfer rates up to 4 Mbit/s (device-dependent)
-* Hardware flow control with automatic RTS/CTS pin configuration
+* XON/XOFF software flow control
+* RTS/CTS hardware flow control with automatic pin configuration
 * Optional `embedded-hal` trait implementations (`blocking::serial::Write`, `serial::{Read, Write}`)
 
 ## Cross compilation

@@ -88,10 +88,9 @@
 //!
 //! ## Hardware flow control
 //!
-//! RTS (request to send) is tied to BCM GPIO 17 (physical pin 11) and
-//! CTS (clear to send) is tied to BCM GPIO 16 (physical pin 36). Enabling
-//! hardware flow control with [`set_hardware_flow_control`] will automatically
-//! configure these pins.
+//! RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to BCM GPIO 16
+//! (physical pin 36). Enabling hardware flow control with
+//! [`set_hardware_flow_control`] will automatically configure these pins.
 //!
 //! The RTS and CTS pins are reset to their original state when [`Uart`] goes
 //! out of scope. Note that `drop` methods aren't called when a process is
@@ -391,8 +390,8 @@ impl Uart {
     /// [here]: index.html#hardware-flow-control
     /// [`OutputPin`]: ../gpio/struct.OutputPin.html
     /// [`InputPin`]: ../gpio/struct.InputPin.html
-    pub fn set_hardware_flow_control(&mut self, enabled: bool) -> Result<()> {
-        if enabled && self.rts_cts.is_none() {
+    pub fn set_hardware_flow_control(&mut self, hardware_flow_control: bool) -> Result<()> {
+        if hardware_flow_control && self.rts_cts.is_none() {
             // Configure and store RTS/CTS GPIO pins for UART0/UART1, so their
             // mode is automatically reset when Uart goes out of scope.
             if let Some((rts_mode, cts_mode)) = self.rts_cts_mode {
@@ -402,34 +401,34 @@ impl Uart {
 
                 self.rts_cts = Some((pin_rts, pin_cts));
             }
-        } else if !enabled {
+        } else if !hardware_flow_control {
             self.rts_cts = None;
         }
 
-        termios::set_hardware_flow_control(self.fd, enabled)
+        termios::set_hardware_flow_control(self.fd, hardware_flow_control)
     }
 
-    /// Returns `true` if CTS (clear to send) is asserted by the remote device.
+    /// Returns `true` if CTS is asserted by the remote device.
     pub fn cts(&self) -> Result<bool> {
         termios::cts(self.fd)
     }
 
-    /// Returns `true` if RTS (request to send) is asserted by `Uart`.
+    /// Returns `true` if RTS is asserted by `Uart`.
     pub fn rts(&self) -> Result<bool> {
         termios::rts(self.fd)
     }
 
-    /// Asserts or releases the RTS (request to send) line.
+    /// Asserts or releases the RTS line.
     ///
-    /// Setting `enabled` to `true` asserts the RTS line, requesting the remote
-    /// device to resume transmitting data. Setting `enabled` to `false` releases
+    /// Setting `rts` to `true` asserts the RTS line, requesting the remote
+    /// device to resume transmitting data. Setting `rts` to `false` releases
     /// the RTS line, requesting the remote device to pause its data transmission.
     ///
     /// `set_rts` has no effect when [`hardware_flow_control`] is disabled.
     ///
     /// [`hardware_flow_control`]: #method.hardware_flow_control
-    pub fn set_rts(&self, enabled: bool) -> Result<()> {
-        termios::set_rts(self.fd, enabled)
+    pub fn set_rts(&self, rts: bool) -> Result<()> {
+        termios::set_rts(self.fd, rts)
     }
 
     /// Returns a tuple containing the status of the XON/XOFF software flow control settings
@@ -463,12 +462,8 @@ impl Uart {
     /// [`read`]: #method.read
     /// [`send_xon`]: #method.send_xon
     /// [`send_xoff`]: #method.send_xoff
-    pub fn set_software_flow_control(
-        &mut self,
-        incoming_enabled: bool,
-        outgoing_enabled: bool,
-    ) -> Result<()> {
-        termios::set_software_flow_control(self.fd, incoming_enabled, outgoing_enabled)
+    pub fn set_software_flow_control(&mut self, incoming: bool, outgoing: bool) -> Result<()> {
+        termios::set_software_flow_control(self.fd, incoming, outgoing)
     }
 
     /// Sends a XON control character to the remote device.
