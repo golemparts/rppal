@@ -222,6 +222,16 @@ pub enum Bus {
     Spi2 = 2,
 }
 
+impl fmt::Display for Bus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Bus::Spi0 => write!(f, "Spi0"),
+            Bus::Spi1 => write!(f, "Spi1"),
+            Bus::Spi2 => write!(f, "Spi2"),
+        }
+    }
+}
+
 /// Slave Select pins.
 ///
 /// Slave Select is used to signal which slave device should pay attention to
@@ -243,11 +253,30 @@ pub enum SlaveSelect {
     Ss2 = 2,
 }
 
+impl fmt::Display for SlaveSelect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            SlaveSelect::Ss0 => write!(f, "Ss0"),
+            SlaveSelect::Ss1 => write!(f, "Ss1"),
+            SlaveSelect::Ss2 => write!(f, "Ss2"),
+        }
+    }
+}
+
 /// Slave Select polarities.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Polarity {
     ActiveLow = 0,
     ActiveHigh = 1,
+}
+
+impl fmt::Display for Polarity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Polarity::ActiveLow => write!(f, "ActiveLow"),
+            Polarity::ActiveHigh => write!(f, "ActiveHigh"),
+        }
+    }
 }
 
 /// SPI modes indicating the clock polarity and phase.
@@ -277,6 +306,17 @@ pub enum Mode {
     Mode3 = 3,
 }
 
+impl fmt::Display for Mode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Mode::Mode0 => write!(f, "Mode0"),
+            Mode::Mode1 => write!(f, "Mode1"),
+            Mode::Mode2 => write!(f, "Mode2"),
+            Mode::Mode3 => write!(f, "Mode3"),
+        }
+    }
+}
+
 /// Bit orders.
 ///
 /// The bit order determines in what order data is shifted out and shifted in.
@@ -297,6 +337,15 @@ pub enum Mode {
 pub enum BitOrder {
     MsbFirst = 0,
     LsbFirst = 1,
+}
+
+impl fmt::Display for BitOrder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            BitOrder::MsbFirst => write!(f, "MsbFirst"),
+            BitOrder::LsbFirst => write!(f, "LsbFirst"),
+        }
+    }
 }
 
 /// Provides access to the Raspberry Pi's SPI peripherals.

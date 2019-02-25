@@ -127,11 +127,29 @@ pub enum Channel {
     Pwm1 = 1,
 }
 
+impl fmt::Display for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Channel::Pwm0 => write!(f, "Pwm0"),
+            Channel::Pwm1 => write!(f, "Pwm1"),
+        }
+    }
+}
+
 /// Output polarities.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Polarity {
     Normal,
     Inverse,
+}
+
+impl fmt::Display for Polarity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Polarity::Normal => write!(f, "Normal"),
+            Polarity::Inverse => write!(f, "Inverse"),
+        }
+    }
 }
 
 /// Provides access to the Raspberry Pi's PWM peripheral.

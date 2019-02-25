@@ -207,12 +207,34 @@ pub enum Parity {
     Space,
 }
 
+impl fmt::Display for Parity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Parity::None => write!(f, "None"),
+            Parity::Even => write!(f, "Even"),
+            Parity::Odd => write!(f, "Odd"),
+            Parity::Mark => write!(f, "Mark"),
+            Parity::Space => write!(f, "Space"),
+        }
+    }
+}
+
 /// Queue types.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Queue {
     Input,
     Output,
     Both,
+}
+
+impl fmt::Display for Queue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Queue::Input => write!(f, "Input"),
+            Queue::Output => write!(f, "Output"),
+            Queue::Both => write!(f, "Both"),
+        }
+    }
 }
 
 /// Provides access to the Raspberry Pi's UART peripherals and any USB serial
