@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         true,
     )?;
 
-    // Sleep for 500ms while the servo moves into position.
+    // Sleep for 500 ms while the servo moves into position.
     thread::sleep(Duration::from_millis(500));
 
     // Rotate the servo to the opposite side.
