@@ -484,22 +484,18 @@ impl Uart {
     /// [`read`]: #method.read
     /// [`send_xon`]: #method.send_xon
     /// [`send_xoff`]: #method.send_xoff
-    pub fn set_software_flow_control(&mut self, incoming: bool, outgoing: bool) -> Result<()> {
+    pub fn set_software_flow_control(&self, incoming: bool, outgoing: bool) -> Result<()> {
         termios::set_software_flow_control(self.fd, incoming, outgoing)
     }
 
     /// Sends a XON control character to the remote device.
-    pub fn send_xon(&mut self) -> Result<()> {
-        self.write(&[XON])?;
-
-        Ok(())
+    pub fn send_xon(&self) -> Result<()> {
+        termios::send_start(self.fd)
     }
 
     /// Sends a XOFF control character to the remote device.
-    pub fn send_xoff(&mut self) -> Result<()> {
-        self.write(&[XOFF])?;
-
-        Ok(())
+    pub fn send_xoff(&self) -> Result<()> {
+        termios::send_stop(self.fd)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout` values.

@@ -32,7 +32,7 @@ use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
-use libc::{TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
+use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
 
 use crate::uart::{Error, Parity, Queue, Result, XOFF, XON};
 
@@ -327,59 +327,6 @@ pub fn set_hardware_flow_control(fd: c_int, enabled: bool) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
-// Return XON/XOFF flow control setting
-pub fn software_flow_control(fd: c_int) -> Result<(bool, bool)> {
-    let attr = attributes(fd)?;
-
-    Ok(((attr.c_iflag & IXOFF) > 0, (attr.c_iflag & IXON) > 0))
-}
-
-// Set XON/XOFF flow control
-pub fn set_software_flow_control(
-    fd: c_int,
-    incoming_enabled: bool,
-    outgoing_enabled: bool,
-) -> Result<()> {
-    let mut attr = attributes(fd)?;
-
-    attr.c_iflag &= !(IXON | IXOFF | IXANY);
-    attr.c_cc[VSTART] = XON;
-    attr.c_cc[VSTOP] = XOFF;
-
-    if incoming_enabled {
-        attr.c_iflag |= IXOFF;
-    }
-
-    if outgoing_enabled {
-        attr.c_iflag |= IXON;
-    }
-
-    set_attributes(fd, &attr)
-}
-
-// Discard all waiting incoming and outgoing data
-pub fn flush(fd: c_int, queue_type: Queue) -> Result<()> {
-    parse_retval!(unsafe {
-        libc::tcflush(
-            fd,
-            match queue_type {
-                Queue::Input => TCIFLUSH,
-                Queue::Output => TCOFLUSH,
-                Queue::Both => TCIOFLUSH,
-            },
-        )
-    })?;
-
-    Ok(())
-}
-
-// Wait until all outgoing data has been transmitted
-pub fn drain(fd: c_int) -> Result<()> {
-    parse_retval!(unsafe { libc::tcdrain(fd) })?;
-
-    Ok(())
-}
-
 // Return CTS state
 pub fn cts(fd: c_int) -> Result<bool> {
     let mut tiocm: c_int = 0;
@@ -411,6 +358,73 @@ pub fn set_rts(fd: c_int, enabled: bool) -> Result<()> {
     }
 
     parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;
+
+    Ok(())
+}
+
+// Return XON/XOFF flow control setting
+pub fn software_flow_control(fd: c_int) -> Result<(bool, bool)> {
+    let attr = attributes(fd)?;
+
+    Ok(((attr.c_iflag & IXOFF) > 0, (attr.c_iflag & IXON) > 0))
+}
+
+// Set XON/XOFF flow control
+pub fn set_software_flow_control(
+    fd: c_int,
+    incoming_enabled: bool,
+    outgoing_enabled: bool,
+) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    attr.c_iflag &= !(IXON | IXOFF | IXANY);
+    attr.c_cc[VSTART] = XON;
+    attr.c_cc[VSTOP] = XOFF;
+
+    if incoming_enabled {
+        attr.c_iflag |= IXOFF;
+    }
+
+    if outgoing_enabled {
+        attr.c_iflag |= IXON;
+    }
+
+    set_attributes(fd, &attr)
+}
+
+// Send XOFF
+pub fn send_stop(fd: c_int) -> Result<()> {
+    parse_retval!(unsafe { libc::tcflow(fd, TCIOFF) })?;
+
+    Ok(())
+}
+
+// Send XON
+pub fn send_start(fd: c_int) -> Result<()> {
+    parse_retval!(unsafe { libc::tcflow(fd, TCION) })?;
+
+    Ok(())
+}
+
+// Discard all waiting incoming and outgoing data
+pub fn flush(fd: c_int, queue_type: Queue) -> Result<()> {
+    parse_retval!(unsafe {
+        libc::tcflush(
+            fd,
+            match queue_type {
+                Queue::Input => TCIFLUSH,
+                Queue::Output => TCOFLUSH,
+                Queue::Both => TCIOFLUSH,
+            },
+        )
+    })?;
+
+    Ok(())
+}
+
+// Wait until all outgoing data has been transmitted
+pub fn drain(fd: c_int) -> Result<()> {
+    parse_retval!(unsafe { libc::tcdrain(fd) })?;
 
     Ok(())
 }
