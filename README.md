@@ -104,7 +104,7 @@ Additional examples can be found in the `examples` directory.
 
 ## Optional features
 
-By default, all optional features are disabled. You can enable a feature by specifying the relevant feature name(s) in the dependency declaration for the `rppal` crate.
+By default, all optional features are disabled. You can enable a feature by specifying the relevant feature flag(s) in the dependency declaration for the `rppal` crate.
 
 * `hal` - Adds `embedded-hal` trait implementations for all supported peripherals. Doesn't include unproven traits.
 

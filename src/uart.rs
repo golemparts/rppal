@@ -21,8 +21,8 @@
 //! Interface for the UART peripherals and USB serial devices.
 //!
 //! RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals
-//! through the `ttyAMA0` and `ttyS0` device interfaces. Communicating with
-//! USB serial devices is supported through `ttyUSBx` and `ttyACMx`.
+//! through the `ttyAMA0` and `ttyS0` device interfaces. USB serial devices are
+//! controlled using `ttyUSBx` and `ttyACMx`.
 //!
 //! ## UART peripherals
 //!
