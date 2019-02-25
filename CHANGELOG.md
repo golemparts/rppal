@@ -2,7 +2,7 @@
 
 ## 0.11.2 (TBD)
 
-* **Uart**: Add support for both the PL011 and mini UART, hardware flow control, and communication with USB serial devices.
+* **Uart**: Add support for the PL011 and mini UART peripherals, software flow control, hardware flow control, and communication with USB serial devices.
 * **Uart**: Implement `embedded-hal` traits `serial::{Read, Write}` and `blocking::serial::Write` for `Uart`.
 
 ## 0.11.1 (February 24, 2019)
