@@ -9,7 +9,7 @@ repository = "https://github.com/golemparts/rppal"
 readme = "README.md"
 license = "MIT"
 categories = ["embedded", "hardware-support"]
-keywords = ["raspberry", "pi", "embedded-hal", "embedded-hal-impl"]
+keywords = ["raspberry", "pi", "embedded-hal", "embedded-hal-impl", "hal"]
 
 [dependencies]
 libc = "0.2.49"
