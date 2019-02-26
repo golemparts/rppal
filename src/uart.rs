@@ -42,9 +42,9 @@
 //!
 //! By default, TX (outgoing data) is tied to BCM GPIO 14 (physical pin 8) and
 //! RX (incoming data) is tied to BCM GPIO 15 (physical pin 10). You can move
-//! these lines to different pins using the `uart0` and `uart1` overlays,
-//! however none of the other pin options are exposed through the GPIO header
-//! on any of the current Raspberry Pi models. They are only available on the
+//! these lines to different GPIO pins using the `uart0` and `uart1` overlays,
+//! but the alternative pin options aren't exposed through the GPIO header on
+//! any of the current Raspberry Pi models. They are only available on the
 //! Compute Module's SO-DIMM pads.
 //!
 //! ## Configure `/dev/ttyAMA0` for serial communication (recommended)
@@ -75,12 +75,14 @@
 //!
 //! ## Configure `/dev/ttyS0` for serial communication
 //!
-//! If you prefer to leave the Bluetooth module on `/dev/ttyAMA0`, you can
-//! configure `/dev/ttyS0` for serial communication instead.
+//! If you prefer to leave the Bluetooth module or Linux serial console tied
+//! to `/dev/ttyAMA0`, you can configure `/dev/ttyS0` for serial communication
+//! instead.
 //!
-//! Disable the Linux serial console by either deactivating it through
-//! `sudo raspi-config`, or manually removing the parameter
-//! `console=serial0,115200` from `/boot/cmdline.txt`.
+//! On Raspberry Pi models with Bluetooth, disable the Linux serial console on
+//! `/dev/ttyS0` by either deactivating it through `sudo raspi-config`, or
+//! manually removing the parameter `console=serial0,115200` from
+//! `/boot/cmdline.txt`.
 //!
 //! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial
 //! communication on `/dev/ttyS0`, which also sets a fixed core frequency.
@@ -122,9 +124,13 @@
 //! the Pi or the external device.
 //!
 //! When [`Uart`] is controlling a UART peripheral, enabling hardware flow
-//! control with [`set_hardware_flow_control`] will also configure the RTS and
-//! CTS pins. RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to
-//! BCM GPIO 16 (physical pin 36).
+//! control will also configure the RTS and CTS pins. On Raspberry Pi models
+//! with a 40-pin GPIO header, RTS is tied to BCM GPIO 17 (physical pin 11)
+//! and CTS is tied to BCM GPIO 16 (physical pin 36). RTS and CTS aren't
+//! available on models with a 26-pin header, except for the Raspberry Pi B
+//! Rev 2, which exposes RTS and CTS through its unpopulated P5 header with
+//! RTS on BCM GPIO 31 (physical pin 5) and CTS on BCM GPIO 30 (physical pin
+//! 6).
 //!
 //! The RTS and CTS pins are reset to their original state when [`Uart`] goes
 //! out of scope. Note that `drop` methods aren't called when a process is
@@ -142,7 +148,6 @@
 //!
 //! [documentation]: https://www.raspberrypi.org/documentation/configuration/uart.md
 //! [`simple_signal`]: https://crates.io/crates/simple-signal
-//! [`set_hardware_flow_control`]: struct.Uart.html#method.set_hardware_flow_control
 //! [`Uart`]: struct.Uart.html
 
 use std::error;
@@ -159,6 +164,7 @@ use std::time::Duration;
 use libc::O_NOCTTY;
 
 use crate::gpio::{self, Gpio, IoPin, Mode};
+use crate::system::{self, DeviceInfo, Model};
 
 #[cfg(feature = "hal")]
 mod hal;
@@ -166,6 +172,9 @@ mod termios;
 
 const GPIO_RTS: u8 = 17;
 const GPIO_CTS: u8 = 16;
+
+const GPIO_RTS_BREV2: u8 = 31;
+const GPIO_CTS_BREV2: u8 = 30;
 
 const GPIO_RTS_MODE_UART0: Mode = Mode::Alt3;
 const GPIO_CTS_MODE_UART0: Mode = Mode::Alt3;
@@ -205,6 +214,12 @@ impl From<io::Error> for Error {
 impl From<gpio::Error> for Error {
     fn from(err: gpio::Error) -> Error {
         Error::Gpio(err)
+    }
+}
+
+impl From<system::Error> for Error {
+    fn from(_err: system::Error) -> Error {
+        Error::Gpio(gpio::Error::UnknownModel)
     }
 }
 
@@ -463,10 +478,10 @@ impl Uart {
     /// manually change the active state of RTS by calling [`send_stop`] and
     /// [`send_start`].
     ///
-    /// If `Uart` is controlling a UART peripheral, enabling hardware flow
+    /// When `Uart` is controlling a UART peripheral, enabling hardware flow
     /// control will also configure the RTS and CTS pins.
     ///
-    /// More information about hardware flow control can be found [here].
+    /// More information on hardware flow control can be found [here].
     ///
     /// By default, hardware flow control is disabled.
     ///
@@ -487,8 +502,18 @@ impl Uart {
             // mode is automatically reset when Uart goes out of scope.
             if let Some((rts_mode, cts_mode)) = self.rtscts_mode {
                 let gpio = Gpio::new()?;
-                let pin_rts = gpio.get(GPIO_RTS)?.into_io(rts_mode);
-                let pin_cts = gpio.get(GPIO_CTS)?.into_io(cts_mode);
+
+                let (gpio_rts, gpio_cts) = if DeviceInfo::new()?.model() == Model::RaspberryPiBRev2
+                {
+                    // The Pi B Rev 2 exposes RTS/CTS through its (unpopulated) P5 header
+                    (GPIO_RTS_BREV2, GPIO_CTS_BREV2)
+                } else {
+                    // All other models with a 40-pin header use these GPIO pins
+                    (GPIO_RTS, GPIO_CTS)
+                };
+
+                let pin_rts = gpio.get(gpio_rts)?.into_io(rts_mode);
+                let pin_cts = gpio.get(gpio_cts)?.into_io(cts_mode);
 
                 self.rtscts_pins = Some((pin_rts, pin_cts));
             }
