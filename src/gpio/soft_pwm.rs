@@ -214,6 +214,10 @@ impl Drop for SoftPwm {
     }
 }
 
+// Required because Sender isn't Sync. Implementing Sync for SoftPwm is
+// safe because all usage of Sender::send() is locked behind &mut self.
+unsafe impl Sync for SoftPwm {}
+
 #[inline(always)]
 fn get_time_ns() -> i64 {
     let mut ts = timespec {
