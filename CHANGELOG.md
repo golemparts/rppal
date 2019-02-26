@@ -2,6 +2,7 @@
 
 ## 0.11.2 (TBD)
 
+* **Gpio**: Implement the `Sync` trait for `IoPin` and `OutputPin`.
 * **Pwm**: Implement `std::fmt::Display` trait for `Channel` and `Polarity`.
 * **Spi**: Implement `std::fmt::Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
 * **Uart**: Add support for the PL011 and mini UART peripherals, USB serial devices, XON/XOFF software flow control and RTS/CTS hardware flow control.
