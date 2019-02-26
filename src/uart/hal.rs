@@ -47,8 +47,7 @@ impl Write<u8> for Uart {
     type Error = Error;
 
     fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
-        let buffer: [u8; 1] = [word];
-        if Uart::write(self, &buffer)? == 0 {
+        if Uart::write(self, &[word])? == 0 {
             Err(nb::Error::WouldBlock)
         } else {
             Ok(())
