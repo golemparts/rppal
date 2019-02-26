@@ -102,16 +102,30 @@
 //!
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
 //! control for USB serial devices depends on the USB controller on the device,
-//! and the relevant Linux driver. Some controllers use an older, 'legacy'
-//! hardware flow control implementation where RTS and CTS lines are hooked up
-//! differently and RTS is used to indicate data is about to be transmitted,
-//! rather than requesting the external device to resume transmission.
+//! and the relevant Linux driver. Some controllers use an older, incompatible
+//! hardware flow control implementation, sometimes referred to as legacy or
+//! simplex mode, where RTS is used to indicate data is about to be
+//! transmitted, rather than to request the external device to resume
+//! transmission.
 //!
 //! ## Hardware flow control
 //!
-//! RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to BCM GPIO 16
-//! (physical pin 36). Enabling hardware flow control with
-//! [`set_hardware_flow_control`] will automatically configure these pins.
+//! The RTS/CTS hardware flow control implementation supported by [`Uart`]
+//! and used by the Raspberry Pi's UART peripherals requires RTS on one
+//! device to be connected to CTS on the other device. The RTS line is
+//! used to request the other device to pause or resume its transmission.
+//!
+//! Some devices use an older, incompatible hardware flow control
+//! implementation, sometimes referred to as legacy or simplex mode, where
+//! RTS is connected to RTS, and CTS to CTS. The RTS line is used to
+//! indicate data is about to be transmitted. [`Uart`] is not compatible
+//! with this old implementation, and connecting the Raspberry Pi's RTS and
+//! CTS pins incorrectly could damage the Pi or the external device.
+//!
+//! If [`Uart`] is controlling a UART peripheral, enabling hardware flow
+//! control with [`set_hardware_flow_control`] will also configure the RTS and
+//! CTS pins. RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to
+//! BCM GPIO 16 (physical pin 36).
 //!
 //! The RTS and CTS pins are reset to their original state when [`Uart`] goes
 //! out of scope. Note that `drop` methods aren't called when a process is
@@ -442,10 +456,6 @@ impl Uart {
 
     /// Enables or disables RTS/CTS hardware flow control.
     ///
-    /// If `Uart` is controlling a UART peripheral, enabling hardware flow
-    /// control will also configure the RTS and CTS pins. More details about
-    /// the GPIO pins associated with RTS/CTS can be found [here].
-    ///
     /// When hardware flow control is enabled, the RTS line (active low) is
     /// automatically driven high to prevent the input queue from overflowing,
     /// and driven low when the input queue is ready for more data. When the
@@ -453,6 +463,11 @@ impl Uart {
     /// in the output queue is held until CTS is driven low. You can also
     /// manually change the active state of RTS by calling [`send_stop`] and
     /// [`send_start`].
+    ///
+    /// If `Uart` is controlling a UART peripheral, enabling hardware flow
+    /// control will also configure the RTS and CTS pins.
+    ///
+    /// More information about hardware flow control can be found [here].
     ///
     /// By default, hardware flow control is disabled.
     ///
@@ -487,14 +502,11 @@ impl Uart {
 
     /// Requests the external device to pause transmission using flow control.
     ///
-    /// If [`software_flow_control`] is enabled for incoming data, `send_stop`
+    /// If software flow control is enabled for incoming data, `send_stop`
     /// sends the XOFF control character.
     ///
-    /// If [`hardware_flow_control`] is enabled, `send_stop` sets RTS to its
+    /// If hardware flow control is enabled, `send_stop` sets RTS to its
     /// inactive state.
-    ///
-    /// [`software_flow_control`]: #method.software_flow_control
-    /// [`hardware_flow_control`]: #method.hardware_flow_control
     pub fn send_stop(&self) -> Result<()> {
         if self.software_flow_control()?.0 {
             termios::send_stop(self.fd)?;
@@ -509,14 +521,11 @@ impl Uart {
 
     /// Requests the external device to resume transmission using flow control.
     ///
-    /// If [`software_flow_control`] is enabled for incoming data, `send_start`
+    /// If software flow control is enabled for incoming data, `send_start`
     /// sends the XON control character.
     ///
-    /// If [`hardware_flow_control`] is enabled, `send_start` sets RTS to its
+    /// If hardware flow control is enabled, `send_start` sets RTS to its
     /// active state.
-    ///
-    /// [`software_flow_control`]: #method.software_flow_control
-    /// [`hardware_flow_control`]: #method.hardware_flow_control
     pub fn send_start(&self) -> Result<()> {
         if self.software_flow_control()?.0 {
             termios::send_start(self.fd)?;
