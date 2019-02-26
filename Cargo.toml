@@ -12,13 +12,13 @@ categories = ["embedded", "hardware-support"]
 keywords = ["raspberry", "pi", "embedded-hal", "embedded-hal-impl"]
 
 [dependencies]
-libc = "0.2"
-lazy_static = "1.2"
-nb = { version = "0.1", optional = true }
-embedded-hal = { version = "0.2", optional = true }
+libc = "0.2.49"
+lazy_static = "1.2.0"
+nb = { version = "0.1.1", optional = true }
+embedded-hal = { version = "0.2.2", optional = true }
 
 [dev-dependencies]
-simple-signal = "1.1"
+simple-signal = "1.1.1"
 
 [features]
 default = []
