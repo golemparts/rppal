@@ -20,9 +20,10 @@
 
 //! RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART
 //! peripherals through a user-friendly interface. In addition to peripheral
-//! access, communicating with USB serial devices is supported as well. The library
-//! can be used in conjunction with a variety of platform-agnostic drivers through
-//! its `embedded-hal` trait implementations by enabling the optional `hal` feature.
+//! access, controlling USB serial devices is supported as well. The library
+//! can be used in conjunction with a variety of platform-agnostic drivers
+//! through its `embedded-hal` trait implementations by enabling the optional
+//! `hal` feature.
 //!
 //! RPPAL requires Raspbian or any similar, recent, Linux distribution. Both
 //! `gnu` and `musl` libc targets are supported. The library is compatible with
