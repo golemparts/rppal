@@ -82,6 +82,7 @@ pub fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
 }
 
 pub fn line_speed(fd: c_int) -> Result<u32> {
+    // We can't use termios2 here, because it's not supported by musl
     Ok(match unsafe { libc::cfgetospeed(&attributes(fd)?) } {
         B0 => 0,
         B50 => 50,
@@ -154,7 +155,9 @@ pub fn set_line_speed(fd: c_int, line_speed: u32) -> Result<()> {
         _ => return Err(Error::InvalidValue),
     };
 
+    // We can't use termios2 here, because it's not supported by musl
     let mut attr = attributes(fd)?;
+
     parse_retval!(unsafe { libc::cfsetispeed(&mut attr, baud) })?;
     parse_retval!(unsafe { libc::cfsetospeed(&mut attr, baud) })?;
 

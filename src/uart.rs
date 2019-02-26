@@ -89,11 +89,11 @@
 //!
 //! ## USB serial devices
 //!
-//! In addition to the hardware UART peripherals, [`Uart`] can also control
-//! USB serial devices. Depending on the type of device/USB controller, these
-//! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
-//! is an index starting at `0`. The numbering is based on the order in which
-//! the devices are discovered by the kernel.
+//! In addition to controlling the hardware UART peripherals, [`Uart`] can
+//! also be used for USB serial devices. Depending on the type of device/USB
+//! controller, these can be accessed either through `/dev/ttyUSBx` or
+//! `/dev/ttyACMx`, where `x` is an index starting at `0`. The numbering is
+//! based on the order in which the devices are discovered by the kernel.
 //!
 //! When you have multiple USB devices connected at the same time, you'll need
 //! to find a way to uniquely identify a specific device, for instance by
@@ -103,10 +103,9 @@
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
 //! control for USB serial devices depends on the USB controller on the device,
 //! and the relevant Linux driver. Some controllers use an older, incompatible
-//! hardware flow control implementation, sometimes referred to as legacy or
-//! simplex mode, where RTS is used to indicate data is about to be
-//! transmitted, rather than to request the external device to resume
-//! transmission.
+//! RTS/CTS implementation, sometimes referred to as legacy or simplex mode,
+//! where RTS is used to indicate data is about to be transmitted, rather than
+//! to request the external device to resume transmission.
 //!
 //! ## Hardware flow control
 //!
@@ -115,14 +114,14 @@
 //! device to be connected to CTS on the other device. The RTS line is
 //! used to request the other device to pause or resume its transmission.
 //!
-//! Some devices use an older, incompatible hardware flow control
-//! implementation, sometimes referred to as legacy or simplex mode, where
-//! RTS is connected to RTS, and CTS to CTS. The RTS line is used to
-//! indicate data is about to be transmitted. [`Uart`] is not compatible
-//! with this old implementation, and connecting the Raspberry Pi's RTS and
-//! CTS pins incorrectly could damage the Pi or the external device.
+//! Some devices use an older, incompatible RTS/CTS implementation, sometimes
+//! referred to as legacy or simplex mode, where RTS is connected to RTS, and
+//! CTS to CTS. The RTS line is used to indicate data is about to be
+//! transmitted. [`Uart`] is not compatible with this implementation.
+//! Connecting the Raspberry Pi's RTS and CTS pins incorrectly could damage
+//! the Pi or the external device.
 //!
-//! If [`Uart`] is controlling a UART peripheral, enabling hardware flow
+//! When [`Uart`] is controlling a UART peripheral, enabling hardware flow
 //! control with [`set_hardware_flow_control`] will also configure the RTS and
 //! CTS pins. RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to
 //! BCM GPIO 16 (physical pin 36).
