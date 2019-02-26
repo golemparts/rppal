@@ -43,7 +43,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.11"
+rppal = "0.11.1"
 ```
 
 If your project requires `embedded-hal` trait implementations, specify the `hal` feature in the dependency declaration.
