@@ -34,7 +34,10 @@ use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
 
-use crate::uart::{Error, Parity, Queue, Result, XOFF, XON};
+use crate::uart::{Error, Parity, Queue, Result};
+
+const XON: u8 = 17;
+const XOFF: u8 = 19;
 
 #[cfg(target_env = "gnu")]
 pub fn attributes(fd: c_int) -> Result<termios> {

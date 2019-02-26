@@ -87,6 +87,26 @@
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
+//! ## USB serial devices
+//!
+//! In addition to the hardware UART peripherals, [`Uart`] can also control
+//! USB serial devices. Depending on the type of device/USB controller, these
+//! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
+//! is an index starting at `0`. The numbering is based on the order in which
+//! the devices are discovered by the kernel.
+//!
+//! When you have multiple USB devices connected at the same time, you'll need
+//! to find a way to uniquely identify a specific device, for instance by
+//! searching for the relevant symlink in the `/dev/serial/by-id` directory, or
+//! by setting up `udev` rules.
+//!
+//! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
+//! control for USB serial devices depends on the USB controller on the device,
+//! and the relevant Linux driver. Some controllers use an older, 'legacy'
+//! hardware flow control implementation where RTS and CTS lines are hooked up
+//! differently and RTS is used to indicate data is about to be transmitted,
+//! rather than requesting the external device to resume transmission.
+//!
 //! ## Hardware flow control
 //!
 //! RTS is tied to BCM GPIO 17 (physical pin 11) and CTS is tied to BCM GPIO 16
@@ -99,19 +119,6 @@
 //! <kbd>C</kbd> and the `SIGINT` signal isn't caught, which prevents [`Uart`]
 //! from resetting the pins. You can catch those using crates such as
 //! [`simple_signal`].
-//!
-//! ## USB serial devices
-//!
-//! In addition to the hardware UART peripherals, [`Uart`] can also connect to
-//! USB serial devices. Depending on the type of device/USB controller, these
-//! can be accessed either through `/dev/ttyUSBx` or `/dev/ttyACMx`, where `x`
-//! is an index starting at `0`. The numbering is based on the order in which
-//! the devices are discovered by the kernel.
-//!
-//! When you have multiple USB devices connected at the same time, you'll need
-//! to find a way to uniquely identify a specific device, for instance by
-//! searching for the relevant symlink in the `/dev/serial/by-id` directory, or
-//! by setting up `udev` rules.
 //!
 //! ## Troubleshooting
 //!
@@ -143,9 +150,6 @@ use crate::gpio::{self, Gpio, IoPin, Mode};
 #[cfg(feature = "hal")]
 mod hal;
 mod termios;
-
-const XON: u8 = 17;
-const XOFF: u8 = 19;
 
 const GPIO_RTS: u8 = 17;
 const GPIO_CTS: u8 = 16;
@@ -244,8 +248,8 @@ impl fmt::Display for Queue {
 pub struct Uart {
     device: File,
     fd: RawFd,
-    rts_cts_mode: Option<(Mode, Mode)>,
-    rts_cts: Option<(IoPin, IoPin)>,
+    rtscts_mode: Option<(Mode, Mode)>,
+    rtscts_pins: Option<(IoPin, IoPin)>,
 }
 
 impl Uart {
@@ -280,7 +284,7 @@ impl Uart {
 
         // Check if we're using /dev/ttyAMA0 or /dev/ttyS0 so we can set the
         // correct RTS/CTS pin modes when needed.
-        let rts_cts_mode = if let Some(path_str) = path.to_str() {
+        let rtscts_mode = if let Some(path_str) = path.to_str() {
             match path_str {
                 "/dev/ttyAMA0" => Some((GPIO_RTS_MODE_UART0, GPIO_CTS_MODE_UART0)),
                 "/dev/ttyS0" => Some((GPIO_RTS_MODE_UART1, GPIO_CTS_MODE_UART1)),
@@ -331,8 +335,8 @@ impl Uart {
         Ok(Uart {
             device,
             fd,
-            rts_cts_mode,
-            rts_cts: None,
+            rtscts_mode,
+            rtscts_pins: None,
         })
     }
 
@@ -395,69 +399,6 @@ impl Uart {
         termios::set_stop_bits(self.fd, stop_bits)
     }
 
-    /// Returns the status of the RTS/CTS hardware flow control setting.
-    pub fn hardware_flow_control(&self) -> Result<bool> {
-        termios::hardware_flow_control(self.fd)
-    }
-
-    /// Enables or disables RTS/CTS hardware flow control.
-    ///
-    /// If `Uart` is controlling a UART peripheral, enabling hardware flow
-    /// control will automatically configure the RTS and CTS pins. More
-    /// information on the GPIO pins associated with RTS/CTS can be found
-    /// [here].
-    ///
-    /// By default, hardware flow control is disabled.
-    ///
-    /// Support for RTS/CTS hardware flow control is device-dependent. You can
-    /// manually implement RTS/CTS by disabling hardware flow control, and
-    /// configuring an [`OutputPin`] for RTS and an [`InputPin`] for CTS.
-    ///
-    /// [here]: index.html#hardware-flow-control
-    /// [`OutputPin`]: ../gpio/struct.OutputPin.html
-    /// [`InputPin`]: ../gpio/struct.InputPin.html
-    pub fn set_hardware_flow_control(&mut self, hardware_flow_control: bool) -> Result<()> {
-        if hardware_flow_control && self.rts_cts.is_none() {
-            // Configure and store RTS/CTS GPIO pins for UART0/UART1, so their
-            // mode is automatically reset when Uart goes out of scope.
-            if let Some((rts_mode, cts_mode)) = self.rts_cts_mode {
-                let gpio = Gpio::new()?;
-                let pin_rts = gpio.get(GPIO_RTS)?.into_io(rts_mode);
-                let pin_cts = gpio.get(GPIO_CTS)?.into_io(cts_mode);
-
-                self.rts_cts = Some((pin_rts, pin_cts));
-            }
-        } else if !hardware_flow_control {
-            self.rts_cts = None;
-        }
-
-        termios::set_hardware_flow_control(self.fd, hardware_flow_control)
-    }
-
-    /// Returns `true` if CTS is asserted by the remote device.
-    pub fn cts(&self) -> Result<bool> {
-        termios::cts(self.fd)
-    }
-
-    /// Returns `true` if RTS is asserted by `Uart`.
-    pub fn rts(&self) -> Result<bool> {
-        termios::rts(self.fd)
-    }
-
-    /// Asserts or releases the RTS line.
-    ///
-    /// Setting `rts` to `true` asserts the RTS line, requesting the remote
-    /// device to resume transmitting data. Setting `rts` to `false` releases
-    /// the RTS line, requesting the remote device to pause its data
-    /// transmission.
-    ///
-    /// `set_rts` has no effect when [`hardware_flow_control`] is disabled.
-    ///
-    /// [`hardware_flow_control`]: #method.hardware_flow_control
-    pub fn set_rts(&self, rts: bool) -> Result<()> {
-        termios::set_rts(self.fd, rts)
-    }
-
     /// Returns a tuple containing the status of the XON/XOFF software flow
     /// control settings for incoming and outgoing data.
     pub fn software_flow_control(&self) -> Result<(bool, bool)> {
@@ -468,37 +409,138 @@ impl Uart {
     /// outgoing data.
     ///
     /// When software flow control is enabled for incoming data, XOFF is
-    /// automatically sent to the remote device to prevent the input queue from
-    /// overflowing. XON is sent when the input queue is ready for more data.
+    /// automatically sent to the external device to prevent the input queue
+    /// from overflowing. XON is sent when the input queue is ready for more
+    /// data. You can also manually send these control characters by calling
+    /// [`send_stop`] and [`send_start`].
     ///
-    /// When software flow control is enabled for outgoing data, any incoming
-    /// XON (decimal 17) and XOFF (decimal 19) control characters will be
-    /// filtered from the input queue. When XOFF is received, any outgoing data
-    /// is held until the remote device sends XON.
+    /// When software flow control is enabled for outgoing data, incoming XON
+    /// (decimal 17) and XOFF (decimal 19) control characters are filtered from
+    /// the input queue. When XOFF is received, all data in the output queue is
+    /// held until the external device sends XON.
     ///
     /// By default, software flow control is disabled.
     ///
     /// Support for incoming and/or outgoing XON/XOFF software flow control is
     /// device-dependent. You can manually implement XON/XOFF by disabling
     /// software flow control, parsing incoming XON/XOFF control characters
-    /// received from [`read`] calls, and sending XON/XOFF when needed using
-    /// [`send_xon`] and [`send_xoff`].
+    /// received with [`read`], and sending XON/XOFF when needed using
+    /// [`write`].
     ///
+    /// [`send_start`]: #method.send_start
+    /// [`send_stop`]: #method.send_stop
     /// [`read`]: #method.read
-    /// [`send_xon`]: #method.send_xon
-    /// [`send_xoff`]: #method.send_xoff
+    /// [`write`]: #method.write
     pub fn set_software_flow_control(&self, incoming: bool, outgoing: bool) -> Result<()> {
         termios::set_software_flow_control(self.fd, incoming, outgoing)
     }
 
-    /// Sends the XON control character to the remote device.
-    pub fn send_xon(&self) -> Result<()> {
-        termios::send_start(self.fd)
+    /// Returns the status of the RTS/CTS hardware flow control setting.
+    pub fn hardware_flow_control(&self) -> Result<bool> {
+        termios::hardware_flow_control(self.fd)
     }
 
-    /// Sends the XOFF control character to the remote device.
-    pub fn send_xoff(&self) -> Result<()> {
-        termios::send_stop(self.fd)
+    /// Enables or disables RTS/CTS hardware flow control.
+    ///
+    /// If `Uart` is controlling a UART peripheral, enabling hardware flow
+    /// control will also configure the RTS and CTS pins. More details about
+    /// the GPIO pins associated with RTS/CTS can be found [here].
+    ///
+    /// When hardware flow control is enabled, the RTS line (active low) is
+    /// automatically driven high to prevent the input queue from overflowing,
+    /// and driven low when the input queue is ready for more data. When the
+    /// CTS line (active low) is driven high by the external device, all data
+    /// in the output queue is held until CTS is driven low. You can also
+    /// manually change the active state of RTS by calling [`send_stop`] and
+    /// [`send_start`].
+    ///
+    /// By default, hardware flow control is disabled.
+    ///
+    /// Support for RTS/CTS hardware flow control is device-dependent. You can
+    /// manually implement RTS/CTS using [`cts`], [`send_stop`] and
+    /// [`send_start`], or by disabling hardware flow control and configuring
+    /// an [`OutputPin`] for RTS and an [`InputPin`] for CTS.
+    ///
+    /// [here]: index.html#hardware-flow-control
+    /// [`cts`]: #method.cts
+    /// [`send_start`]: #method.send_start
+    /// [`send_stop`]: #method.send_stop
+    /// [`OutputPin`]: ../gpio/struct.OutputPin.html
+    /// [`InputPin`]: ../gpio/struct.InputPin.html
+    pub fn set_hardware_flow_control(&mut self, hardware_flow_control: bool) -> Result<()> {
+        if hardware_flow_control && self.rtscts_pins.is_none() {
+            // Configure and store RTS/CTS GPIO pins for UART0/UART1, so their
+            // mode is automatically reset when Uart goes out of scope.
+            if let Some((rts_mode, cts_mode)) = self.rtscts_mode {
+                let gpio = Gpio::new()?;
+                let pin_rts = gpio.get(GPIO_RTS)?.into_io(rts_mode);
+                let pin_cts = gpio.get(GPIO_CTS)?.into_io(cts_mode);
+
+                self.rtscts_pins = Some((pin_rts, pin_cts));
+            }
+        } else if !hardware_flow_control {
+            self.rtscts_pins = None;
+        }
+
+        termios::set_hardware_flow_control(self.fd, hardware_flow_control)
+    }
+
+    /// Requests the external device to pause transmission using flow control.
+    ///
+    /// If [`software_flow_control`] is enabled for incoming data, `send_stop`
+    /// sends the XOFF control character.
+    ///
+    /// If [`hardware_flow_control`] is enabled, `send_stop` sets RTS to its
+    /// inactive state.
+    ///
+    /// [`software_flow_control`]: #method.software_flow_control
+    /// [`hardware_flow_control`]: #method.hardware_flow_control
+    pub fn send_stop(&self) -> Result<()> {
+        if self.software_flow_control()?.0 {
+            termios::send_stop(self.fd)?;
+        }
+
+        if self.hardware_flow_control()? {
+            termios::set_rts(self.fd, false)?;
+        }
+
+        Ok(())
+    }
+
+    /// Requests the external device to resume transmission using flow control.
+    ///
+    /// If [`software_flow_control`] is enabled for incoming data, `send_start`
+    /// sends the XON control character.
+    ///
+    /// If [`hardware_flow_control`] is enabled, `send_start` sets RTS to its
+    /// active state.
+    ///
+    /// [`software_flow_control`]: #method.software_flow_control
+    /// [`hardware_flow_control`]: #method.hardware_flow_control
+    pub fn send_start(&self) -> Result<()> {
+        if self.software_flow_control()?.0 {
+            termios::send_start(self.fd)?;
+        }
+
+        if self.hardware_flow_control()? {
+            termios::set_rts(self.fd, true)?;
+        }
+
+        Ok(())
+    }
+
+    /// Returns `true` if CTS is active.
+    ///
+    /// The CTS line (active low) is controlled by the external device.
+    pub fn cts(&self) -> Result<bool> {
+        termios::cts(self.fd)
+    }
+
+    /// Returns `true` if RTS is active.
+    ///
+    /// The RTS line (active low) is controlled by `Uart`.
+    pub fn rts(&self) -> Result<bool> {
+        termios::rts(self.fd)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout`
@@ -545,7 +587,8 @@ impl Uart {
         Ok(())
     }
 
-    /// Receives incoming data from the remote device and stores it in `buffer`.
+    /// Receives incoming data from the external device and stores it in
+    /// `buffer`.
     ///
     /// `read` operates in one of four (non)blocking modes, depending on the
     /// settings configured by [`set_blocking_mode`].
@@ -561,7 +604,7 @@ impl Uart {
         }
     }
 
-    /// Sends the contents of `buffer` to the remote device.
+    /// Sends the contents of `buffer` to the external device.
     ///
     /// `write` returns immediately after copying the contents of `buffer` to
     /// the output queue. If the output queue is full, `write` blocks until
