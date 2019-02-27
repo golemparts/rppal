@@ -114,7 +114,8 @@
 //! The RTS/CTS hardware flow control implementation supported by [`Uart`]
 //! and used by the Raspberry Pi's UART peripherals requires RTS on one
 //! device to be connected to CTS on the other device. The RTS line is
-//! used to request the other device to pause or resume its transmission.
+//! used to request the other device to pause or resume its transmission. A
+//! more appropriate name for the RTS line is RTR (Ready to Receive).
 //!
 //! Some devices use an older, incompatible RTS/CTS implementation, sometimes
 //! referred to as legacy or simplex mode, where RTS is connected to RTS, and
@@ -429,6 +430,68 @@ impl Uart {
         termios::set_stop_bits(self.fd, stop_bits)
     }
 
+    /// Returns `true` if CTS is active.
+    ///
+    /// The CTS line (active low) is controlled by the external device.
+    pub fn cts(&self) -> Result<bool> {
+        termios::cts(self.fd)
+    }
+
+    /// Returns `true` if RTS is active.
+    ///
+    /// The RTS line (active low) is controlled by `Uart`.
+    pub fn rts(&self) -> Result<bool> {
+        termios::rts(self.fd)
+    }
+
+    /// Returns `true` if DSR is active.
+    ///
+    /// The DSR line (active low) is controlled by the external device.
+    ///
+    /// DSR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dsr(&self) -> Result<bool> {
+        termios::dsr(self.fd)
+    }
+
+    /// Returns `true` if DTR is active.
+    ///
+    /// The DTR line (active low) is controlled by `Uart`.
+    ///
+    /// DTR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dtr(&self) -> Result<bool> {
+        termios::dtr(self.fd)
+    }
+
+    /// Sets the DTR line to active (`true`) or inactive (`false`).
+    ///
+    /// DTR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn set_dtr(&self, dtr: bool) -> Result<()> {
+        termios::set_dtr(self.fd, dtr)
+    }
+
+    /// Returns `true` if DCD is active.
+    ///
+    /// The DCD line (active low) is controlled by the external device.
+    ///
+    /// DCD is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dcd(&self) -> Result<bool> {
+        termios::dcd(self.fd)
+    }
+
+    /// Returns `true` if RI is active.
+    ///
+    /// The RI line (active low) is controlled by the external device.
+    ///
+    /// RI is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn ri(&self) -> Result<bool> {
+        termios::ri(self.fd)
+    }
+
     /// Returns a tuple containing the status of the XON/XOFF software flow
     /// control settings for incoming and outgoing data.
     pub fn software_flow_control(&self) -> Result<(bool, bool)> {
@@ -562,68 +625,6 @@ impl Uart {
         }
 
         Ok(())
-    }
-
-    /// Returns `true` if CTS is active.
-    ///
-    /// The CTS line (active low) is controlled by the external device.
-    pub fn cts(&self) -> Result<bool> {
-        termios::cts(self.fd)
-    }
-
-    /// Returns `true` if RTS is active.
-    ///
-    /// The RTS line (active low) is controlled by `Uart`.
-    pub fn rts(&self) -> Result<bool> {
-        termios::rts(self.fd)
-    }
-
-    /// Returns `true` if DSR is active.
-    ///
-    /// The DSR line (active low) is controlled by the external device.
-    ///
-    /// DSR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dsr(&self) -> Result<bool> {
-        termios::dsr(self.fd)
-    }
-
-    /// Returns `true` if DTR is active.
-    ///
-    /// The DTR line (active low) is controlled by `Uart`.
-    ///
-    /// DTR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dtr(&self) -> Result<bool> {
-        termios::dtr(self.fd)
-    }
-
-    /// Sets the DTR line to active (`true`) or inactive (`false`).
-    ///
-    /// DTR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn set_dtr(&self, dtr: bool) -> Result<()> {
-        termios::set_dtr(self.fd, dtr)
-    }
-
-    /// Returns `true` if DCD is active.
-    ///
-    /// The DCD line (active low) is controlled by the external device.
-    ///
-    /// DCD is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dcd(&self) -> Result<bool> {
-        termios::dcd(self.fd)
-    }
-
-    /// Returns `true` if RI is active.
-    ///
-    /// The RI line (active low) is controlled by the external device.
-    ///
-    /// RI is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn ri(&self) -> Result<bool> {
-        termios::ri(self.fd)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout`
