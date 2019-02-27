@@ -299,7 +299,9 @@ impl Uart {
     ///
     /// When a new `Uart` is constructed, the specified device is configured
     /// for non-canonical mode which processes input per character, ignores any
-    /// special terminal input or output characters and disables local echo.
+    /// special terminal input or output characters and disables local echo. The
+    /// DCD line is ignored, all flow control is disabled, and the input and
+    /// output queues are flushed.
     pub fn with_path<P: AsRef<Path>>(
         path: P,
         line_speed: u32,
@@ -602,6 +604,26 @@ impl Uart {
     /// but may be available on USB serial devices.
     pub fn set_dtr(&self, dtr: bool) -> Result<()> {
         termios::set_dtr(self.fd, dtr)
+    }
+
+    /// Returns `true` if DCD is active.
+    ///
+    /// The DCD line (active low) is controlled by the external device.
+    ///
+    /// DCD is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dcd(&self) -> Result<bool> {
+        termios::dcd(self.fd)
+    }
+
+    /// Returns `true` if RI is active.
+    ///
+    /// The RI line (active low) is controlled by the external device.
+    ///
+    /// RI is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn ri(&self) -> Result<bool> {
+        termios::ri(self.fd)
     }
 
     /// Returns a tuple containing the configured `min_length` and `timeout`

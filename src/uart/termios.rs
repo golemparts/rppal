@@ -33,7 +33,7 @@ use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
-use libc::{TIOCMBIC, TIOCMBIS};
+use libc::{TIOCMBIC, TIOCMBIS, TIOCM_CAR, TIOCM_RNG};
 
 use crate::uart::{Error, Parity, Queue, Result};
 
@@ -359,6 +359,24 @@ pub fn set_rts(fd: c_int, rts: bool) -> Result<()> {
     parse_retval!(unsafe { libc::ioctl(fd, if rts { TIOCMBIS } else { TIOCMBIC }, &tiocm) })?;
 
     Ok(())
+}
+
+// Return DCD state
+pub fn dcd(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_CAR > 0)
+}
+
+// Return RI state
+pub fn ri(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_RNG > 0)
 }
 
 // Return DSR state
