@@ -33,6 +33,7 @@ use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
+use libc::{TIOCMBIC, TIOCMBIS};
 
 use crate::uart::{Error, Parity, Queue, Result};
 
@@ -353,17 +354,9 @@ pub fn rts(fd: c_int) -> Result<bool> {
 
 // Assert / release RTS line
 pub fn set_rts(fd: c_int, rts: bool) -> Result<()> {
-    let mut tiocm: c_int = 0;
+    let tiocm: c_int = TIOCM_RTS;
 
-    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
-
-    if rts {
-        tiocm |= TIOCM_RTS;
-    } else {
-        tiocm &= !TIOCM_RTS;
-    }
-
-    parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;
+    parse_retval!(unsafe { libc::ioctl(fd, if rts { TIOCMBIS } else { TIOCMBIC }, &tiocm) })?;
 
     Ok(())
 }
@@ -388,17 +381,9 @@ pub fn dtr(fd: c_int) -> Result<bool> {
 
 // Assert / release DTR line
 pub fn set_dtr(fd: c_int, dtr: bool) -> Result<()> {
-    let mut tiocm: c_int = 0;
+    let tiocm: c_int = TIOCM_DTR;
 
-    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
-
-    if dtr {
-        tiocm |= TIOCM_DTR;
-    } else {
-        tiocm &= !TIOCM_DTR;
-    }
-
-    parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;
+    parse_retval!(unsafe { libc::ioctl(fd, if dtr { TIOCMBIS } else { TIOCMBIC }, &tiocm) })?;
 
     Ok(())
 }
