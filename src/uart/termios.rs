@@ -32,7 +32,7 @@ use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
-use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_RTS};
+use libc::{TCIOFF, TCION, TIOCMGET, TIOCMSET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
 
 use crate::uart::{Error, Parity, Queue, Result};
 
@@ -352,15 +352,50 @@ pub fn rts(fd: c_int) -> Result<bool> {
 }
 
 // Assert / release RTS line
-pub fn set_rts(fd: c_int, enabled: bool) -> Result<()> {
+pub fn set_rts(fd: c_int, rts: bool) -> Result<()> {
     let mut tiocm: c_int = 0;
 
     parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
 
-    if enabled {
+    if rts {
         tiocm |= TIOCM_RTS;
     } else {
         tiocm &= !TIOCM_RTS;
+    }
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;
+
+    Ok(())
+}
+
+// Return DSR state
+pub fn dsr(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_DSR > 0)
+}
+
+// Return DTR state
+pub fn dtr(fd: c_int) -> Result<bool> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm & TIOCM_DTR > 0)
+}
+
+// Assert / release DTR line
+pub fn set_dtr(fd: c_int, dtr: bool) -> Result<()> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    if dtr {
+        tiocm |= TIOCM_DTR;
+    } else {
+        tiocm &= !TIOCM_DTR;
     }
 
     parse_retval!(unsafe { libc::ioctl(fd, TIOCMSET, &tiocm) })?;

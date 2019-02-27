@@ -576,6 +576,34 @@ impl Uart {
         termios::rts(self.fd)
     }
 
+    /// Returns `true` if DSR is active.
+    ///
+    /// The DSR line (active low) is controlled by the external device.
+    ///
+    /// DSR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dsr(&self) -> Result<bool> {
+        termios::dsr(self.fd)
+    }
+
+    /// Returns `true` if DTR is active.
+    ///
+    /// The DTR line (active low) is controlled by `Uart`.
+    ///
+    /// DTR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dtr(&self) -> Result<bool> {
+        termios::dtr(self.fd)
+    }
+
+    /// Sets the DTR line to active (`true`) or inactive (`false`).
+    ///
+    /// DTR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn set_dtr(&self, dtr: bool) -> Result<()> {
+        termios::set_dtr(self.fd, dtr)
+    }
+
     /// Returns a tuple containing the configured `min_length` and `timeout`
     /// values.
     pub fn blocking_mode(&self) -> Result<(usize, Duration)> {
