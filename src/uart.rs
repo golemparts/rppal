@@ -65,11 +65,8 @@
 //! `sudo systemctl disable hciuart`.
 //!
 //! To move the Bluetooth module to `/dev/ttyS0`, instead of disabling it with
-//! the above-mentioned steps, add `dtoverlay=pi3-miniuart-bt` to
-//! `/boot/config.txt`. You'll also need to edit
-//! `/lib/systemd/system/hciuart.service` and replace `/dev/ttyAMA0` with
-//! `/dev/ttyS0`, and set a fixed core frequency by adding `core_freq=250` to
-//! `/boot/config.txt`.
+//! the above-mentioned steps, add `dtoverlay=pi3-miniuart-bt` and
+//! `core_freq=250` to `/boot/config.txt`.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!

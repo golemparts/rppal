@@ -157,9 +157,9 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`blocking::spi::{Transfer, Write}`, `spi::FullDuplex`)
 
-### [UART](https://docs.golemparts.com/rppal/latest/uart)
+### [UART](https://docs.golemparts.com/rppal/dev/rppal/uart)
 
-RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals through the `ttyAMA0` and `ttyS0` device
+**_(Coming in 0.11.2)_** RPPAL controls the Raspberry Pi's PL011 and mini UART peripherals through the `ttyAMA0` and `ttyS0` device
 interfaces. USB serial devices are controlled using `ttyUSBx` and `ttyACMx`.
 
 #### Features
