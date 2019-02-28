@@ -49,8 +49,8 @@
 //!
 //! ## Configure `/dev/ttyAMA0` for serial communication (recommended)
 //!
-//! Disable the Linux serial console by either deactivating it through
-//! `sudo raspi-config`, or manually removing the parameter
+//! Disable the Linux serial console on `/dev/ttyAMA0` by either deactivating
+//! it through `sudo raspi-config`, or manually removing the parameter
 //! `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
 //! Remove any lines containing `enable_uart=0` or `enable_uart=1` from
@@ -75,14 +75,12 @@
 //!
 //! ## Configure `/dev/ttyS0` for serial communication
 //!
-//! If you prefer to leave the Bluetooth module or Linux serial console tied
-//! to `/dev/ttyAMA0`, you can configure `/dev/ttyS0` for serial communication
-//! instead.
+//! If you prefer to leave the Bluetooth module tied to `/dev/ttyAMA0`, you can
+//! configure `/dev/ttyS0` for serial communication instead.
 //!
-//! On Raspberry Pi models with Bluetooth, disable the Linux serial console on
-//! `/dev/ttyS0` by either deactivating it through `sudo raspi-config`, or
-//! manually removing the parameter `console=serial0,115200` from
-//! `/boot/cmdline.txt`.
+//! Disable the Linux serial console on `/dev/ttyS0` by either deactivating it
+//! through `sudo raspi-config`, or manually removing the parameter
+//! `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
 //! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial
 //! communication on `/dev/ttyS0`, which also sets a fixed core frequency.
@@ -227,17 +225,22 @@ impl From<system::Error> for Error {
 /// Result type returned from methods that can have `uart::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Parity modes.
+/// Parity bit modes.
 ///
 /// `None` omits the parity bit. `Even` and `Odd` count the total number of
 /// 1-bits in the data bits. `Mark` and `Space` always set the parity
 /// bit to `1` or `0` respectively.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Parity {
+    /// No parity bit.
     None,
+    /// Even parity.
     Even,
+    /// Odd parity.
     Odd,
+    /// Sets parity bit to `1`.
     Mark,
+    /// Sets parity bit to `0`.
     Space,
 }
 
@@ -256,8 +259,11 @@ impl fmt::Display for Parity {
 /// Queue types.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Queue {
+    /// Input queue.
     Input,
+    /// Output queue.
     Output,
+    /// Both queues.
     Both,
 }
 
@@ -639,30 +645,30 @@ impl Uart {
     /// value may differ from the actual buffer length. Maximum value: 255
     /// bytes.
     ///
-    /// `timeout` indicates how long the `read` call will block while waiting
-    /// for incoming data. `timeout` uses a 0.1 second resolution. Maximum
+    /// `timeout` indicates how long [`read`] blocks while waiting for
+    /// incoming data. `timeout` uses a 0.1 second resolution. Maximum
     /// value: 25.5 seconds.
     ///
-    /// `read` operates in one of four modes, depending on the specified
+    /// [`read`] operates in one of four modes, depending on the specified
     /// `min_length` and `timeout`:
     ///
-    /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). `read`
-    /// stores any available data and returns immediately.
-    /// * **Blocking read** (`min_length` > 0, `timeout` = 0). `read` blocks
+    /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). [`read`]
+    /// retrieves any available data and returns immediately.
+    /// * **Blocking read** (`min_length` > 0, `timeout` = 0). [`read`] blocks
     /// until at least `min_length` bytes are available, or the provided buffer
     /// variable is full.
-    /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). `read`
+    /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). [`read`]
     /// blocks until at least one byte is available, or the `timeout` duration
     /// elapses.
     /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0).
-    /// `read` blocks until at least `min_length` bytes are available, the
+    /// [`read`] blocks until at least `min_length` bytes are available, the
     /// provided buffer variable is full, or the `timeout` duration elapses
     /// after receiving one or more bytes. The timer is started after an
-    /// initial byte becomes available, and is restarted after each additiona
-    ///  byte. That means `read` will block indefinitely until at least one
-    /// byte is available.
+    /// initial byte becomes available, and is restarted after each additional
+    /// byte. That means [`read`] will block indefinitely until at least one
+    /// byte has been received.
     ///
-    /// By default, `read` is configured for non-blocking reads.
+    /// By default, [`read`] is configured for non-blocking reads.
     ///
     /// [`read`]: #method.read
     pub fn set_blocking_mode(&self, min_length: usize, timeout: Duration) -> Result<()> {
