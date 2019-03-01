@@ -70,7 +70,7 @@
 //!
 //! ### Permission denied
 //!
-//! If [`new`] returns an `io::ErrorKind::PermissionDenied`
+//! If [`new`] or [`with_bus`] returns an `io::ErrorKind::PermissionDenied`
 //! error, make sure the file permissions for `/dev/i2c-1` or `/dev/i2c-0`
 //! are correct, and the current user is a member of the `i2c` group.
 //!
@@ -80,6 +80,7 @@
 //! exceeds the timeout value. You can change the timeout using [`set_timeout`].
 //!
 //! [`new`]: struct.I2c.html#method.new
+//! [`with_bus`]: struct.I2c.html#method.with_bus
 //! [`set_timeout`]: struct.I2c.html#method.set_timeout
 
 #![allow(dead_code)]

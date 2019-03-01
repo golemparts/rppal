@@ -138,12 +138,16 @@
 //!
 //! ### Permission denied
 //!
-//! The current user should be a member of the group that owns the specified
-//! device. The group is usually set to either `dialout` or `tty`.
+//! If [`new`] or [`with_path`] returns an `io::ErrorKind::PermissionDenied`
+//! error, make sure the file permissions for the specified device are correct,
+//! and the current user is a member of the group that owns the device, which is
+//! usually either `dialout` or `tty`.
 //!
 //! [documentation]: https://www.raspberrypi.org/documentation/configuration/uart.md
 //! [`simple_signal`]: https://crates.io/crates/simple-signal
 //! [`Uart`]: struct.Uart.html
+//! [`new`]: struct.Uart.html#method.new
+//! [`with_path`]: struct.Uart.html#method.with_path
 
 use std::error;
 use std::fmt;
@@ -184,7 +188,7 @@ pub enum Error {
     Io(io::Error),
     /// GPIO error.
     Gpio(gpio::Error),
-    /// Invalid value.
+    /// Invalid or unsupported value.
     InvalidValue,
 }
 
@@ -193,7 +197,7 @@ impl fmt::Display for Error {
         match *self {
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::Gpio(ref err) => write!(f, "GPIO error: {}", err),
-            Error::InvalidValue => write!(f, "Invalid value"),
+            Error::InvalidValue => write!(f, "Invalid or unsupported value"),
         }
     }
 }
@@ -290,8 +294,8 @@ impl Uart {
     /// 15, and then calls [`with_path`] with the appropriate device path.
     ///
     /// [`with_path`]: #method.with_path
-    pub fn new(line_speed: u32, parity: Parity, data_bits: u8, stop_bits: u8) -> Result<Uart> {
-        Self::with_path("/dev/serial0", line_speed, parity, data_bits, stop_bits)
+    pub fn new(baud_rate: u32, parity: Parity, data_bits: u8, stop_bits: u8) -> Result<Uart> {
+        Self::with_path("/dev/serial0", baud_rate, parity, data_bits, stop_bits)
     }
 
     /// Constructs a new `Uart` connected to the serial device interface
@@ -307,7 +311,7 @@ impl Uart {
     /// output queues are flushed.
     pub fn with_path<P: AsRef<Path>>(
         path: P,
-        line_speed: u32,
+        baud_rate: u32,
         parity: Parity,
         data_bits: u8,
         stop_bits: u8,
@@ -357,7 +361,7 @@ impl Uart {
         // Disable hardware flow control (RTS/CTS)
         termios::set_hardware_flow_control(fd, false)?;
 
-        termios::set_line_speed(fd, line_speed)?;
+        termios::set_line_speed(fd, baud_rate)?;
         termios::set_parity(fd, parity)?;
         termios::set_data_bits(fd, data_bits)?;
         termios::set_stop_bits(fd, stop_bits)?;
@@ -373,12 +377,15 @@ impl Uart {
         })
     }
 
-    /// Returns the line speed in bits per second (bit/s).
-    pub fn line_speed(&self) -> Result<u32> {
+    /// Returns the line speed in baud (Bd).
+    pub fn baud_rate(&self) -> Result<u32> {
         termios::line_speed(self.fd)
     }
 
-    /// Sets the line speed in bits per second (bit/s).
+    /// Sets the line speed in baud (Bd).
+    ///
+    /// On the Raspberry Pi, baud rate is equivalent to bit rate in bits per
+    /// second (bit/s).
     ///
     /// Accepted values:
     /// `0`, `50`, `75`, `110`, `134`, `150`, `200`, `300`, `600`, `1_200`,
@@ -388,8 +395,8 @@ impl Uart {
     /// `3_000_000`, `3_500_000`, `4_000_000`.
     ///
     /// Support for some values may be device-dependent.
-    pub fn set_line_speed(&self, line_speed: u32) -> Result<()> {
-        termios::set_line_speed(self.fd, line_speed)
+    pub fn set_baud_rate(&self, baud_rate: u32) -> Result<()> {
+        termios::set_line_speed(self.fd, baud_rate)
     }
 
     /// Returns the parity bit mode.

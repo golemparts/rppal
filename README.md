@@ -46,7 +46,7 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 rppal = "0.11.1"
 ```
 
-If your project requires `embedded-hal` trait implementations, specify the `hal` feature in the dependency declaration.
+If your project requires `embedded-hal` trait implementations, specify the `hal` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
@@ -104,7 +104,7 @@ Additional examples can be found in the `examples` directory.
 
 ## Optional features
 
-By default, all optional features are disabled. You can enable a feature by specifying the relevant feature flag(s) in the dependency declaration for the `rppal` crate.
+By default, all optional features are disabled. You can enable a feature by specifying the relevant feature flag(s) in the dependency declaration for `rppal` in your `Cargo.toml`.
 
 * `hal` - Adds `embedded-hal` trait implementations for all supported peripherals. Doesn't include unproven traits.
 
