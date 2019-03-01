@@ -77,7 +77,13 @@ pub fn attributes(fd: c_int) -> Result<termios> {
 }
 
 pub fn set_attributes(fd: c_int, attr: &termios) -> Result<()> {
-    parse_retval!(unsafe { libc::tcsetattr(fd, TCSANOW, attr) })?;
+    parse_retval!(unsafe { libc::tcsetattr(fd, TCSANOW, attr) }).map_err(|e| {
+        if e.kind() == io::ErrorKind::InvalidInput {
+            Error::InvalidValue
+        } else {
+            Error::Io(e)
+        }
+    })?;
 
     Ok(())
 }
@@ -186,7 +192,7 @@ pub fn parity(fd: c_int) -> Result<Parity> {
         return Ok(Parity::Space);
     }
 
-    Err(Error::InvalidValue)
+    Ok(Parity::None)
 }
 
 pub fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
