@@ -49,8 +49,8 @@
 //!
 //! ## Configure `/dev/ttyAMA0` for serial communication (recommended)
 //!
-//! Disable the Linux serial console on `/dev/ttyAMA0` by either deactivating
-//! it through `sudo raspi-config`, or manually removing the parameter
+//! Disable the Linux serial console by either deactivating it through
+//! `sudo raspi-config`, or manually removing the parameter
 //! `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
 //! Remove any lines containing `enable_uart=0` or `enable_uart=1` from
@@ -72,11 +72,11 @@
 //!
 //! ## Configure `/dev/ttyS0` for serial communication
 //!
-//! If you prefer to leave the Bluetooth module tied to `/dev/ttyAMA0`, you can
-//! configure `/dev/ttyS0` for serial communication instead.
+//! If you prefer to leave the Bluetooth module connected to `/dev/ttyAMA0`,
+//! you can configure `/dev/ttyS0` for serial communication instead.
 //!
-//! Disable the Linux serial console on `/dev/ttyS0` by either deactivating it
-//! through `sudo raspi-config`, or manually removing the parameter
+//! Disable the Linux serial console by either deactivating it through
+//! `sudo raspi-config`, or manually removing the parameter
 //! `console=serial0,115200` from `/boot/cmdline.txt`.
 //!
 //! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial
@@ -95,7 +95,7 @@
 //! When you have multiple USB devices connected at the same time, you'll need
 //! to find a way to uniquely identify a specific device, for instance by
 //! searching for the relevant symlink in the `/dev/serial/by-id` directory, or
-//! by setting up `udev` rules.
+//! by adding your own `udev` rules.
 //!
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
 //! control for USB serial devices depends on the USB controller on the device,
@@ -109,8 +109,7 @@
 //! The RTS/CTS hardware flow control implementation supported by [`Uart`]
 //! and used by the Raspberry Pi's UART peripherals requires RTS on one
 //! device to be connected to CTS on the other device. The RTS line is
-//! used to request the other device to pause or resume its transmission. A
-//! more appropriate name for the RTS line is RTR (Ready to Receive).
+//! used to request the other device to pause or resume its transmission.
 //!
 //! Some devices use an older, incompatible RTS/CTS implementation, sometimes
 //! referred to as legacy or simplex mode, where RTS is connected to RTS, and
@@ -125,8 +124,8 @@
 //! and CTS is tied to BCM GPIO 16 (physical pin 36). RTS and CTS aren't
 //! available on models with a 26-pin header, except for the Raspberry Pi B
 //! Rev 2, which exposes RTS and CTS through its unpopulated P5 header with
-//! RTS on BCM GPIO 31 (physical pin 5) and CTS on BCM GPIO 30 (physical pin
-//! 6).
+//! RTS on BCM GPIO 31 (physical pin 6) and CTS on BCM GPIO 30 (physical pin
+//! 5).
 //!
 //! The RTS and CTS pins are reset to their original state when [`Uart`] goes
 //! out of scope. Note that `drop` methods aren't called when a process is
