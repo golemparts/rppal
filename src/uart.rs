@@ -434,12 +434,14 @@ impl Uart {
         termios::set_line_speed(self.fd, baud_rate)
     }
 
-    /// Returns the parity mode.
+    /// Returns the parity bit mode.
     pub fn parity(&self) -> Result<Parity> {
         termios::parity(self.fd)
     }
 
-    /// Sets the parity mode.
+    /// Sets the parity bit mode.
+    ///
+    /// The parity bit mode determines how the parity bit is calculated.
     ///
     /// Support for some modes may be device-dependent.
     pub fn set_parity(&mut self, parity: Parity) -> Result<()> {
