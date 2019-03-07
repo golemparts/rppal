@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut uart = Uart::new(115_200, Parity::None, 8, 1)?;
 
     // Configure read() to block until at least 1 byte is received.
-    uart.set_blocking_mode(1, Duration::default())?;
+    uart.set_read_mode(1, Duration::default())?;
 
     let mut buffer = [0u8; 1];
     loop {

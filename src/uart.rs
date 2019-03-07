@@ -56,9 +56,9 @@
 //! Remove any lines containing `enable_uart=0` or `enable_uart=1` from
 //! `/boot/config.txt`.
 //!
-//! On Raspberry Pi models with Bluetooth, an extra step is required to either
-//! disable Bluetooth or move it to `/dev/ttyS0`, so `/dev/ttyAMA0` becomes
-//! available for serial communication.
+//! On Raspberry Pi models with a Bluetooth module, an extra step is required
+//! to either disable Bluetooth or move it to `/dev/ttyS0`, so `/dev/ttyAMA0`
+//! becomes available for serial communication.
 //!
 //! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/config.txt`.
 //! You'll also need to disable the service that initializes Bluetooth with
@@ -102,7 +102,7 @@
 //! and the relevant Linux driver. Some controllers use an older, incompatible
 //! RTS/CTS implementation, sometimes referred to as legacy or simplex mode,
 //! where RTS is used to indicate data is about to be transmitted, rather than
-//! to request the external device to resume transmission.
+//! to request the external device to resume its transmission.
 //!
 //! ## Hardware flow control
 //!
@@ -160,7 +160,7 @@ use std::path::Path;
 use std::result;
 use std::time::Duration;
 
-use libc::O_NOCTTY;
+use libc::{O_NOCTTY, O_NONBLOCK};
 
 use crate::gpio::{self, Gpio, IoPin, Mode};
 use crate::system::{self, DeviceInfo, Model};
@@ -285,6 +285,8 @@ pub struct Uart {
     fd: RawFd,
     rtscts_mode: Option<(Mode, Mode)>,
     rtscts_pins: Option<(IoPin, IoPin)>,
+    blocking_read: bool,
+    blocking_write: bool,
 }
 
 impl Uart {
@@ -331,13 +333,10 @@ impl Uart {
             None
         };
 
-        // While it's tempting to set O_NONBLOCK here to prevent write()
-        // from blocking, that also prevents read() from working properly
-        // with the VMIN and VTIME settings.
         let device = OpenOptions::new()
             .read(true)
             .write(true)
-            .custom_flags(O_NOCTTY)
+            .custom_flags(O_NOCTTY | O_NONBLOCK)
             .open(path)?;
 
         let fd = device.as_raw_fd();
@@ -374,6 +373,8 @@ impl Uart {
             fd,
             rtscts_mode,
             rtscts_pins: None,
+            blocking_read: false,
+            blocking_write: false,
         })
     }
 
@@ -501,29 +502,25 @@ impl Uart {
         termios::ri(self.fd)
     }
 
-    /// Returns a tuple containing the status of the XON/XOFF software flow
-    /// control settings for incoming and outgoing data.
-    pub fn software_flow_control(&self) -> Result<(bool, bool)> {
-        termios::software_flow_control(self.fd)
+    /// Returns `true` if XON/XOFF software flow control is enabled.
+    pub fn software_flow_control(&self) -> Result<bool> {
+        Ok(termios::software_flow_control(self.fd)?.0)
     }
 
-    /// Enables or disables XON/XOFF software flow control for incoming and
-    /// outgoing data.
+    /// Enables or disables XON/XOFF software flow control.
     ///
-    /// When software flow control is enabled for incoming data, XOFF is
-    /// automatically sent to the external device to prevent the input queue
-    /// from overflowing. XON is sent when the input queue is ready for more
-    /// data. You can also manually send these control characters by calling
-    /// [`send_stop`] and [`send_start`].
-    ///
-    /// When software flow control is enabled for outgoing data, incoming XON
-    /// (decimal 17) and XOFF (decimal 19) control characters are filtered from
-    /// the input queue. When XOFF is received, all data in the output queue is
-    /// held until the external device sends XON.
+    /// When software flow control is enabled, incoming XON (decimal 17) and
+    /// XOFF (decimal 19) control characters are filtered from the input queue.
+    /// When XOFF is received, the transmission of data in the output queue is
+    /// paused until the external device sends XON. XOFF is automatically sent
+    /// to the external device to prevent the input queue from overflowing.
+    /// XON is sent when the input queue is ready for more data. You can also
+    /// manually send these control characters by calling [`send_stop`] and
+    /// [`send_start`].
     ///
     /// By default, software flow control is disabled.
     ///
-    /// Support for incoming and/or outgoing XON/XOFF software flow control is
+    /// Support for XON/XOFF software flow control is
     /// device-dependent. You can manually implement XON/XOFF by disabling
     /// software flow control, parsing incoming XON/XOFF control characters
     /// received with [`read`], and sending XON/XOFF when needed using
@@ -533,11 +530,11 @@ impl Uart {
     /// [`send_stop`]: #method.send_stop
     /// [`read`]: #method.read
     /// [`write`]: #method.write
-    pub fn set_software_flow_control(&self, incoming: bool, outgoing: bool) -> Result<()> {
-        termios::set_software_flow_control(self.fd, incoming, outgoing)
+    pub fn set_software_flow_control(&self, flow_control: bool) -> Result<()> {
+        termios::set_software_flow_control(self.fd, flow_control, flow_control)
     }
 
-    /// Returns the status of the RTS/CTS hardware flow control setting.
+    /// Returns `true` if RTS/CTS hardware flow control is enabled.
     pub fn hardware_flow_control(&self) -> Result<bool> {
         termios::hardware_flow_control(self.fd)
     }
@@ -598,15 +595,15 @@ impl Uart {
         termios::set_hardware_flow_control(self.fd, hardware_flow_control)
     }
 
-    /// Requests the external device to pause transmission using flow control.
+    /// Requests the external device to pause its transmission using flow control.
     ///
-    /// If software flow control is enabled for incoming data, `send_stop`
+    /// If software flow control is enabled, `send_stop`
     /// sends the XOFF control character.
     ///
     /// If hardware flow control is enabled, `send_stop` sets RTS to its
     /// inactive state.
     pub fn send_stop(&self) -> Result<()> {
-        if self.software_flow_control()?.0 {
+        if self.software_flow_control()? {
             termios::send_stop(self.fd)?;
         }
 
@@ -617,15 +614,15 @@ impl Uart {
         Ok(())
     }
 
-    /// Requests the external device to resume transmission using flow control.
+    /// Requests the external device to resume its transmission using flow control.
     ///
-    /// If software flow control is enabled for incoming data, `send_start`
+    /// If software flow control is enabled, `send_start`
     /// sends the XON control character.
     ///
     /// If hardware flow control is enabled, `send_start` sets RTS to its
     /// active state.
     pub fn send_start(&self) -> Result<()> {
-        if self.software_flow_control()?.0 {
+        if self.software_flow_control()? {
             termios::send_start(self.fd)?;
         }
 
@@ -636,10 +633,18 @@ impl Uart {
         Ok(())
     }
 
-    /// Returns a tuple containing the configured `min_length` and `timeout`
-    /// values.
-    pub fn blocking_mode(&self) -> Result<(usize, Duration)> {
-        termios::read_mode(self.fd)
+    /// Returns `true` if [`read`] is configured to block when needed.
+    ///
+    /// [`read`]: #method.write
+    pub fn is_read_blocking(&self) -> bool {
+        self.blocking_read
+    }
+
+    /// Returns `true` if [`write`] is configured to block when needed.
+    ///
+    /// [`write`]: #method.write
+    pub fn is_write_blocking(&self) -> bool {
+        self.blocking_write
     }
 
     /// Sets the blocking mode for subsequent calls to [`read`].
@@ -653,29 +658,81 @@ impl Uart {
     /// value: 25.5 seconds.
     ///
     /// [`read`] operates in one of four modes, depending on the specified
-    /// `min_length` and `timeout`:
+    /// `min_length` and `timeout` values:
     ///
     /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). [`read`]
     /// retrieves any available data and returns immediately.
     /// * **Blocking read** (`min_length` > 0, `timeout` = 0). [`read`] blocks
     /// until at least `min_length` bytes are available, or the provided buffer
-    /// variable is full.
+    /// is full.
     /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). [`read`]
     /// blocks until at least one byte is available, or the `timeout` duration
     /// elapses.
     /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0).
     /// [`read`] blocks until at least `min_length` bytes are available, the
-    /// provided buffer variable is full, or the `timeout` duration elapses
+    /// provided buffer is full, or the `timeout` duration elapses
     /// after receiving one or more bytes. The timer is started after an
     /// initial byte becomes available, and is restarted after each additional
     /// byte. That means [`read`] will block indefinitely until at least one
     /// byte has been received.
     ///
-    /// By default, [`read`] is configured for non-blocking reads.
+    /// By default, [`read`] is configured as non-blocking.
     ///
     /// [`read`]: #method.read
-    pub fn set_blocking_mode(&self, min_length: usize, timeout: Duration) -> Result<()> {
+    pub fn set_read_mode(&mut self, min_length: usize, timeout: Duration) -> Result<()> {
         termios::set_read_mode(self.fd, min_length, timeout)?;
+
+        self.blocking_read = min_length > 0 || timeout.as_millis() > 0;
+
+        // If both read() and write() are non-blocking, we can safely set
+        // O_NONBLOCK once instead of toggling it for every write. We can't
+        // leave it set when read() should block, because it ignores the
+        // VMIN and VTIME settings.
+        if self.blocking_read || self.blocking_write {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, 0);
+            }
+        } else {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Sets the blocking mode for subsequent calls to [`write`].
+    ///
+    /// [`write`] operates in one of two modes, depending on the specified
+    /// `blocking` value:
+    ///
+    /// * **Non-blocking write**. [`write`] returns immediately after
+    /// copying as much of the contents of the provided buffer to the output queue
+    /// as it's able to fit.
+    /// * **Blocking write**. [`write`] blocks until the entire contents of the provided buffer
+    /// can be copied to the output queue. If flow control is enabled and the
+    /// external device has sent a stop request, the transmission of any waiting data
+    /// in the output queue is paused until a start request has been received.
+    ///
+    /// By default, [`write`] is configured as non-blocking.
+    ///
+    /// [`write`]: #method.write
+    pub fn set_write_mode(&mut self, blocking: bool) -> Result<()> {
+        self.blocking_write = blocking;
+
+        // If both read() and write() are non-blocking, we can safely set
+        // O_NONBLOCK once instead of toggling it for every write. We can't
+        // leave it set when read() should block, because it ignores the
+        // VMIN and VTIME settings.
+        if self.blocking_read || self.blocking_write {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, 0);
+            }
+        } else {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+            }
+        }
 
         Ok(())
     }
@@ -684,45 +741,64 @@ impl Uart {
     /// `buffer`.
     ///
     /// `read` operates in one of four (non)blocking modes, depending on the
-    /// settings configured by [`set_blocking_mode`].
+    /// settings configured by [`set_read_mode`]. By default, `read` is configured
+    /// as non-blocking.
     ///
     /// Returns how many bytes were read.
     ///
-    /// [`set_blocking_mode`]: #method.set_blocking_mode
+    /// [`set_read_mode`]: #method.set_read_mode
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        match self.device.read(buffer) {
-            Ok(bytes_read) => Ok(bytes_read),
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
-            Err(e) => Err(Error::Io(e)),
-        }
+        self.device.read(buffer).or_else(|e| {
+            if e.kind() == io::ErrorKind::WouldBlock {
+                Ok(0)
+            } else {
+                Err(Error::Io(e))
+            }
+        })
     }
 
     /// Sends the contents of `buffer` to the external device.
     ///
-    /// `write` returns immediately after copying the contents of `buffer` to
-    /// the output queue. If the output queue is full, `write` blocks until
-    /// the entire contents of `buffer` can be copied.
-    ///
-    /// You can call [`drain`] to wait until all data stored in the output
-    /// queue has been transmitted.
+    /// `write` operates in either blocking or non-blocking mode, depending on the
+    /// settings configured by [`set_write_mode`]. By default, `write` is configured
+    /// as non-blocking.
     ///
     /// Returns how many bytes were written.
     ///
-    /// [`drain`]: #method.drain
+    /// [`set_write_mode`]: #method.set_write_mode
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
-        match self.device.write(buffer) {
-            Ok(bytes_written) => Ok(bytes_written),
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Ok(0),
-            Err(e) => Err(Error::Io(e)),
+        // We only need to toggle O_NONBLOCK when read() is configured as
+        // blocking. If read() is non-blocking, either with_path() or
+        // set_read_mode() will have already enabled O_NONBLOCK.
+        if self.blocking_read && !self.blocking_write {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+            }
         }
+
+        let result = self.device.write(buffer).or_else(|e| {
+            if e.kind() == io::ErrorKind::WouldBlock {
+                Ok(0)
+            } else {
+                Err(Error::Io(e))
+            }
+        });
+
+        if self.blocking_read && !self.blocking_write {
+            unsafe {
+                libc::fcntl(self.fd, libc::F_SETFL, 0);
+            }
+        }
+
+        result
     }
 
-    /// Blocks until all waiting outgoing data has been transmitted.
+    /// Blocks until all data in the output queue has been transmitted.
     pub fn drain(&self) -> Result<()> {
         termios::drain(self.fd)
     }
 
-    /// Discards all waiting data in the input and/or output queue.
+    /// Discards all data in the input and/or output queue.
     pub fn flush(&self, queue_type: Queue) -> Result<()> {
         termios::flush(self.fd, queue_type)
     }
