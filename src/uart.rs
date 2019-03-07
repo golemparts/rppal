@@ -426,7 +426,7 @@ impl Uart {
     /// `3_000_000`, `3_500_000`, `4_000_000`.
     ///
     /// Support for some values may be device-dependent.
-    pub fn set_baud_rate(&self, baud_rate: u32) -> Result<()> {
+    pub fn set_baud_rate(&mut self, baud_rate: u32) -> Result<()> {
         termios::set_line_speed(self.fd, baud_rate)
     }
 
@@ -438,7 +438,7 @@ impl Uart {
     /// Sets the parity mode.
     ///
     /// Support for some modes may be device-dependent.
-    pub fn set_parity(&self, parity: Parity) -> Result<()> {
+    pub fn set_parity(&mut self, parity: Parity) -> Result<()> {
         termios::set_parity(self.fd, parity)
     }
 
@@ -454,7 +454,7 @@ impl Uart {
     /// Support for some modes may be device-dependent.
     ///
     /// [`None`]: enum.ParityFilter.html#variant.None
-    pub fn set_parity_filter(&self, filter: ParityFilter) -> Result<()> {
+    pub fn set_parity_filter(&mut self, filter: ParityFilter) -> Result<()> {
         termios::set_parity_filter(self.fd, filter)
     }
 
@@ -468,7 +468,7 @@ impl Uart {
     /// Accepted values: `5`, `6`, `7`, `8`.
     ///
     /// Support for some values may be device-dependent.
-    pub fn set_data_bits(&self, data_bits: u8) -> Result<()> {
+    pub fn set_data_bits(&mut self, data_bits: u8) -> Result<()> {
         termios::set_data_bits(self.fd, data_bits)
     }
 
@@ -482,7 +482,7 @@ impl Uart {
     /// Accepted values: `1`, `2`.
     ///
     /// Support for some values may be device-dependent.
-    pub fn set_stop_bits(&self, stop_bits: u8) -> Result<()> {
+    pub fn set_stop_bits(&mut self, stop_bits: u8) -> Result<()> {
         termios::set_stop_bits(self.fd, stop_bits)
     }
 
@@ -524,7 +524,7 @@ impl Uart {
     ///
     /// DTR is not supported by the Raspberry Pi's UART peripherals,
     /// but may be available on USB serial devices.
-    pub fn set_dtr(&self, dtr: bool) -> Result<()> {
+    pub fn set_dtr(&mut self, dtr: bool) -> Result<()> {
         termios::set_dtr(self.fd, dtr)
     }
 
@@ -576,7 +576,7 @@ impl Uart {
     /// [`send_stop`]: #method.send_stop
     /// [`read`]: #method.read
     /// [`write`]: #method.write
-    pub fn set_software_flow_control(&self, flow_control: bool) -> Result<()> {
+    pub fn set_software_flow_control(&mut self, flow_control: bool) -> Result<()> {
         termios::set_software_flow_control(self.fd, flow_control, flow_control)
     }
 
