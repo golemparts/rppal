@@ -225,7 +225,9 @@ impl From<system::Error> for Error {
 /// Result type returned from methods that can have `uart::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Parity modes.
+/// Parity bit modes.
+///
+/// The parity bit mode determines how the parity bit is calculated.
 ///
 /// `None` omits the parity bit. `Even` and `Odd` count the total number of
 /// 1-bits in the data bits. `Mark` and `Space` always set the parity
@@ -257,6 +259,8 @@ impl fmt::Display for Parity {
 }
 
 /// Parity check modes.
+///
+/// The parity check mode determines how parity errors are handled.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum ParityCheck {
     /// Ignores parity errors.
