@@ -387,13 +387,13 @@ impl Uart {
         // Disable hardware flow control (RTS/CTS)
         termios::set_hardware_flow_control(fd, false)?;
 
-        // Pass through parity errors unfiltered
-        termios::set_parity_filter(fd, ParityFilter::None)?;
-
         termios::set_line_speed(fd, baud_rate)?;
         termios::set_parity(fd, parity)?;
         termios::set_data_bits(fd, data_bits)?;
         termios::set_stop_bits(fd, stop_bits)?;
+
+        // Pass through parity errors unfiltered
+        termios::set_parity_filter(fd, ParityFilter::None)?;
 
         // Flush the input and output queue
         termios::flush(fd, Queue::Both)?;
