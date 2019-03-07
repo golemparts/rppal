@@ -31,11 +31,12 @@ use libc::{B1200, B1800, B2400, B4800, B600, B9600};
 use libc::{B1500000, B2000000, B2500000, B3000000, B3500000, B4000000};
 use libc::{CLOCAL, CMSPAR, CREAD, CRTSCTS, TCSANOW};
 use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
+use libc::{IGNPAR, INPCK, PARMRK};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
 use libc::{TIOCMBIC, TIOCMBIS, TIOCM_CAR, TIOCM_RNG};
 
-use crate::uart::{Error, Parity, Queue, Result};
+use crate::uart::{Error, Parity, ParityFilter, Queue, Result};
 
 const XON: u8 = 17;
 const XOFF: u8 = 19;
@@ -222,6 +223,53 @@ pub fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+pub fn parity_filter(fd: c_int) -> Result<ParityFilter> {
+    let attr = attributes(fd)?;
+
+    if (attr.c_iflag & INPCK) == 0 {
+        return Ok(ParityFilter::None);
+    } else if (attr.c_iflag & INPCK) > 0
+        && (attr.c_iflag & IGNPAR) > 0
+        && (attr.c_iflag & PARMRK) == 0
+    {
+        return Ok(ParityFilter::Strip);
+    } else if (attr.c_iflag & INPCK) > 0
+        && (attr.c_iflag & IGNPAR) == 0
+        && (attr.c_iflag & PARMRK) == 0
+    {
+        return Ok(ParityFilter::Replace);
+    } else if (attr.c_iflag & INPCK) > 0
+        && (attr.c_iflag & IGNPAR) == 0
+        && (attr.c_iflag & PARMRK) > 0
+    {
+        return Ok(ParityFilter::Mark);
+    }
+
+    Ok(ParityFilter::None)
+}
+
+pub fn set_parity_filter(fd: c_int, filter: ParityFilter) -> Result<()> {
+    let mut attr = attributes(fd)?;
+
+    match filter {
+        ParityFilter::None => attr.c_iflag &= !(INPCK | IGNPAR | PARMRK),
+        ParityFilter::Strip => {
+            attr.c_iflag |= INPCK | IGNPAR;
+            attr.c_iflag &= !PARMRK;
+        }
+        ParityFilter::Replace => {
+            attr.c_iflag |= INPCK;
+            attr.c_iflag &= !(IGNPAR | PARMRK);
+        }
+        ParityFilter::Mark => {
+            attr.c_iflag |= INPCK | PARMRK;
+            attr.c_iflag &= !IGNPAR;
+        }
+    }
+
+    set_attributes(fd, &attr)
+}
+
 pub fn data_bits(fd: c_int) -> Result<u8> {
     let attr = attributes(fd)?;
 
@@ -271,6 +319,7 @@ pub fn set_stop_bits(fd: c_int, stop_bits: u8) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Enable non-canonical mode
 pub fn set_raw_mode(fd: c_int) -> Result<()> {
     let mut attr = attributes(fd)?;
 
@@ -282,6 +331,7 @@ pub fn set_raw_mode(fd: c_int) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Return minimum input queue length and timeout duration for read()
 pub fn read_mode(fd: c_int) -> Result<(usize, Duration)> {
     let attr = attributes(fd)?;
 
@@ -292,6 +342,7 @@ pub fn read_mode(fd: c_int) -> Result<(usize, Duration)> {
     ))
 }
 
+// Set minimum input queue length and timeout duration for read()
 pub fn set_read_mode(fd: c_int, min_length: usize, timeout: Duration) -> Result<()> {
     let mut attr = attributes(fd)?;
 

@@ -225,7 +225,7 @@ impl From<system::Error> for Error {
 /// Result type returned from methods that can have `uart::Error`s.
 pub type Result<T> = result::Result<T, Error>;
 
-/// Parity bit modes.
+/// Parity modes.
 ///
 /// `None` omits the parity bit. `Even` and `Odd` count the total number of
 /// 1-bits in the data bits. `Mark` and `Space` always set the parity
@@ -252,6 +252,33 @@ impl fmt::Display for Parity {
             Parity::Odd => write!(f, "Odd"),
             Parity::Mark => write!(f, "Mark"),
             Parity::Space => write!(f, "Space"),
+        }
+    }
+}
+
+/// Parity error filter modes.
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum ParityFilter {
+    /// Ignores parity errors.
+    None,
+    /// Removes bytes with parity errors from the input queue.
+    Strip,
+    /// Replaces bytes with parity errors with a `0` byte.
+    Replace,
+    /// Marks bytes with parity errors with a preceding `255` and `0` byte.
+    ///
+    /// Actual `255` bytes are replaced with two `255` bytes to avoid confusion
+    /// with parity errors.
+    Mark,
+}
+
+impl fmt::Display for ParityFilter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ParityFilter::None => write!(f, "None"),
+            ParityFilter::Strip => write!(f, "Strip"),
+            ParityFilter::Replace => write!(f, "Replace"),
+            ParityFilter::Mark => write!(f, "Mark"),
         }
     }
 }
@@ -360,6 +387,9 @@ impl Uart {
         // Disable hardware flow control (RTS/CTS)
         termios::set_hardware_flow_control(fd, false)?;
 
+        // Pass through parity errors unfiltered
+        termios::set_parity_filter(fd, ParityFilter::None)?;
+
         termios::set_line_speed(fd, baud_rate)?;
         termios::set_parity(fd, parity)?;
         termios::set_data_bits(fd, data_bits)?;
@@ -400,16 +430,32 @@ impl Uart {
         termios::set_line_speed(self.fd, baud_rate)
     }
 
-    /// Returns the parity bit mode.
+    /// Returns the parity mode.
     pub fn parity(&self) -> Result<Parity> {
         termios::parity(self.fd)
     }
 
-    /// Sets the parity bit mode.
+    /// Sets the parity mode.
     ///
     /// Support for some modes may be device-dependent.
     pub fn set_parity(&self, parity: Parity) -> Result<()> {
         termios::set_parity(self.fd, parity)
+    }
+
+    /// Returns the parity error filter mode.
+    pub fn parity_filter(&self) -> Result<ParityFilter> {
+        termios::parity_filter(self.fd)
+    }
+
+    /// Sets the parity error filter mode.
+    ///
+    /// By default, the filter mode is set to [`None`].
+    ///
+    /// Support for some modes may be device-dependent.
+    ///
+    /// [`None`]: enum.ParityFilter.html#variant.None
+    pub fn set_parity_filter(&self, filter: ParityFilter) -> Result<()> {
+        termios::set_parity_filter(self.fd, filter)
     }
 
     /// Returns the number of data bits.
