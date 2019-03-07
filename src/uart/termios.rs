@@ -36,7 +36,7 @@ use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTO
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
 use libc::{TIOCMBIC, TIOCMBIS, TIOCM_CAR, TIOCM_RNG};
 
-use crate::uart::{Error, Parity, ParityFilter, Queue, Result};
+use crate::uart::{Error, Parity, ParityCheck, Queue, Result};
 
 const XON: u8 = 17;
 const XOFF: u8 = 19;
@@ -223,45 +223,45 @@ pub fn set_parity(fd: c_int, parity: Parity) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
-pub fn parity_filter(fd: c_int) -> Result<ParityFilter> {
+pub fn parity_check(fd: c_int) -> Result<ParityCheck> {
     let attr = attributes(fd)?;
 
     if (attr.c_iflag & INPCK) == 0 {
-        return Ok(ParityFilter::None);
+        return Ok(ParityCheck::None);
     } else if (attr.c_iflag & INPCK) > 0
         && (attr.c_iflag & IGNPAR) > 0
         && (attr.c_iflag & PARMRK) == 0
     {
-        return Ok(ParityFilter::Strip);
+        return Ok(ParityCheck::Strip);
     } else if (attr.c_iflag & INPCK) > 0
         && (attr.c_iflag & IGNPAR) == 0
         && (attr.c_iflag & PARMRK) == 0
     {
-        return Ok(ParityFilter::Replace);
+        return Ok(ParityCheck::Replace);
     } else if (attr.c_iflag & INPCK) > 0
         && (attr.c_iflag & IGNPAR) == 0
         && (attr.c_iflag & PARMRK) > 0
     {
-        return Ok(ParityFilter::Mark);
+        return Ok(ParityCheck::Mark);
     }
 
-    Ok(ParityFilter::None)
+    Ok(ParityCheck::None)
 }
 
-pub fn set_parity_filter(fd: c_int, filter: ParityFilter) -> Result<()> {
+pub fn set_parity_check(fd: c_int, parity_check: ParityCheck) -> Result<()> {
     let mut attr = attributes(fd)?;
 
-    match filter {
-        ParityFilter::None => attr.c_iflag &= !(INPCK | IGNPAR | PARMRK),
-        ParityFilter::Strip => {
+    match parity_check {
+        ParityCheck::None => attr.c_iflag &= !(INPCK | IGNPAR | PARMRK),
+        ParityCheck::Strip => {
             attr.c_iflag |= INPCK | IGNPAR;
             attr.c_iflag &= !PARMRK;
         }
-        ParityFilter::Replace => {
+        ParityCheck::Replace => {
             attr.c_iflag |= INPCK;
             attr.c_iflag &= !(IGNPAR | PARMRK);
         }
-        ParityFilter::Mark => {
+        ParityCheck::Mark => {
             attr.c_iflag |= INPCK | PARMRK;
             attr.c_iflag &= !IGNPAR;
         }

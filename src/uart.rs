@@ -256,9 +256,9 @@ impl fmt::Display for Parity {
     }
 }
 
-/// Parity error filter modes.
+/// Parity check modes.
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum ParityFilter {
+pub enum ParityCheck {
     /// Ignores parity errors.
     None,
     /// Removes bytes with parity errors from the input queue.
@@ -272,13 +272,13 @@ pub enum ParityFilter {
     Mark,
 }
 
-impl fmt::Display for ParityFilter {
+impl fmt::Display for ParityCheck {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            ParityFilter::None => write!(f, "None"),
-            ParityFilter::Strip => write!(f, "Strip"),
-            ParityFilter::Replace => write!(f, "Replace"),
-            ParityFilter::Mark => write!(f, "Mark"),
+            ParityCheck::None => write!(f, "None"),
+            ParityCheck::Strip => write!(f, "Strip"),
+            ParityCheck::Replace => write!(f, "Replace"),
+            ParityCheck::Mark => write!(f, "Mark"),
         }
     }
 }
@@ -393,7 +393,7 @@ impl Uart {
         termios::set_stop_bits(fd, stop_bits)?;
 
         // Pass through parity errors unfiltered
-        termios::set_parity_filter(fd, ParityFilter::None)?;
+        termios::set_parity_check(fd, ParityCheck::None)?;
 
         // Flush the input and output queue
         termios::flush(fd, Queue::Both)?;
@@ -442,20 +442,22 @@ impl Uart {
         termios::set_parity(self.fd, parity)
     }
 
-    /// Returns the parity error filter mode.
-    pub fn parity_filter(&self) -> Result<ParityFilter> {
-        termios::parity_filter(self.fd)
+    /// Returns the parity check mode.
+    pub fn parity_check(&self) -> Result<ParityCheck> {
+        termios::parity_check(self.fd)
     }
 
-    /// Sets the parity error filter mode.
+    /// Sets the parity check mode.
     ///
-    /// By default, the filter mode is set to [`None`].
+    /// The parity check mode determines how parity errors are handled.
+    ///
+    /// By default, `parity_check` is set to [`None`].
     ///
     /// Support for some modes may be device-dependent.
     ///
-    /// [`None`]: enum.ParityFilter.html#variant.None
-    pub fn set_parity_filter(&mut self, filter: ParityFilter) -> Result<()> {
-        termios::set_parity_filter(self.fd, filter)
+    /// [`None`]: enum.ParityCheck.html#variant.None
+    pub fn set_parity_check(&mut self, parity_check: ParityCheck) -> Result<()> {
+        termios::set_parity_check(self.fd, parity_check)
     }
 
     /// Returns the number of data bits.
