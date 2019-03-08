@@ -391,6 +391,15 @@ pub fn set_hardware_flow_control(fd: c_int, enabled: bool) -> Result<()> {
     set_attributes(fd, &attr)
 }
 
+// Return control signal status
+pub fn status(fd: c_int) -> Result<c_int> {
+    let mut tiocm: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCMGET, &mut tiocm) })?;
+
+    Ok(tiocm)
+}
+
 // Return CTS state
 pub fn cts(fd: c_int) -> Result<bool> {
     let mut tiocm: c_int = 0;

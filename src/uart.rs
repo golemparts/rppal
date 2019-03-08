@@ -108,12 +108,12 @@
 //!
 //! The RTS/CTS hardware flow control implementation supported by [`Uart`]
 //! and used by the Raspberry Pi's UART peripherals requires RTS on one
-//! device to be connected to CTS on the other device. The RTS line is
+//! device to be connected to CTS on the other device. The RTS signal is
 //! used to request the other device to pause or resume its transmission.
 //!
 //! Some devices use an older, incompatible RTS/CTS implementation, sometimes
 //! referred to as legacy or simplex mode, where RTS is connected to RTS, and
-//! CTS to CTS. The RTS line is used to indicate data is about to be
+//! CTS to CTS. The RTS signal is used to indicate data is about to be
 //! transmitted. [`Uart`] is not compatible with this implementation.
 //! Connecting the Raspberry Pi's RTS and CTS pins incorrectly could damage
 //! the Pi or the external device.
@@ -160,7 +160,8 @@ use std::path::Path;
 use std::result;
 use std::time::Duration;
 
-use libc::{O_NOCTTY, O_NONBLOCK};
+use libc::{c_int, O_NOCTTY, O_NONBLOCK};
+use libc::{TIOCM_CAR, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RNG, TIOCM_RTS};
 
 use crate::gpio::{self, Gpio, IoPin, Mode};
 use crate::system::{self, DeviceInfo, Model};
@@ -305,6 +306,84 @@ impl fmt::Display for Queue {
             Queue::Output => write!(f, "Output"),
             Queue::Both => write!(f, "Both"),
         }
+    }
+}
+
+/// Control signal status.
+#[derive(Debug)]
+pub struct Status {
+    tiocm: c_int,
+}
+
+impl Status {
+    /// Returns `true` if RTS is active.
+    ///
+    /// RTS (active low) is controlled by [`Uart`]. An active signal indicates
+    /// [`Uart`] is ready to receive more data.
+    ///
+    /// [`Uart`]: struct.Uart.html
+    pub fn rts(&self) -> bool {
+        self.tiocm & TIOCM_RTS > 0
+    }
+
+    /// Returns `true` if CTS is active.
+    ///
+    /// CTS (active low) is controlled by the external device. An active signal
+    /// indicates the external device is ready to receive more data.
+    pub fn cts(&self) -> bool {
+        self.tiocm & TIOCM_CTS > 0
+    }
+
+    /// Returns `true` if DTR is active.
+    ///
+    /// DTR (active low) is controlled by [`Uart`]. When communicating with a
+    /// modem, an active signal is used to place or accept a call. An inactive
+    /// signal causes the modem to hang up. Other devices may use DTR and DSR
+    /// for flow control.
+    ///
+    /// DTR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    ///
+    /// [`Uart`]: struct.Uart.html
+    pub fn dtr(&self) -> bool {
+        self.tiocm & TIOCM_DTR > 0
+    }
+
+    /// Returns `true` if DSR is active.
+    ///
+    /// DSR (active low) is controlled by the external device. When
+    /// communicating with a modem, an active signal indicates the modem is
+    /// ready for data transmission. Other devices may use DTR and DSR for flow
+    /// control.
+    ///
+    /// DSR is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dsr(&self) -> bool {
+        self.tiocm & TIOCM_DSR > 0
+    }
+
+    /// Returns `true` if DCD is active.
+    ///
+    /// DCD (active low) is controlled by the external device. When
+    /// communicating with a modem, an active signal indicates a connection is
+    /// established.
+    ///
+    /// DCD is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn dcd(&self) -> bool {
+        self.tiocm & TIOCM_CAR > 0
+    }
+
+    /// Returns `true` if RI is active.
+    ///
+    /// RI (active low) is controlled by the external device. When
+    /// communicating with a modem, an active signal indicates an incoming
+    /// call.
+    ///
+    /// RI is not supported by the Raspberry Pi's UART peripherals,
+    /// but may be available on USB serial devices.
+    pub fn ri(&self) -> bool {
+        self.tiocm & TIOCM_RNG > 0
     }
 }
 
@@ -494,41 +573,14 @@ impl Uart {
         termios::set_stop_bits(self.fd, stop_bits)
     }
 
-    /// Returns `true` if CTS is active.
-    ///
-    /// The CTS line (active low) is controlled by the external device.
-    pub fn cts(&self) -> Result<bool> {
-        termios::cts(self.fd)
+    /// Returns the status of the control signals.
+    pub fn status(&self) -> Result<Status> {
+        let tiocm = termios::status(self.fd)?;
+
+        Ok(Status { tiocm })
     }
 
-    /// Returns `true` if RTS is active.
-    ///
-    /// The RTS line (active low) is controlled by `Uart`.
-    pub fn rts(&self) -> Result<bool> {
-        termios::rts(self.fd)
-    }
-
-    /// Returns `true` if DSR is active.
-    ///
-    /// The DSR line (active low) is controlled by the external device.
-    ///
-    /// DSR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dsr(&self) -> Result<bool> {
-        termios::dsr(self.fd)
-    }
-
-    /// Returns `true` if DTR is active.
-    ///
-    /// The DTR line (active low) is controlled by `Uart`.
-    ///
-    /// DTR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dtr(&self) -> Result<bool> {
-        termios::dtr(self.fd)
-    }
-
-    /// Sets the DTR line to active (`true`) or inactive (`false`).
+    /// Sets DTR to active (`true`) or inactive (`false`).
     ///
     /// DTR is not supported by the Raspberry Pi's UART peripherals,
     /// but may be available on USB serial devices.
@@ -536,24 +588,9 @@ impl Uart {
         termios::set_dtr(self.fd, dtr)
     }
 
-    /// Returns `true` if DCD is active.
-    ///
-    /// The DCD line (active low) is controlled by the external device.
-    ///
-    /// DCD is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn dcd(&self) -> Result<bool> {
-        termios::dcd(self.fd)
-    }
-
-    /// Returns `true` if RI is active.
-    ///
-    /// The RI line (active low) is controlled by the external device.
-    ///
-    /// RI is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on USB serial devices.
-    pub fn ri(&self) -> Result<bool> {
-        termios::ri(self.fd)
+    /// Sets RTS to active (`true`) or inactive (`false`).
+    pub fn set_rts(&mut self, rts: bool) -> Result<()> {
+        termios::set_rts(self.fd, rts)
     }
 
     /// Returns `true` if XON/XOFF software flow control is enabled.
