@@ -343,10 +343,10 @@ pub fn read_mode(fd: c_int) -> Result<(usize, Duration)> {
 }
 
 // Set minimum input queue length and timeout duration for read()
-pub fn set_read_mode(fd: c_int, min_length: usize, timeout: Duration) -> Result<()> {
+pub fn set_read_mode(fd: c_int, min_length: u8, timeout: Duration) -> Result<()> {
     let mut attr = attributes(fd)?;
 
-    attr.c_cc[VMIN] = min_length.min(255) as u8;
+    attr.c_cc[VMIN] = min_length;
     // Specified in deciseconds
     attr.c_cc[VTIME] = (timeout.as_secs() * 10)
         .saturating_add(u64::from(timeout.subsec_micros() / 100_000))

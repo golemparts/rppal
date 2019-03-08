@@ -621,8 +621,8 @@ impl Uart {
     /// [`send_stop`]: #method.send_stop
     /// [`read`]: #method.read
     /// [`write`]: #method.write
-    pub fn set_software_flow_control(&mut self, flow_control: bool) -> Result<()> {
-        termios::set_software_flow_control(self.fd, flow_control, flow_control)
+    pub fn set_software_flow_control(&mut self, software_flow_control: bool) -> Result<()> {
+        termios::set_software_flow_control(self.fd, software_flow_control, software_flow_control)
     }
 
     /// Returns `true` if RTS/CTS hardware flow control is enabled.
@@ -653,7 +653,7 @@ impl Uart {
     /// an [`OutputPin`] for RTS and an [`InputPin`] for CTS.
     ///
     /// [here]: index.html#hardware-flow-control
-    /// [`cts`]: #method.cts
+    /// [`cts`]: struct.Status.html#method.cts
     /// [`send_start`]: #method.send_start
     /// [`send_stop`]: #method.send_stop
     /// [`OutputPin`]: ../gpio/struct.OutputPin.html
@@ -770,7 +770,7 @@ impl Uart {
     /// By default, [`read`] is configured as non-blocking.
     ///
     /// [`read`]: #method.read
-    pub fn set_read_mode(&mut self, min_length: usize, timeout: Duration) -> Result<()> {
+    pub fn set_read_mode(&mut self, min_length: u8, timeout: Duration) -> Result<()> {
         termios::set_read_mode(self.fd, min_length, timeout)?;
 
         self.blocking_read = min_length > 0 || timeout.as_millis() > 0;
