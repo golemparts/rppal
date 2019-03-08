@@ -448,12 +448,12 @@ impl Uart {
         termios::set_parity(self.fd, parity)
     }
 
-    /// Returns the parity check mode.
+    /// Returns the parity check mode for incoming data.
     pub fn parity_check(&self) -> Result<ParityCheck> {
         termios::parity_check(self.fd)
     }
 
-    /// Sets the parity check mode.
+    /// Configures parity checking for incoming data.
     ///
     /// The parity check mode determines how parity errors are handled.
     ///
