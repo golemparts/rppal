@@ -34,7 +34,7 @@ use libc::{CS5, CS6, CS7, CS8, CSIZE, CSTOPB, PARENB, PARODD};
 use libc::{IGNPAR, INPCK, PARMRK};
 use libc::{IXANY, IXOFF, IXON, TCIFLUSH, TCIOFLUSH, TCOFLUSH, VMIN, VSTART, VSTOP, VTIME};
 use libc::{TCIOFF, TCION, TIOCMGET, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RTS};
-use libc::{TIOCMBIC, TIOCMBIS, TIOCM_CAR, TIOCM_RNG};
+use libc::{TIOCINQ, TIOCMBIC, TIOCMBIS, TIOCM_CAR, TIOCM_RNG, TIOCOUTQ};
 
 use crate::uart::{Error, Parity, ParityCheck, Queue, Result};
 
@@ -537,4 +537,22 @@ pub fn drain(fd: c_int) -> Result<()> {
     parse_retval!(unsafe { libc::tcdrain(fd) })?;
 
     Ok(())
+}
+
+// Returns the number of bytes waiting in the input queue.
+pub fn input_len(fd: c_int) -> Result<usize> {
+    let mut len: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCINQ, &mut len) })?;
+
+    Ok(len as usize)
+}
+
+// Returns the number of bytes waiting in the output queue.
+pub fn output_len(fd: c_int) -> Result<usize> {
+    let mut len: c_int = 0;
+
+    parse_retval!(unsafe { libc::ioctl(fd, TIOCOUTQ, &mut len) })?;
+
+    Ok(len as usize)
 }

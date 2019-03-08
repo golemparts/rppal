@@ -573,6 +573,16 @@ impl Uart {
         termios::set_stop_bits(self.fd, stop_bits)
     }
 
+    /// Returns the number of bytes waiting in the input queue.
+    pub fn input_len(&self) -> Result<usize> {
+        termios::input_len(self.fd)
+    }
+
+    /// Returns the number of bytes waiting in the output queue.
+    pub fn output_len(&self) -> Result<usize> {
+        termios::output_len(self.fd)
+    }
+
     /// Returns the status of the control signals.
     pub fn status(&self) -> Result<Status> {
         let tiocm = termios::status(self.fd)?;
