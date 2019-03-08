@@ -116,10 +116,9 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 
 #### Features
 
-* Get/set pin modes
-* Read/write pin logic levels
-* Activate built-in pull-up/pull-down resistors
-* Configure synchronous and asynchronous interrupt handlers
+* Get/set pin mode and logic level
+* Configure built-in pull-up/pull-down resistors
+* Synchronous and asynchronous interrupt handlers
 * Software-based PWM implementation
 * Optional `embedded-hal` trait implementations (`digital::OutputPin`, `PwmPin`)
 
