@@ -18,11 +18,11 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-//! Interface for the UART peripherals and any USB serial adapters.
+//! Interface for the UART peripherals and any USB to serial adapters.
 //!
 //! RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0`
-//! (PL011) and `ttyS0` (mini UART) character devices. USB serial adapters are
-//! controlled using the `ttyUSBx` and `ttyACMx` character devices.
+//! (PL011) and `ttyS0` (mini UART) character devices. USB to serial adapters
+//! are controlled using the `ttyUSBx` and `ttyACMx` character devices.
 //!
 //! ## UART peripherals
 //!
@@ -84,25 +84,26 @@
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
-//! ## USB serial adapters
+//! ## USB to serial adapters
 //!
 //! In addition to controlling the hardware UART peripherals, [`Uart`] can
-//! also be used for USB serial adapters. Depending on the type of device/USB
-//! controller, these can be accessed either through `/dev/ttyUSBx` or
-//! `/dev/ttyACMx`, where `x` is an index starting at `0`. The numbering is
+//! also be used for USB to serial adapters. Depending on the type of
+//! device/USB controller, these can be accessed either through `/dev/ttyUSBx`
+//! or `/dev/ttyACMx`, where `x` is an index starting at `0`. The numbering is
 //! based on the order in which the devices are discovered by the kernel.
 //!
-//! When you have multiple USB serial adapters connected at the same time,
+//! When you have multiple USB to serial adapters connected at the same time,
 //! you'll need a method to uniquely identify a specific device, for instance
 //! by searching for the relevant symlink in the `/dev/serial/by-id` directory,
 //! or by adding your own `udev` rules.
 //!
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
-//! control for USB serial adapters depends on the USB controller on the device,
-//! and the relevant Linux driver. Some controllers use an older, incompatible
-//! RTS/CTS implementation, sometimes referred to as legacy or simplex mode,
-//! where RTS is used to indicate data is about to be transmitted, rather than
-//! to request the external device to resume its transmission.
+//! control for USB to serial adapters depends on the USB controller on the
+//! device, and the relevant Linux driver. Some controllers use an older,
+//! incompatible RTS/CTS implementation, sometimes referred to as legacy or
+//! simplex mode, where RTS is used to indicate data is about to be
+//! transmitted, rather than to request the external device to resume its
+//! transmission.
 //!
 //! ## Hardware flow control
 //!
@@ -342,7 +343,7 @@ impl Status {
     /// for flow control.
     ///
     /// DTR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on some USB serial adapters.
+    /// but may be available on some USB to serial adapters.
     ///
     /// [`Uart`]: struct.Uart.html
     pub fn dtr(&self) -> bool {
@@ -357,7 +358,7 @@ impl Status {
     /// control.
     ///
     /// DSR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on some USB serial adapters.
+    /// but may be available on some USB to serial adapters.
     pub fn dsr(&self) -> bool {
         self.tiocm & TIOCM_DSR > 0
     }
@@ -369,7 +370,7 @@ impl Status {
     /// established.
     ///
     /// DCD is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on some USB serial adapters.
+    /// but may be available on some USB to serial adapters.
     pub fn dcd(&self) -> bool {
         self.tiocm & TIOCM_CAR > 0
     }
@@ -381,14 +382,14 @@ impl Status {
     /// call.
     ///
     /// RI is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on some USB serial adapters.
+    /// but may be available on some USB to serial adapters.
     pub fn ri(&self) -> bool {
         self.tiocm & TIOCM_RNG > 0
     }
 }
 
-/// Provides access to the Raspberry Pi's UART peripherals and any USB serial
-/// adapters.
+/// Provides access to the Raspberry Pi's UART peripherals and any USB to
+/// serial adapters.
 #[derive(Debug)]
 pub struct Uart {
     device: File,
@@ -410,11 +411,11 @@ impl Uart {
         Self::with_path("/dev/serial0", baud_rate, parity, data_bits, stop_bits)
     }
 
-    /// Constructs a new `Uart` connected to the serial device interface
+    /// Constructs a new `Uart` connected to the serial character device
     /// specified by `path`.
     ///
     /// `with_path` can be used to connect to either a UART peripheral or a USB
-    /// serial adapter.
+    /// to serial adapter.
     ///
     /// When a new `Uart` is constructed, the specified device is configured
     /// for non-canonical mode which processes input per character, ignores any
@@ -583,7 +584,7 @@ impl Uart {
     /// Sets DTR to active (`true`) or inactive (`false`).
     ///
     /// DTR is not supported by the Raspberry Pi's UART peripherals,
-    /// but may be available on some USB serial adapters.
+    /// but may be available on some USB to serial adapters.
     pub fn set_dtr(&mut self, dtr: bool) -> Result<()> {
         termios::set_dtr(self.fd, dtr)
     }

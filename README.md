@@ -5,7 +5,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
-RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB serial adapters. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
+RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
 
 RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
@@ -158,11 +158,11 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 
 ### [UART](https://docs.golemparts.com/rppal/dev/rppal/uart)
 
-**_(Coming in 0.11.2)_** RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011) and `ttyS0` (mini UART) character devices. USB serial adapters are controlled using the `ttyUSBx` and `ttyACMx` character devices.
+**_(Coming in 0.11.2)_** RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011) and `ttyS0` (mini UART) character devices. USB to serial adapters are controlled using the `ttyUSBx` and `ttyACMx` character devices.
 
 #### Features
 
-* Support for UART peripherals (PL011, mini UART) and USB serial adapters
+* Support for UART peripherals (PL011, mini UART) and USB to serial adapters
 * None/Even/Odd/Mark/Space parity, 5-8 data bits, 1-2 stop bits
 * Transfer rates up to 4 Mbit/s (device-dependent)
 * XON/XOFF software flow control
