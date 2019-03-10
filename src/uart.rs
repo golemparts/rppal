@@ -93,9 +93,9 @@
 //! based on the order in which the devices are discovered by the kernel.
 //!
 //! When you have multiple USB to serial adapters connected at the same time,
-//! you'll need a method to uniquely identify a specific device, for instance
-//! by searching for the relevant symlink in the `/dev/serial/by-id` directory,
-//! or by adding your own `udev` rules.
+//! you can uniquely identify a specific device by searching for the relevant
+//! symlink in the `/dev/serial/by-id` directory, or by adding your own
+//! `udev` rules.
 //!
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
 //! control for USB to serial adapters depends on the USB interface IC on the
@@ -388,16 +388,28 @@ impl Status {
     }
 }
 
-/// Provides access to the Raspberry Pi's UART peripherals and any USB to
-/// serial adapters.
 #[derive(Debug)]
-pub struct Uart {
+struct UartInner {
     device: File,
     fd: RawFd,
     rtscts_mode: Option<(Mode, Mode)>,
     rtscts_pins: Option<(IoPin, IoPin)>,
     blocking_read: bool,
     blocking_write: bool,
+    baud_rate: u32,
+    parity: Parity,
+    parity_check: ParityCheck,
+    data_bits: u8,
+    stop_bits: u8,
+    software_flow_control: bool,
+    hardware_flow_control: bool,
+}
+
+/// Provides access to the Raspberry Pi's UART peripherals and any USB to
+/// serial adapters.
+#[derive(Debug)]
+pub struct Uart {
+    inner: UartInner,
 }
 
 impl Uart {
@@ -419,9 +431,9 @@ impl Uart {
     ///
     /// When a new `Uart` is constructed, the specified device is configured
     /// for non-canonical mode which processes input per character, ignores any
-    /// special terminal input or output characters and disables local echo. The
-    /// DCD line is ignored, all flow control is disabled, and the input and
-    /// output queues are flushed.
+    /// special terminal input or output characters and disables local echo. DCD
+    /// is ignored, all flow control is disabled, and the input and output queues
+    /// are flushed.
     pub fn with_path<P: AsRef<Path>>(
         path: P,
         baud_rate: u32,
@@ -483,18 +495,27 @@ impl Uart {
         termios::flush(fd, Queue::Both)?;
 
         Ok(Uart {
-            device,
-            fd,
-            rtscts_mode,
-            rtscts_pins: None,
-            blocking_read: false,
-            blocking_write: false,
+            inner: UartInner {
+                device,
+                fd,
+                rtscts_mode,
+                rtscts_pins: None,
+                blocking_read: false,
+                blocking_write: false,
+                baud_rate,
+                parity,
+                parity_check: ParityCheck::None,
+                data_bits,
+                stop_bits,
+                software_flow_control: false,
+                hardware_flow_control: false,
+            },
         })
     }
 
     /// Returns the line speed in baud (Bd).
-    pub fn baud_rate(&self) -> Result<u32> {
-        termios::line_speed(self.fd)
+    pub fn baud_rate(&self) -> u32 {
+        self.inner.baud_rate
     }
 
     /// Sets the line speed in baud (Bd).
@@ -511,12 +532,16 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_baud_rate(&mut self, baud_rate: u32) -> Result<()> {
-        termios::set_line_speed(self.fd, baud_rate)
+        termios::set_line_speed(self.inner.fd, baud_rate)?;
+
+        self.inner.baud_rate = baud_rate;
+
+        Ok(())
     }
 
     /// Returns the parity bit mode.
-    pub fn parity(&self) -> Result<Parity> {
-        termios::parity(self.fd)
+    pub fn parity(&self) -> Parity {
+        self.inner.parity
     }
 
     /// Sets the parity bit mode.
@@ -525,12 +550,16 @@ impl Uart {
     ///
     /// Support for some modes may be device-dependent.
     pub fn set_parity(&mut self, parity: Parity) -> Result<()> {
-        termios::set_parity(self.fd, parity)
+        termios::set_parity(self.inner.fd, parity)?;
+
+        self.inner.parity = parity;
+
+        Ok(())
     }
 
     /// Returns the parity check mode for incoming data.
-    pub fn parity_check(&self) -> Result<ParityCheck> {
-        termios::parity_check(self.fd)
+    pub fn parity_check(&self) -> ParityCheck {
+        self.inner.parity_check
     }
 
     /// Configures parity checking for incoming data.
@@ -543,12 +572,16 @@ impl Uart {
     ///
     /// [`None`]: enum.ParityCheck.html#variant.None
     pub fn set_parity_check(&mut self, parity_check: ParityCheck) -> Result<()> {
-        termios::set_parity_check(self.fd, parity_check)
+        termios::set_parity_check(self.inner.fd, parity_check)?;
+
+        self.inner.parity_check = parity_check;
+
+        Ok(())
     }
 
     /// Returns the number of data bits.
-    pub fn data_bits(&self) -> Result<u8> {
-        termios::data_bits(self.fd)
+    pub fn data_bits(&self) -> u8 {
+        self.inner.data_bits
     }
 
     /// Sets the number of data bits.
@@ -557,12 +590,16 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_data_bits(&mut self, data_bits: u8) -> Result<()> {
-        termios::set_data_bits(self.fd, data_bits)
+        termios::set_data_bits(self.inner.fd, data_bits)?;
+
+        self.inner.data_bits = data_bits;
+
+        Ok(())
     }
 
     /// Returns the number of stop bits.
-    pub fn stop_bits(&self) -> Result<u8> {
-        termios::stop_bits(self.fd)
+    pub fn stop_bits(&self) -> u8 {
+        self.inner.stop_bits
     }
 
     /// Sets the number of stop bits.
@@ -571,12 +608,16 @@ impl Uart {
     ///
     /// Support for some values may be device-dependent.
     pub fn set_stop_bits(&mut self, stop_bits: u8) -> Result<()> {
-        termios::set_stop_bits(self.fd, stop_bits)
+        termios::set_stop_bits(self.inner.fd, stop_bits)?;
+
+        self.inner.stop_bits = stop_bits;
+
+        Ok(())
     }
 
     /// Returns the status of the control signals.
     pub fn status(&self) -> Result<Status> {
-        let tiocm = termios::status(self.fd)?;
+        let tiocm = termios::status(self.inner.fd)?;
 
         Ok(Status { tiocm })
     }
@@ -586,17 +627,17 @@ impl Uart {
     /// DTR is not supported by the Raspberry Pi's UART peripherals,
     /// but may be available on some USB to serial adapters.
     pub fn set_dtr(&mut self, dtr: bool) -> Result<()> {
-        termios::set_dtr(self.fd, dtr)
+        termios::set_dtr(self.inner.fd, dtr)
     }
 
     /// Sets RTS to active (`true`) or inactive (`false`).
     pub fn set_rts(&mut self, rts: bool) -> Result<()> {
-        termios::set_rts(self.fd, rts)
+        termios::set_rts(self.inner.fd, rts)
     }
 
     /// Returns `true` if XON/XOFF software flow control is enabled.
-    pub fn software_flow_control(&self) -> Result<bool> {
-        Ok(termios::software_flow_control(self.fd)?.0)
+    pub fn software_flow_control(&self) -> bool {
+        self.inner.software_flow_control
     }
 
     /// Enables or disables XON/XOFF software flow control.
@@ -623,12 +664,20 @@ impl Uart {
     /// [`read`]: #method.read
     /// [`write`]: #method.write
     pub fn set_software_flow_control(&mut self, software_flow_control: bool) -> Result<()> {
-        termios::set_software_flow_control(self.fd, software_flow_control, software_flow_control)
+        termios::set_software_flow_control(
+            self.inner.fd,
+            software_flow_control,
+            software_flow_control,
+        )?;
+
+        self.inner.software_flow_control = software_flow_control;
+
+        Ok(())
     }
 
     /// Returns `true` if RTS/CTS hardware flow control is enabled.
-    pub fn hardware_flow_control(&self) -> Result<bool> {
-        termios::hardware_flow_control(self.fd)
+    pub fn hardware_flow_control(&self) -> bool {
+        self.inner.hardware_flow_control
     }
 
     /// Enables or disables RTS/CTS hardware flow control.
@@ -660,10 +709,10 @@ impl Uart {
     /// [`OutputPin`]: ../gpio/struct.OutputPin.html
     /// [`InputPin`]: ../gpio/struct.InputPin.html
     pub fn set_hardware_flow_control(&mut self, hardware_flow_control: bool) -> Result<()> {
-        if hardware_flow_control && self.rtscts_pins.is_none() {
+        if hardware_flow_control && self.inner.rtscts_pins.is_none() {
             // Configure and store RTS/CTS GPIO pins for UART0/UART1, so their
             // mode is automatically reset when Uart goes out of scope.
-            if let Some((rts_mode, cts_mode)) = self.rtscts_mode {
+            if let Some((rts_mode, cts_mode)) = self.inner.rtscts_mode {
                 let gpio = Gpio::new()?;
 
                 let (gpio_rts, gpio_cts) = if DeviceInfo::new()?.model() == Model::RaspberryPiBRev2
@@ -678,13 +727,17 @@ impl Uart {
                 let pin_rts = gpio.get(gpio_rts)?.into_io(rts_mode);
                 let pin_cts = gpio.get(gpio_cts)?.into_io(cts_mode);
 
-                self.rtscts_pins = Some((pin_rts, pin_cts));
+                self.inner.rtscts_pins = Some((pin_rts, pin_cts));
             }
         } else if !hardware_flow_control {
-            self.rtscts_pins = None;
+            self.inner.rtscts_pins = None;
         }
 
-        termios::set_hardware_flow_control(self.fd, hardware_flow_control)
+        termios::set_hardware_flow_control(self.inner.fd, hardware_flow_control)?;
+
+        self.inner.hardware_flow_control = hardware_flow_control;
+
+        Ok(())
     }
 
     /// Requests the external device to pause its transmission using flow control.
@@ -695,12 +748,12 @@ impl Uart {
     /// If hardware flow control is enabled, `send_stop` sets RTS to its
     /// inactive state.
     pub fn send_stop(&self) -> Result<()> {
-        if self.software_flow_control()? {
-            termios::send_stop(self.fd)?;
+        if self.inner.software_flow_control {
+            termios::send_stop(self.inner.fd)?;
         }
 
-        if self.hardware_flow_control()? {
-            termios::set_rts(self.fd, false)?;
+        if self.inner.hardware_flow_control {
+            termios::set_rts(self.inner.fd, false)?;
         }
 
         Ok(())
@@ -714,12 +767,12 @@ impl Uart {
     /// If hardware flow control is enabled, `send_start` sets RTS to its
     /// active state.
     pub fn send_start(&self) -> Result<()> {
-        if self.software_flow_control()? {
-            termios::send_start(self.fd)?;
+        if self.inner.software_flow_control {
+            termios::send_start(self.inner.fd)?;
         }
 
-        if self.hardware_flow_control()? {
-            termios::set_rts(self.fd, true)?;
+        if self.inner.hardware_flow_control {
+            termios::set_rts(self.inner.fd, true)?;
         }
 
         Ok(())
@@ -729,14 +782,14 @@ impl Uart {
     ///
     /// [`read`]: #method.write
     pub fn is_read_blocking(&self) -> bool {
-        self.blocking_read
+        self.inner.blocking_read
     }
 
     /// Returns `true` if [`write`] is configured to block when needed.
     ///
     /// [`write`]: #method.write
     pub fn is_write_blocking(&self) -> bool {
-        self.blocking_write
+        self.inner.blocking_write
     }
 
     /// Sets the blocking mode for subsequent calls to [`read`].
@@ -772,21 +825,21 @@ impl Uart {
     ///
     /// [`read`]: #method.read
     pub fn set_read_mode(&mut self, min_length: u8, timeout: Duration) -> Result<()> {
-        termios::set_read_mode(self.fd, min_length, timeout)?;
+        termios::set_read_mode(self.inner.fd, min_length, timeout)?;
 
-        self.blocking_read = min_length > 0 || timeout.as_millis() > 0;
+        self.inner.blocking_read = min_length > 0 || timeout.as_millis() > 0;
 
         // If both read() and write() are non-blocking, we can safely set
         // O_NONBLOCK once instead of toggling it for every write. We can't
         // leave it set when read() should block, because it ignores the
         // VMIN and VTIME settings.
-        if self.blocking_read || self.blocking_write {
+        if self.inner.blocking_read || self.inner.blocking_write {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, 0);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, 0);
             }
         } else {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, libc::O_NONBLOCK);
             }
         }
 
@@ -810,19 +863,19 @@ impl Uart {
     ///
     /// [`write`]: #method.write
     pub fn set_write_mode(&mut self, blocking: bool) -> Result<()> {
-        self.blocking_write = blocking;
+        self.inner.blocking_write = blocking;
 
         // If both read() and write() are non-blocking, we can safely set
         // O_NONBLOCK once instead of toggling it for every write. We can't
         // leave it set when read() should block, because it ignores the
         // VMIN and VTIME settings.
-        if self.blocking_read || self.blocking_write {
+        if self.inner.blocking_read || self.inner.blocking_write {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, 0);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, 0);
             }
         } else {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, libc::O_NONBLOCK);
             }
         }
 
@@ -831,12 +884,12 @@ impl Uart {
 
     /// Returns the number of bytes waiting in the input queue.
     pub fn input_len(&self) -> Result<usize> {
-        termios::input_len(self.fd)
+        termios::input_len(self.inner.fd)
     }
 
     /// Returns the number of bytes waiting in the output queue.
     pub fn output_len(&self) -> Result<usize> {
-        termios::output_len(self.fd)
+        termios::output_len(self.inner.fd)
     }
 
     /// Receives incoming data from the external device and stores it in
@@ -850,7 +903,7 @@ impl Uart {
     ///
     /// [`set_read_mode`]: #method.set_read_mode
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        self.device.read(buffer).or_else(|e| {
+        self.inner.device.read(buffer).or_else(|e| {
             if e.kind() == io::ErrorKind::WouldBlock {
                 Ok(0)
             } else {
@@ -872,13 +925,13 @@ impl Uart {
         // We only need to toggle O_NONBLOCK when read() is configured as
         // blocking. If read() is non-blocking, either with_path() or
         // set_read_mode() will have already enabled O_NONBLOCK.
-        if self.blocking_read && !self.blocking_write {
+        if self.inner.blocking_read && !self.inner.blocking_write {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, libc::O_NONBLOCK);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, libc::O_NONBLOCK);
             }
         }
 
-        let result = self.device.write(buffer).or_else(|e| {
+        let result = self.inner.device.write(buffer).or_else(|e| {
             if e.kind() == io::ErrorKind::WouldBlock {
                 Ok(0)
             } else {
@@ -886,9 +939,9 @@ impl Uart {
             }
         });
 
-        if self.blocking_read && !self.blocking_write {
+        if self.inner.blocking_read && !self.inner.blocking_write {
             unsafe {
-                libc::fcntl(self.fd, libc::F_SETFL, 0);
+                libc::fcntl(self.inner.fd, libc::F_SETFL, 0);
             }
         }
 
@@ -897,11 +950,11 @@ impl Uart {
 
     /// Blocks until all data in the output queue has been transmitted.
     pub fn drain(&self) -> Result<()> {
-        termios::drain(self.fd)
+        termios::drain(self.inner.fd)
     }
 
     /// Discards all data in the input and/or output queue.
     pub fn flush(&self, queue_type: Queue) -> Result<()> {
-        termios::flush(self.fd, queue_type)
+        termios::flush(self.inner.fd, queue_type)
     }
 }
