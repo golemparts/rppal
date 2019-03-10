@@ -44,7 +44,7 @@ const BUSYWAIT_REMAINDER: i64 = 100;
 
 static mut MSG_WAITING: AtomicBool = AtomicBool::new(false);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 enum Msg {
     Reconfigure(Duration, Duration),
     Stop,

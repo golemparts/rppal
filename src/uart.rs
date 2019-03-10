@@ -88,8 +88,8 @@
 //!
 //! In addition to controlling the hardware UART peripherals, [`Uart`] can
 //! also be used for USB to serial adapters. Depending on the type of
-//! device/USB controller, these can be accessed either through `/dev/ttyUSBx`
-//! or `/dev/ttyACMx`, where `x` is an index starting at `0`. The numbering is
+//! device, these can be accessed either through `/dev/ttyUSBx` or
+//! `/dev/ttyACMx`, where `x` is an index starting at `0`. The numbering is
 //! based on the order in which the devices are discovered by the kernel.
 //!
 //! When you have multiple USB to serial adapters connected at the same time,
@@ -98,8 +98,8 @@
 //! or by adding your own `udev` rules.
 //!
 //! Support for automatic software (XON/XOFF) and hardware (RTS/CTS) flow
-//! control for USB to serial adapters depends on the USB controller on the
-//! device, and the relevant Linux driver. Some controllers use an older,
+//! control for USB to serial adapters depends on the USB interface IC on the
+//! device, and the relevant Linux driver. Some ICs use an older,
 //! incompatible RTS/CTS implementation, sometimes referred to as legacy or
 //! simplex mode, where RTS is used to indicate data is about to be
 //! transmitted, rather than to request the external device to resume its
@@ -234,7 +234,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// `None` omits the parity bit. `Even` and `Odd` count the total number of
 /// 1-bits in the data bits. `Mark` and `Space` always set the parity
 /// bit to `1` or `0` respectively.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Parity {
     /// No parity bit.
     None,
@@ -263,7 +263,7 @@ impl fmt::Display for Parity {
 /// Parity check modes.
 ///
 /// The parity check mode determines how parity errors are handled.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ParityCheck {
     /// Ignores parity errors.
     None,
@@ -290,7 +290,7 @@ impl fmt::Display for ParityCheck {
 }
 
 /// Queue types.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Queue {
     /// Input queue.
     Input,

@@ -226,7 +226,7 @@ impl From<system::Error> for Error {
 pub type Result<T> = result::Result<T, Error>;
 
 /// Pin modes.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(u8)]
 pub enum Mode {
     Input = 0b000,
@@ -255,7 +255,7 @@ impl fmt::Display for Mode {
 }
 
 /// Pin logic levels.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(u8)]
 pub enum Level {
     Low = 0,
@@ -283,7 +283,7 @@ impl Not for Level {
 }
 
 /// Built-in pull-up/pull-down resistor states.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum PullUpDown {
     Off = 0b00,
     PullDown = 0b01,
@@ -301,7 +301,7 @@ impl fmt::Display for PullUpDown {
 }
 
 /// Interrupt trigger conditions.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Trigger {
     Disabled = 0,
     RisingEdge = 1,

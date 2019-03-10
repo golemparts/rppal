@@ -121,7 +121,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// found [here].
 ///
 /// [here]: index.html
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
@@ -137,7 +137,7 @@ impl fmt::Display for Channel {
 }
 
 /// Output polarities.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Polarity {
     Normal,
     Inverse,
@@ -163,6 +163,7 @@ impl fmt::Display for Polarity {
 ///
 /// [here]: index.html
 /// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
+#[derive(Debug)]
 pub struct Pwm {
     channel: Channel,
     reset_on_drop: bool,

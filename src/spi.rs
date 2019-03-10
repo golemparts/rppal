@@ -215,7 +215,7 @@ pub fn reverse_bits(buffer: &mut [u8]) {
 /// your `/boot/config.txt` configuration. More information can be found [here].
 ///
 /// [here]: index.html
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Bus {
     Spi0 = 0,
     Spi1 = 1,
@@ -246,7 +246,7 @@ impl fmt::Display for Bus {
 /// [here].
 ///
 /// [here]: index.html
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SlaveSelect {
     Ss0 = 0,
     Ss1 = 1,
@@ -264,7 +264,7 @@ impl fmt::Display for SlaveSelect {
 }
 
 /// Slave Select polarities.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Polarity {
     ActiveLow = 0,
     ActiveHigh = 1,
@@ -298,7 +298,7 @@ impl fmt::Display for Polarity {
 /// [`Spi1`]: enum.Bus.html
 /// [`Spi2`]: enum.Bus.html
 /// [Wikipedia]: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Mode {
     Mode0 = 0,
     Mode1 = 1,
@@ -333,7 +333,7 @@ impl fmt::Display for Mode {
 /// reading any incoming data.
 ///
 /// [`reverse_bits`]: fn.reverse_bits.html
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum BitOrder {
     MsbFirst = 0,
     LsbFirst = 1,

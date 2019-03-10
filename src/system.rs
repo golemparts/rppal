@@ -72,7 +72,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// `Model` might be extended with additional variants in a minor or
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
@@ -122,7 +122,7 @@ impl fmt::Display for Model {
 /// `SoC` might be extended with additional variants in a minor or
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum SoC {
     Bcm2835,
     Bcm2836,
@@ -296,7 +296,7 @@ fn parse_base_model() -> Result<Model> {
 }
 
 /// Retrieves Raspberry Pi device information.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct DeviceInfo {
     model: Model,
     soc: SoC,

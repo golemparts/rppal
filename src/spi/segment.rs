@@ -34,7 +34,7 @@ use std::marker;
 /// [`with_read`]: #method.with_read
 /// [`with_write`]: #method.with_write
 /// [`new`]: #method.new
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 #[repr(C)]
 pub struct Segment<'a, 'b> {
     // Pointer to write buffer, or 0.
