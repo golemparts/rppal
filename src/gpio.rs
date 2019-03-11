@@ -147,6 +147,8 @@ use lazy_static::lazy_static;
 mod epoll;
 #[cfg(feature = "hal")]
 mod hal;
+#[cfg(feature = "hal-unproven")]
+mod hal_unproven;
 mod interrupt;
 mod ioctl;
 mod mem;
