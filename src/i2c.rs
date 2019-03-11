@@ -99,7 +99,7 @@ use libc::c_ulong;
 use crate::system;
 use crate::system::{DeviceInfo, Model};
 
-#[cfg(feature = "hal")]
+#[cfg(any(feature = "hal", feature = "hal-unproven"))]
 mod hal;
 mod ioctl;
 

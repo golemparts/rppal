@@ -145,7 +145,7 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 
 mod epoll;
-#[cfg(feature = "hal")]
+#[cfg(any(feature = "hal", feature = "hal-unproven"))]
 mod hal;
 #[cfg(feature = "hal-unproven")]
 mod hal_unproven;

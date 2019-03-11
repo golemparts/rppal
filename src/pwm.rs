@@ -85,7 +85,7 @@ use std::io;
 use std::result;
 use std::time::Duration;
 
-#[cfg(feature = "hal")]
+#[cfg(any(feature = "hal", feature = "hal-unproven"))]
 mod hal;
 mod sysfs;
 
