@@ -81,3 +81,15 @@ impl digital::StatefulOutputPin for OutputPin {
         OutputPin::is_set_low(self)
     }
 }
+
+impl digital::ToggleableOutputPin for IoPin {
+    fn toggle(&mut self) {
+        IoPin::toggle(self);
+    }
+}
+
+impl digital::ToggleableOutputPin for OutputPin {
+    fn toggle(&mut self) {
+        OutputPin::toggle(self);
+    }
+}
