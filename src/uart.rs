@@ -167,7 +167,7 @@ use libc::{TIOCM_CAR, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RNG, TIOCM_RTS};
 use crate::gpio::{self, Gpio, IoPin, Mode};
 use crate::system::{self, DeviceInfo, Model};
 
-#[cfg(any(feature = "hal", feature = "hal-unproven"))]
+#[cfg(feature = "hal")]
 mod hal;
 mod termios;
 

@@ -110,7 +110,7 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-#[cfg(any(feature = "hal", feature = "hal-unproven"))]
+#[cfg(feature = "hal")]
 mod hal;
 mod ioctl;
 mod segment;
@@ -364,7 +364,7 @@ impl fmt::Display for BitOrder {
 pub struct Spi {
     spidev: File,
     // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
-    #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+    #[cfg(feature = "hal")]
     last_read: u8,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
@@ -409,7 +409,7 @@ impl Spi {
 
         let spi = Spi {
             spidev,
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             last_read: 0,
             not_sync: PhantomData,
         };

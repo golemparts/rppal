@@ -134,7 +134,7 @@ macro_rules! impl_output {
             }
 
             // Store frequency/duty cycle for the embedded-hal PwmPin implementation.
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             {
                 let period_s =
                     period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0);
@@ -570,10 +570,10 @@ pub struct OutputPin {
     pud_mode: PullUpDown,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
-    #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+    #[cfg(feature = "hal")]
     pub(crate) frequency: f64,
     // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
-    #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+    #[cfg(feature = "hal")]
     pub(crate) duty_cycle: f64,
 }
 
@@ -594,9 +594,9 @@ impl OutputPin {
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
             soft_pwm: None,
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             frequency: 0.0,
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             duty_cycle: 0.0,
         }
     }
@@ -654,10 +654,10 @@ pub struct IoPin {
     pud_mode: PullUpDown,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
-    #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+    #[cfg(feature = "hal")]
     pub(crate) frequency: f64,
     // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
-    #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+    #[cfg(feature = "hal")]
     pub(crate) duty_cycle: f64,
 }
 
@@ -679,9 +679,9 @@ impl IoPin {
             reset_on_drop: true,
             pud_mode: PullUpDown::Off,
             soft_pwm: None,
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             frequency: 0.0,
-            #[cfg(any(feature = "hal", feature = "hal-unproven"))]
+            #[cfg(feature = "hal")]
             duty_cycle: 0.0,
         }
     }
