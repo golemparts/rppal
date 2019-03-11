@@ -106,7 +106,6 @@ use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Read, Write};
-use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
@@ -366,10 +365,6 @@ pub struct Spi {
     // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
     #[cfg(feature = "hal")]
     last_read: u8,
-    // The not_sync field is a workaround to force !Sync. Spi isn't safe for
-    // Sync because of ioctl() and the underlying drivers. This avoids needing
-    // #![feature(optin_builtin_traits)] to manually add impl !Sync for Spi.
-    not_sync: PhantomData<*const ()>,
 }
 
 impl Spi {
@@ -407,11 +402,10 @@ impl Spi {
             }
         }
 
-        let spi = Spi {
+        let mut spi = Spi {
             spidev,
             #[cfg(feature = "hal")]
             last_read: 0,
-            not_sync: PhantomData,
         };
 
         // Set defaults and user-specified settings
@@ -445,7 +439,7 @@ impl Spi {
     /// [`MsbFirst`]: enum.BitOrder.html
     /// [`LsbFirst`]: enum.BitOrder.html
     /// [`reverse_bits`]: fn.reverse_bits.html
-    pub fn set_bit_order(&self, bit_order: BitOrder) -> Result<()> {
+    pub fn set_bit_order(&mut self, bit_order: BitOrder) -> Result<()> {
         match ioctl::set_lsb_first(self.spidev.as_raw_fd(), bit_order as u8) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
@@ -468,7 +462,7 @@ impl Spi {
     /// The Raspberry Pi currently only supports 8 bit words.
     ///
     /// By default, `bits_per_word` is set to 8.
-    pub fn set_bits_per_word(&self, bits_per_word: u8) -> Result<()> {
+    pub fn set_bits_per_word(&mut self, bits_per_word: u8) -> Result<()> {
         match ioctl::set_bits_per_word(self.spidev.as_raw_fd(), bits_per_word) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
@@ -489,7 +483,7 @@ impl Spi {
     /// Sets the clock frequency in hertz (Hz).
     ///
     /// The SPI driver will automatically round down to the closest valid frequency.
-    pub fn set_clock_speed(&self, clock_speed: u32) -> Result<()> {
+    pub fn set_clock_speed(&mut self, clock_speed: u32) -> Result<()> {
         match ioctl::set_clock_speed(self.spidev.as_raw_fd(), clock_speed) {
             Ok(_) => Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::InvalidInput => {
@@ -516,7 +510,7 @@ impl Spi {
     ///
     /// The SPI mode indicates the serial clock polarity and phase. Some modes
     /// may not be available depending on the SPI bus that's used.
-    pub fn set_mode(&self, mode: Mode) -> Result<()> {
+    pub fn set_mode(&mut self, mode: Mode) -> Result<()> {
         let mut new_mode: u8 = 0;
         ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
 
@@ -547,7 +541,7 @@ impl Spi {
     /// Sets Slave Select polarity.
     ///
     /// By default, the Slave Select polarity is set to `ActiveLow`.
-    pub fn set_ss_polarity(&self, polarity: Polarity) -> Result<()> {
+    pub fn set_ss_polarity(&mut self, polarity: Polarity) -> Result<()> {
         let mut new_mode: u8 = 0;
         ioctl::mode(self.spidev.as_raw_fd(), &mut new_mode)?;
 
@@ -609,7 +603,7 @@ impl Spi {
     /// when the transfer completes.
     ///
     /// Returns how many bytes were transferred.
-    pub fn transfer(&self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
+    pub fn transfer(&mut self, read_buffer: &mut [u8], write_buffer: &[u8]) -> Result<usize> {
         let segment = Segment::new(read_buffer, write_buffer);
 
         ioctl::transfer(self.spidev.as_raw_fd(), &[segment])?;
@@ -629,16 +623,12 @@ impl Spi {
     ///
     /// [`Segment`]: struct.Segment.html
     /// [`Segment::set_ss_change`]: struct.Segment.html#method.set_ss_change
-    pub fn transfer_segments(&self, segments: &[Segment<'_, '_>]) -> Result<()> {
+    pub fn transfer_segments(&mut self, segments: &[Segment<'_, '_>]) -> Result<()> {
         ioctl::transfer(self.spidev.as_raw_fd(), segments)?;
 
         Ok(())
     }
 }
-
-// Send is safe for Spi, but we're marked !Send because of the dummy pointer that's
-// needed to force !Sync.
-unsafe impl Send for Spi {}
 
 impl fmt::Debug for Spi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
