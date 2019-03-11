@@ -6,8 +6,8 @@
 * **Gpio**: Implement `Sync` trait for `IoPin` and `OutputPin`.
 * **Gpio**: Implement `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` for `OutputPin` and `IoPin`.
-* **Pwm**: Implement `std::fmt::Display` trait for `Channel` and `Polarity`.
-* **Spi**: Implement `std::fmt::Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
+* **Pwm**: Implement `Display` trait for `Channel` and `Polarity`.
+* **Spi**: Implement `Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
 * **Uart**: Add support for the PL011 and mini UART peripherals, USB to serial adapters, XON/XOFF software flow control and RTS/CTS hardware flow control.
 * **Uart**: Implement `embedded-hal` traits `serial::{Read, Write}` and `blocking::serial::Write` for `Uart`.
 
