@@ -2,7 +2,10 @@
 
 ## 0.11.2 (TBD)
 
+* Add optional `hal-unproven` feature flag (disabled by default), which includes all `unproven` `embedded-hal` trait implementations for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `Sync` trait for `IoPin` and `OutputPin`.
+* **Gpio**: Implement `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
+* **Gpio**: Implement `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` for `OutputPin` and `IoPin`.
 * **Pwm**: Implement `std::fmt::Display` trait for `Channel` and `Polarity`.
 * **Spi**: Implement `std::fmt::Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
 * **Uart**: Add support for the PL011 and mini UART peripherals, USB to serial adapters, XON/XOFF software flow control and RTS/CTS hardware flow control.
@@ -14,7 +17,7 @@
 
 ## 0.11.0 (February 20, 2019)
 
-* Add optional `hal` feature (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
+* Add optional `hal` feature flag (disabled by default), which includes `embedded-hal` trait implementations for all supported peripherals.
 * Add `Gpio` example demonstrating software-based PWM.
 * **DeviceInfo**: (Breaking change) Add support for Raspberry Pi Compute Module 3+.
 * **DeviceInfo**: (Breaking change) Add hidden `Model::__Nonexhaustive` and `SoC::__Nonexhaustive` variants, indicating `Model` and `SoC` shouldn't be exhaustively matched. After this change, adding new variants to these enums when a new Raspberry Pi model is released won't be considered a breaking change anymore. This is a hack that can still be circumvented, but anyone that does so should be aware of the repercussions. This will be replaced once `#[non_exhaustive]` stabilizes.
