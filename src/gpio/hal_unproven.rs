@@ -61,3 +61,23 @@ impl digital::InputPin for OutputPin {
         OutputPin::is_set_low(self)
     }
 }
+
+impl digital::StatefulOutputPin for IoPin {
+    fn is_set_high(&self) -> bool {
+        IoPin::is_high(self)
+    }
+
+    fn is_set_low(&self) -> bool {
+        IoPin::is_low(self)
+    }
+}
+
+impl digital::StatefulOutputPin for OutputPin {
+    fn is_set_high(&self) -> bool {
+        OutputPin::is_set_high(self)
+    }
+
+    fn is_set_low(&self) -> bool {
+        OutputPin::is_set_low(self)
+    }
+}
