@@ -7,6 +7,7 @@
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` and `Pwm` for `OutputPin` and `IoPin`.
 * **Pwm**: Implement `Display` trait for `Channel` and `Polarity`.
+* **Pwm**: Implement `unproven` `embedded-hal` trait `Pwm` for `Pwm`.
 * **Spi**: Implement `Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
 * **Uart**: Add support for the PL011 and mini UART peripherals, USB to serial adapters, XON/XOFF software flow control and RTS/CTS hardware flow control.
 * **Uart**: Implement `embedded-hal` traits `serial::{Read, Write}` and `blocking::serial::Write` for `Uart`.

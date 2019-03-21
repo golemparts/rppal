@@ -87,6 +87,8 @@ use std::time::Duration;
 
 #[cfg(feature = "hal")]
 mod hal;
+#[cfg(feature = "hal-unproven")]
+mod hal_unproven;
 mod sysfs;
 
 /// Errors that can occur when accessing the PWM peripheral.
