@@ -311,7 +311,6 @@ impl fmt::Display for Queue {
 }
 
 /// Control signal status.
-#[derive(Debug)]
 pub struct Status {
     tiocm: c_int,
 }
@@ -385,6 +384,19 @@ impl Status {
     /// but may be available on some USB to serial adapters.
     pub fn ri(&self) -> bool {
         self.tiocm & TIOCM_RNG > 0
+    }
+}
+
+impl fmt::Debug for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Status")
+            .field("rts", &self.rts())
+            .field("cts", &self.cts())
+            .field("dtr", &self.dtr())
+            .field("dsr", &self.dsr())
+            .field("dcd", &self.dcd())
+            .field("ri", &self.ri())
+            .finish()
     }
 }
 
