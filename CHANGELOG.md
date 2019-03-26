@@ -6,6 +6,7 @@
 * **Gpio**: Implement `Sync` trait for `IoPin` and `OutputPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` and `Pwm` for `OutputPin` and `IoPin`.
+* **Hal**: Implement `embedded-hal` traits `blocking::delay::{DelayMs, DelayUs}` for `Delay`.
 * **Pwm**: Implement `Display` trait for `Channel` and `Polarity`.
 * **Pwm**: Implement `unproven` `embedded-hal` trait `Pwm` for `Pwm`.
 * **Spi**: Implement `Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
