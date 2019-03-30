@@ -16,6 +16,11 @@ libc = "0.2.50"
 lazy_static = "1.3.0"
 nb = { version = "0.1.1", optional = true }
 embedded-hal = { version = "0.2.2", optional = true }
+bitrate = "0.1.1"
+
+[dependencies.void]
+default-features = false
+version = "1.0.2"
 
 [dev-dependencies]
 simple-signal = "1.1.1"

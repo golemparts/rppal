@@ -27,9 +27,12 @@
 //! flag is enabled.
 
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use bitrate::Hertz;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
+use embedded_hal::timer::CountDown;
+use void::Void;
 
 /// Implements the `embedded-hal` `DelayMs` and `DelayUs` traits.
 #[derive(Debug, Default)]
@@ -87,5 +90,62 @@ impl DelayUs<u32> for Delay {
 impl DelayUs<u64> for Delay {
     fn delay_us(&mut self, us: u64) {
         thread::sleep(Duration::from_micros(us));
+    }
+}
+
+/// Implements the `embedded-hal` `CountDown` trait.
+#[derive(Debug, Copy, Clone)]
+pub struct Timer {
+    now: Instant,
+    duration: Duration,
+}
+
+impl Timer {
+    /// Constructs a new `Timer`.
+    pub fn new() -> Self {
+        Self {
+            now: Instant::now(),
+            duration: Duration::from_micros(0),
+        }
+    }
+}
+
+pub struct MicroSeconds(u64);
+
+impl From<Hertz<u64>> for MicroSeconds {
+    fn from(item: Hertz<u64>) -> Self {
+        MicroSeconds(item.0 * 1_000_000)
+    }
+}
+
+impl MicroSeconds {
+    fn as_u64(&self) -> u64 {
+        let &MicroSeconds(t) = self;
+        t
+    }
+}
+
+impl CountDown for Timer {
+    type Time = MicroSeconds;
+
+    /// Start the timer with a `timeout`
+    fn start<T>(&mut self, timeout: T)
+    where
+        T: Into<MicroSeconds>,
+    {
+        self.duration = Duration::from_micros(timeout.into().as_u64());
+        self.now = Instant::now();
+    }
+
+    /// Return `Ok` if the timer has wrapped
+    /// Automatically clears the flag and restarts the time
+    fn wait(&mut self) -> nb::Result<(), Void> {
+        if self.now.elapsed() >= self.duration {
+            let duration = Duration::from_micros(1);
+            thread::sleep(duration);
+            Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
     }
 }
