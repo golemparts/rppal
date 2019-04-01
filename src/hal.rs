@@ -133,15 +133,14 @@ impl From<Second> for Microsecond {
 
 impl Microsecond {
     fn as_u64(&self) -> u64 {
-        let &Microsecond(t) = self;
-        t
+        self.0
     }
 }
 
 impl CountDown for Timer {
     type Time = Microsecond;
 
-    /// Start the timer with a `timeout`
+    /// Starts the timer with a `timeout`.
     fn start<T>(&mut self, timeout: T)
     where
         T: Into<Microsecond>,
@@ -150,8 +149,7 @@ impl CountDown for Timer {
         self.now = Instant::now();
     }
 
-    /// Return `Ok` if the timer has wrapped
-    /// Automatically clears the flag and restarts the time
+    /// Returns `Ok` if the timer has wrapped.
     fn wait(&mut self) -> nb::Result<(), Void> {
         if self.now.elapsed() >= self.duration {
             Ok(())
