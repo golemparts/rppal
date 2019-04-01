@@ -29,7 +29,6 @@
 use std::thread;
 use std::time::{Duration, Instant};
 
-use bitrate::Hertz;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::timer::CountDown;
 use void::Void;
@@ -113,12 +112,6 @@ impl Timer {
 pub struct Millisecond(pub u64);
 pub struct MicroSecond(pub u64);
 pub struct Second(pub u64);
-
-impl From<Hertz<u64>> for MicroSecond {
-    fn from(item: Hertz<u64>) -> Self {
-        MicroSecond(item.0 * 1_000_000)
-    }
-}
 
 impl From<Millisecond> for MicroSecond {
     fn from(item: Millisecond) -> Self {
