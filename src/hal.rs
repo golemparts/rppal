@@ -148,8 +148,6 @@ impl CountDown for Timer {
     /// Automatically clears the flag and restarts the time
     fn wait(&mut self) -> nb::Result<(), Void> {
         if self.now.elapsed() >= self.duration {
-            let duration = Duration::from_micros(1);
-            thread::sleep(duration);
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)
