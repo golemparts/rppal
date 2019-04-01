@@ -125,7 +125,7 @@ impl From<Second> for Microsecond {
     }
 }
 
-impl MicroSecond {
+impl Microsecond {
     fn as_u64(&self) -> u64 {
         let &Microsecond(t) = self;
         t
