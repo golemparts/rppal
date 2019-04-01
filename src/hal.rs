@@ -110,35 +110,35 @@ impl Timer {
 }
 
 pub struct Millisecond(pub u64);
-pub struct MicroSecond(pub u64);
+pub struct Microsecond(pub u64);
 pub struct Second(pub u64);
 
-impl From<Millisecond> for MicroSecond {
+impl From<Millisecond> for Microsecond {
     fn from(item: Millisecond) -> Self {
-        MicroSecond(item.0 * 1_000)
+        Microsecond(item.0 * 1_000)
     }
 }
 
-impl From<Second> for MicroSecond {
+impl From<Second> for Microsecond {
     fn from(item: Second) -> Self {
-        MicroSecond(item.0 * 1_000_000)
+        Microsecond(item.0 * 1_000_000)
     }
 }
 
 impl MicroSecond {
     fn as_u64(&self) -> u64 {
-        let &MicroSecond(t) = self;
+        let &Microsecond(t) = self;
         t
     }
 }
 
 impl CountDown for Timer {
-    type Time = MicroSecond;
+    type Time = Microsecond;
 
     /// Start the timer with a `timeout`
     fn start<T>(&mut self, timeout: T)
     where
-        T: Into<MicroSecond>,
+        T: Into<Microsecond>,
     {
         self.duration = Duration::from_micros(timeout.into().as_u64());
         self.now = Instant::now();
