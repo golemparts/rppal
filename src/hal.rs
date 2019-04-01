@@ -93,7 +93,7 @@ impl DelayUs<u64> for Delay {
 }
 
 /// Implements the `embedded-hal` `CountDown` trait.
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Timer {
     now: Instant,
     duration: Duration,
@@ -106,6 +106,12 @@ impl Timer {
             now: Instant::now(),
             duration: Duration::from_micros(0),
         }
+    }
+}
+
+impl Default for Timer {
+    fn default() -> Self {
+        Timer::new()
     }
 }
 
