@@ -93,7 +93,7 @@ impl DelayUs<u64> for Delay {
 }
 
 /// Implements the `embedded-hal` `CountDown` trait.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Timer {
     now: Instant,
     duration: Duration,
