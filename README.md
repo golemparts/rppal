@@ -1,6 +1,6 @@
 # RPPAL - Raspberry Pi Peripheral Access Library
 
-[![Build Status](https://travis-ci.org/golemparts/rppal.svg?branch=master)](https://travis-ci.org/golemparts/rppal)
+[![Build Status](https://travis-ci.com/golemparts/rppal.svg?branch=master)](https://travis-ci.com/golemparts/rppal)
 [![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
