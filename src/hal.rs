@@ -118,6 +118,17 @@ impl Default for Timer {
 pub struct Millisecond(pub u64);
 pub struct Microsecond(pub u64);
 pub struct Second(pub u64);
+pub struct Hertz(pub f64);
+
+impl From<Hertz> for Microsecond {
+    fn from(item: Hertz) -> Self {
+        if item.0 > 0.0 && item.0.is_finite() {
+            Microsecond(((1.0 / item.0) * 1_000_000.0) as u64)
+        } else {
+            Microsecond(0)
+        }
+    }
+}
 
 impl From<Millisecond> for Microsecond {
     fn from(item: Millisecond) -> Self {
