@@ -92,6 +92,18 @@ impl DelayUs<u64> for Delay {
     }
 }
 
+pub struct Hertz(pub f64);
+
+impl From<Hertz> for Duration {
+    fn from(item: Hertz) -> Self {
+        if item.0 > 0.0 && item.0.is_finite() {
+            Duration::from_micros(((1.0 / item.0) * 1_000_000.0) as u64)
+        } else {
+            Duration::default()
+        }
+    }
+}
+
 /// Implements the `embedded-hal` `CountDown` trait.
 #[derive(Debug, Copy, Clone)]
 pub struct Timer {
@@ -115,48 +127,15 @@ impl Default for Timer {
     }
 }
 
-pub struct Millisecond(pub u64);
-pub struct Microsecond(pub u64);
-pub struct Second(pub u64);
-pub struct Hertz(pub f64);
-
-impl From<Hertz> for Microsecond {
-    fn from(item: Hertz) -> Self {
-        if item.0 > 0.0 && item.0.is_finite() {
-            Microsecond(((1.0 / item.0) * 1_000_000.0) as u64)
-        } else {
-            Microsecond(0)
-        }
-    }
-}
-
-impl From<Millisecond> for Microsecond {
-    fn from(item: Millisecond) -> Self {
-        Microsecond(item.0 * 1_000)
-    }
-}
-
-impl From<Second> for Microsecond {
-    fn from(item: Second) -> Self {
-        Microsecond(item.0 * 1_000_000)
-    }
-}
-
-impl Microsecond {
-    fn as_u64(&self) -> u64 {
-        self.0
-    }
-}
-
 impl CountDown for Timer {
-    type Time = Microsecond;
+    type Time = Duration;
 
     /// Starts the timer with a `timeout`.
     fn start<T>(&mut self, timeout: T)
     where
-        T: Into<Microsecond>,
+        T: Into<Self::Time>,
     {
-        self.duration = Duration::from_micros(timeout.into().as_u64());
+        self.duration = timeout.into();
         self.now = Instant::now();
     }
 
