@@ -2,10 +2,11 @@
 
 ## 0.11.2 (TBD)
 
-* Add `hal-unproven` feature flag (disabled by default), which includes the relevant `unproven` `embedded-hal` trait implementations. Note that `embedded-hal` may introduce breaking changes for `unproven` traits in patch releases.
+* Add `hal-unproven` feature flag (disabled by default), which enables `unproven` `embedded-hal` trait implementations. Note that `embedded-hal`'s `unproven` traits don't follow semver rules. Patch releases may introduce breaking changes.
 * **Gpio**: Implement `Sync` trait for `IoPin` and `OutputPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` and `Pwm` for `OutputPin` and `IoPin`.
+* **Hal**: Add `hal` module, containing `embedded-hal` trait implementations that aren't tied to a specific peripheral.
 * **Hal**: Implement `embedded-hal` traits `blocking::delay::{DelayMs, DelayUs}` for `Delay`.
 * **Hal**: Implement `embedded-hal` trait `timer::CountDown` for `Timer` (contributed by @jacobrosenthal).
 * **Pwm**: Implement `Display` trait for `Channel` and `Polarity`.

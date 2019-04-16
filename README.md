@@ -5,7 +5,7 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.31.0-lightgray.svg)](https://blog.rust-lang.org/2018/12/06/Rust-1.31-and-rust-2018.html)
 
-RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations by enabling the optional `hal` feature.
+RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations.
 
 RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
@@ -43,14 +43,14 @@ Add a dependency for `rppal` to your `Cargo.toml`.
 
 ```toml
 [dependencies]
-rppal = "0.11.1"
+rppal = "0.11.2"
 ```
 
-If your project requires `embedded-hal` trait implementations, specify the `hal` feature flag in the dependency declaration.
+If your project requires `embedded-hal` trait implementations, specify either the `hal` or `hal-unproven` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
-rppal = { version = "0.11.1", features = ["hal"] }
+rppal = { version = "0.11.2", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
@@ -106,7 +106,8 @@ Additional examples can be found in the `examples` directory.
 
 By default, all optional features are disabled. You can enable a feature by specifying the relevant feature flag(s) in the dependency declaration for `rppal` in your `Cargo.toml`.
 
-* `hal` - Adds `embedded-hal` trait implementations for all supported peripherals. Doesn't include unproven traits.
+* `hal` - Enables `embedded-hal` trait implementations for all supported peripherals. This doesn't include `unproven` traits.
+* `hal-unproven` - Enables `embedded-hal` trait implementations for all supported peripherals, including traits marked as `unproven`. Note that `embedded-hal`'s `unproven` traits don't follow semver rules. Patch releases may introduce breaking changes.
 
 ## Supported peripherals
 
@@ -120,7 +121,7 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Configure built-in pull-up/pull-down resistors
 * Synchronous and asynchronous interrupt handlers
 * Software-based PWM implementation
-* Optional `embedded-hal` trait implementations (`digital::OutputPin`, `PwmPin`)
+* Optional `embedded-hal` trait implementations (`digital::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}`, `Pwm`, `PwmPin`)
 
 ### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
@@ -141,7 +142,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interfa
 
 * Up to two hardware PWM channels
 * Configurable frequency, duty cycle and polarity
-* Optional `embedded-hal` trait implementations (`PwmPin`)
+* Optional `embedded-hal` trait implementations (`Pwm`, `PwmPin`)
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
@@ -156,9 +157,9 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations (`blocking::spi::{Transfer, Write}`, `spi::FullDuplex`)
 
-### [UART](https://docs.golemparts.com/rppal/dev/rppal/uart)
+### [UART](https://docs.golemparts.com/rppal/latest/uart)
 
-**_(Coming in 0.11.2)_** RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011) and `ttyS0` (mini UART) character devices. USB to serial adapters are controlled using the `ttyUSBx` and `ttyACMx` character devices.
+RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011) and `ttyS0` (mini UART) character devices. USB to serial adapters are controlled using the `ttyUSBx` and `ttyACMx` character devices.
 
 #### Features
 

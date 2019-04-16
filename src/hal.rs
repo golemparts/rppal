@@ -92,7 +92,7 @@ impl DelayUs<u64> for Delay {
     }
 }
 
-/// Newtype that converts into `Duration`.
+/// Newtype wrapper for `f64`. Converts into `Duration`.
 pub struct Hertz(pub f64);
 
 impl From<Hertz> for Duration {
