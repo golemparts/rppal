@@ -23,7 +23,6 @@
 #![allow(dead_code)]
 
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
