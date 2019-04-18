@@ -6,6 +6,7 @@
 * **Gpio**: Implement `Sync` trait for `IoPin` and `OutputPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::InputPin` for `Pin`, `InputPin`, `OutputPin` and `IoPin`.
 * **Gpio**: Implement `unproven` `embedded-hal` traits `digital::{StatefulOutputPin, ToggleableOutputPin}` and `Pwm` for `OutputPin` and `IoPin`.
+* **Gpio**: Remove internal `MSG_WAITING` flag from software PWM implementation to resolve an issue found in the wild causing delays in message processing (contributed by @aehmlo).
 * **Hal**: Add `hal` module, containing `embedded-hal` trait implementations that aren't tied to a specific peripheral.
 * **Hal**: Implement `embedded-hal` traits `blocking::delay::{DelayMs, DelayUs}` for `Delay`.
 * **Hal**: Implement `embedded-hal` trait `timer::CountDown` for `Timer` (contributed by @jacobrosenthal).
