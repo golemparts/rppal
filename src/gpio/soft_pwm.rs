@@ -42,8 +42,6 @@ const BUSYWAIT_MAX: i64 = 200_000;
 // Subtract from the remaining busy wait time to account for get_time_ns() overhead
 const BUSYWAIT_REMAINDER: i64 = 100;
 
-static mut MSG_WAITING: AtomicBool = AtomicBool::new(false);
-
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 enum Msg {
     Reconfigure(Duration, Duration),
@@ -129,26 +127,23 @@ impl SoftPwm {
                 // PWM inactive
                 gpio_state.gpio_mem.set_low(pin);
 
-                // This is slightly faster than directly checking try_recv()
-                if unsafe { MSG_WAITING.compare_and_swap(true, false, Ordering::AcqRel) } {
-                    while let Ok(msg) = receiver.try_recv() {
-                        match msg {
-                            Msg::Reconfigure(period, pulse_width) => {
-                                // Reconfigure period and pulse width
-                                pulse_width_ns = (pulse_width.as_secs() as i64 * 1_000_000_000)
-                                    + pulse_width.subsec_nanos() as i64;
+                while let Ok(msg) = receiver.try_recv() {
+                    match msg {
+                        Msg::Reconfigure(period, pulse_width) => {
+                            // Reconfigure period and pulse width
+                            pulse_width_ns = (pulse_width.as_secs() as i64 * 1_000_000_000)
+                                + pulse_width.subsec_nanos() as i64;
 
-                                period_ns = (period.as_secs() as i64 * 1_000_000_000)
-                                    + period.subsec_nanos() as i64;
+                            period_ns = (period.as_secs() as i64 * 1_000_000_000)
+                                + period.subsec_nanos() as i64;
 
-                                if pulse_width_ns > period_ns {
-                                    pulse_width_ns = period_ns;
-                                }
+                            if pulse_width_ns > period_ns {
+                                pulse_width_ns = period_ns;
                             }
-                            Msg::Stop => {
-                                // The main thread asked us to stop
-                                return Ok(());
-                            }
+                        }
+                        Msg::Stop => {
+                            // The main thread asked us to stop
+                            return Ok(());
                         }
                     }
                 }
@@ -181,17 +176,10 @@ impl SoftPwm {
 
     pub(crate) fn reconfigure(&mut self, period: Duration, pulse_width: Duration) {
         let _ = self.sender.send(Msg::Reconfigure(period, pulse_width));
-        unsafe {
-            MSG_WAITING.store(true, Ordering::Release);
-        }
     }
 
     pub(crate) fn stop(&mut self) -> Result<()> {
         let _ = self.sender.send(Msg::Stop);
-        unsafe {
-            MSG_WAITING.store(true, Ordering::Release);
-        }
-
         if let Some(pwm_thread) = self.pwm_thread.take() {
             match pwm_thread.join() {
                 Ok(r) => return r,
