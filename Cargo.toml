@@ -1,6 +1,6 @@
 [package]
 name = "rppal"
-version = "0.11.1" # Also update html_root_url in lib.rs
+version = "0.11.2" # Also update html_root_url in lib.rs
 edition = "2018"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
 description = "Interface for the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals."
