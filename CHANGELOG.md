@@ -63,6 +63,7 @@
 * **Spi**: (Breaking change) Rename `TransferSegment` to `Segment`.
 * **Spi**: (Breaking change) `Segment::new()` parameters are no longer wrapped in `Option`. Use `Segment::with_read()` or `Segment::with_write()` instead when a full-duplex transfer isn't needed.
 * **Spi**: Add `Segment::with_read()` and `Segment::with_write()` convenience methods for read operations without any outgoing data, or write operations where any incoming data should be discarded.
+* **Spi**: Remove `From<Error>` implementation due to a conflict with `nb` v0.1.2 (contributed by @gferon).
 
 ## 0.9.0 (November 15, 2018)
 
