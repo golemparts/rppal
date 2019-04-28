@@ -24,12 +24,6 @@ use nb;
 
 use super::{Error, Result, Spi};
 
-impl From<Error> for nb::Error<Error> {
-    fn from(err: Error) -> nb::Error<Error> {
-        nb::Error::Other(err)
-    }
-}
-
 impl Transfer<u8> for Spi {
     type Error = Error;
 
