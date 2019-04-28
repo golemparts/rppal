@@ -24,12 +24,6 @@ use nb;
 
 use super::{Error, Queue, Uart};
 
-impl From<Error> for nb::Error<Error> {
-    fn from(err: Error) -> nb::Error<Error> {
-        nb::Error::Other(err)
-    }
-}
-
 impl Read<u8> for Uart {
     type Error = Error;
 
