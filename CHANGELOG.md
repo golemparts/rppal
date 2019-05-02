@@ -13,6 +13,7 @@
 * **Pwm**: Implement `Display` trait for `Channel` and `Polarity`.
 * **Pwm**: Implement `unproven` `embedded-hal` trait `Pwm` for `Pwm`.
 * **Spi**: Implement `Display` trait for `BitOrder`, `Bus`, `Mode`, `Polarity` and `SlaveSelect`.
+* **Spi**: Remove `From<Error>` implementation due to a conflict with `nb` v0.1.2 (contributed by @gferon).
 * **Uart**: Add support for the PL011 and mini UART peripherals, USB to serial adapters, XON/XOFF software flow control and RTS/CTS hardware flow control.
 * **Uart**: Implement `embedded-hal` traits `serial::{Read, Write}` and `blocking::serial::Write` for `Uart`.
 
@@ -63,7 +64,6 @@
 * **Spi**: (Breaking change) Rename `TransferSegment` to `Segment`.
 * **Spi**: (Breaking change) `Segment::new()` parameters are no longer wrapped in `Option`. Use `Segment::with_read()` or `Segment::with_write()` instead when a full-duplex transfer isn't needed.
 * **Spi**: Add `Segment::with_read()` and `Segment::with_write()` convenience methods for read operations without any outgoing data, or write operations where any incoming data should be discarded.
-* **Spi**: Remove `From<Error>` implementation due to a conflict with `nb` v0.1.2 (contributed by @gferon).
 
 ## 0.9.0 (November 15, 2018)
 
