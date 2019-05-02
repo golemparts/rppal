@@ -419,6 +419,14 @@ struct UartInner {
 
 /// Provides access to the Raspberry Pi's UART peripherals and any USB to
 /// serial adapters.
+///
+/// The `embedded-hal` [`serial::Read`], [`serial::Write`] and [`blocking::serial::Write`] trait
+/// implementations for `Uart` can be enabled by specifying the optional `hal` feature in the
+/// dependency declaration for the `rppal` crate.
+///
+/// [`serial::Read`]: ../../embedded_hal/serial/trait.Read.html
+/// [`serial::Write`]: ../../embedded_hal/serial/trait.Write.html
+/// [`blocking::serial::Write`]: ../../embedded_hal/blocking/serial/trait.Write.html
 #[derive(Debug)]
 pub struct Uart {
     inner: UartInner,

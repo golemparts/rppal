@@ -163,8 +163,13 @@ impl fmt::Display for Polarity {
 /// by specifying the optional `hal` feature in the dependency declaration for
 /// the `rppal` crate.
 ///
+/// The `unproven` `embedded-hal` [`Pwm`] trait implementation for `Pwm` can be enabled
+/// by specifying the optional `hal-unproven` feature in the dependency declaration for
+/// the `rppal` crate.
+///
 /// [here]: index.html
 /// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
+/// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
 #[derive(Debug)]
 pub struct Pwm {
     channel: Channel,

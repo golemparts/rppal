@@ -270,6 +270,11 @@ macro_rules! impl_eq {
 /// various `into_` methods available on `Pin` configures the appropriate mode, and
 /// provides access to additional methods relevant to the selected pin mode.
 ///
+/// The `unproven` `embedded-hal` [`digital::InputPin`] trait implementation for `Pin` can be enabled
+/// by specifying the optional `hal-unproven` feature in the dependency declaration for
+/// the `rppal` crate.
+///
+/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
 /// [`Gpio::get`]: struct.Gpio.html#method.get
 /// [`InputPin`]: struct.InputPin.html
 /// [`OutputPin`]: struct.OutputPin.html
@@ -409,6 +414,11 @@ impl_eq!(Pin);
 /// An `InputPin` can be used to read a pin's logic level, or (a)synchronously poll for
 /// interrupt trigger events.
 ///
+/// The `unproven` `embedded-hal` [`digital::InputPin`] trait implementation for `InputPin` can be enabled
+/// by specifying the optional `hal-unproven` feature in the dependency declaration for
+/// the `rppal` crate.
+///
+/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
 /// [`Pin`]: struct.Pin.html
 /// [`Input`]: enum.Mode.html#variant.Input
 /// [`Pin::into_input`]: struct.Pin.html#method.into_input
@@ -553,14 +563,23 @@ impl_eq!(InputPin);
 ///
 /// An `OutputPin` can be used to change a pin's output state.
 ///
-/// The `embedded-hal` [`OutputPin`] and [`PwmPin`] trait implementations for `OutputPin`
+/// The `embedded-hal` [`digital::OutputPin`] and [`PwmPin`] trait implementations for `OutputPin`
 /// can be enabled by specifying the optional `hal` feature in the dependency
 /// declaration for the `rppal` crate.
 ///
+/// The `unproven` `embedded-hal` [`digital::InputPin`], [`digital::StatefulOutputPin`],
+/// [`digital::ToggleableOutputPin`] and [`Pwm`] trait implementations for `OutputPin` can be enabled
+/// by specifying the optional `hal-unproven` feature in the dependency declaration for
+/// the `rppal` crate.
+///
+/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
+/// [`digital::StatefulOutputPin`]: ../../embedded_hal/digital/trait.StatefulOutputPin.html
+/// [`digital::ToggleableOutputPin`]: ../../embedded_hal/digital/trait.ToggleableOutputPin.html
+/// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
 /// [`Pin`]: struct.Pin.html
 /// [`Output`]: enum.Mode.html#variant.Output
 /// [`Pin::into_output`]: struct.Pin.html#method.into_output
-/// [`OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
+/// [`digital::OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
 /// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]
 pub struct OutputPin {
@@ -636,14 +655,23 @@ impl_eq!(OutputPin);
 /// alters the pin's output state won't cause any changes when the pin's mode is set
 /// to [`Input`].
 ///
-/// The `embedded-hal` [`OutputPin`] and [`PwmPin`] trait implementations for `IoPin`
+/// The `embedded-hal` [`digital::OutputPin`] and [`PwmPin`] trait implementations for `IoPin`
 /// can be enabled by specifying the optional `hal` feature in the dependency
 /// declaration for the `rppal` crate.
 ///
+/// The `unproven` `embedded-hal` [`digital::InputPin`], [`digital::StatefulOutputPin`],
+/// [`digital::ToggleableOutputPin`] and [`Pwm`] trait implementations for `IoPin` can be enabled
+/// by specifying the optional `hal-unproven` feature in the dependency declaration for
+/// the `rppal` crate.
+///
+/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
+/// [`digital::StatefulOutputPin`]: ../../embedded_hal/digital/trait.StatefulOutputPin.html
+/// [`digital::ToggleableOutputPin`]: ../../embedded_hal/digital/trait.ToggleableOutputPin.html
+/// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
 /// [`Pin`]: struct.Pin.html
 /// [`Input`]: enum.Mode.html#variant.Input
 /// [`Pin::into_io`]: struct.Pin.html#method.into_io
-/// [`OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
+/// [`digital::OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
 /// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]
 pub struct IoPin {

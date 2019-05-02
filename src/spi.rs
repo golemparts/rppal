@@ -353,14 +353,15 @@ impl fmt::Display for BitOrder {
 /// Before using `Spi`, make sure your Raspberry Pi has the necessary SPI buses
 /// and Slave Select pins enabled. More information can be found [here].
 ///
-/// The `embedded-hal` [`Transfer<u8>`], [`Write<u8>`] and [`FullDuplex<u8>`] trait
+/// The `embedded-hal` [`blocking::spi::Transfer<u8>`], [`blocking::spi::Write<u8>`]
+/// and [`spi::FullDuplex<u8>`] trait
 /// implementations for `Spi` can be enabled by specifying the optional `hal`
 /// feature in the dependency declaration for the `rppal` crate.
 ///
 /// [here]: index.html
-/// [`Transfer<u8>`]: ../../embedded_hal/blocking/spi/trait.Transfer.html
-/// [`Write<u8>`]: ../../embedded_hal/blocking/spi/trait.Write.html
-/// [`FullDuplex<u8>`]: ../../embedded_hal/spi/trait.FullDuplex.html
+/// [`blocking::spi::Transfer<u8>`]: ../../embedded_hal/blocking/spi/trait.Transfer.html
+/// [`blocking::spi::Write<u8>`]: ../../embedded_hal/blocking/spi/trait.Write.html
+/// [`spi::FullDuplex<u8>`]: ../../embedded_hal/spi/trait.FullDuplex.html
 pub struct Spi {
     spidev: File,
     // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
