@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.11.3 (TBD)
+## 0.11.3 (June 24, 2019)
 
-* **DeviceInfo**: Add support for Raspberry Pi 4 B.
+* **DeviceInfo**: Add device identification support for Raspberry Pi 4 B. (Support for the new peripherals will be added in 0.12.0)
 
 ## 0.11.2 (May 2, 2019)
 
