@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.3 (TBD)
+
+* **DeviceInfo**: Add support for Raspberry Pi 4 B.
+
 ## 0.11.2 (May 2, 2019)
 
 * Add `hal-unproven` feature flag (disabled by default), which enables `unproven` `embedded-hal` trait implementations. Note that `embedded-hal`'s `unproven` traits don't follow semver rules. Patch releases may introduce breaking changes.
