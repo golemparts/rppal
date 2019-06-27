@@ -113,10 +113,7 @@ pub enum Error {
     /// Invalid slave address.
     ///
     /// I2C supports 7-bit and 10-bit addresses. Several 7-bit addresses
-    /// are reserved, and can't be used as slave addresses. A list of
-    /// those reserved addresses can be found [here].
-    ///
-    /// [here]: https://en.wikipedia.org/wiki/I%C2%B2C#Reserved_addresses_in_7-bit_address_space
+    /// can't be used as slave addresses.
     InvalidSlaveAddress(u16),
     /// I2C/SMBus feature not supported.
     ///
@@ -298,9 +295,9 @@ impl I2c {
     ///
     /// [`set_addr_10bit`]: #method.set_addr_10bit
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
-        // Filter out reserved, invalid and unsupported addresses
+        // Filter out invalid and unsupported addresses
         if (!self.addr_10bit
-            && (slave_address < 8 || (slave_address >> 3) == 0b1111 || slave_address > 0x7F))
+            && ((slave_address >> 3) == 0b1111 || slave_address > 0x7F))
             || (self.addr_10bit && slave_address > 0x03FF)
         {
             return Err(Error::InvalidSlaveAddress(slave_address));
