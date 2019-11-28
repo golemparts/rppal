@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0 (TBD)
+
+* **I2c**: Accept slave addresses below 0x08 (contributed by @Majkl578).
+
 ## 0.11.3 (June 24, 2019)
 
 * **DeviceInfo**: Add device identification support for Raspberry Pi 4 B. (Support for the new peripherals will be added in 0.12.0)
