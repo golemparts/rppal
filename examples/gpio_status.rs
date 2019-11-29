@@ -168,6 +168,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         | Model::RaspberryPi3APlus
         | Model::RaspberryPi3B
         | Model::RaspberryPi3BPlus
+        | Model::RaspberryPi4B
         | Model::RaspberryPiZero
         | Model::RaspberryPiZeroW => print_header(&HEADER[..MAX_PINS_LONG]),
         model => {
