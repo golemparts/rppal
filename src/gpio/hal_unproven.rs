@@ -20,80 +20,96 @@
 
 use std::time::Duration;
 
-use embedded_hal::digital;
+use embedded_hal::digital::v2;
 use embedded_hal::Pwm;
 
-use super::{InputPin, IoPin, Level, OutputPin, Pin};
+use super::{Error, InputPin, IoPin, Level, OutputPin, Pin, Result};
 
-impl digital::InputPin for Pin {
-    fn is_high(&self) -> bool {
-        Pin::read(self) == Level::High
+impl v2::InputPin for Pin {
+    type Error = Error;
+
+    fn is_high(&self) -> Result<bool> {
+        Ok(Pin::read(self) == Level::High)
     }
 
-    fn is_low(&self) -> bool {
-        Pin::read(self) == Level::Low
-    }
-}
-
-impl digital::InputPin for InputPin {
-    fn is_high(&self) -> bool {
-        InputPin::is_high(self)
-    }
-
-    fn is_low(&self) -> bool {
-        InputPin::is_low(self)
+    fn is_low(&self) -> Result<bool> {
+        Ok(Pin::read(self) == Level::Low)
     }
 }
 
-impl digital::InputPin for IoPin {
-    fn is_high(&self) -> bool {
-        IoPin::is_high(self)
+impl v2::InputPin for InputPin {
+    type Error = Error;
+
+    fn is_high(&self) -> Result<bool> {
+        Ok(InputPin::is_high(self))
     }
 
-    fn is_low(&self) -> bool {
-        IoPin::is_low(self)
-    }
-}
-
-impl digital::InputPin for OutputPin {
-    fn is_high(&self) -> bool {
-        OutputPin::is_set_high(self)
-    }
-
-    fn is_low(&self) -> bool {
-        OutputPin::is_set_low(self)
+    fn is_low(&self) -> Result<bool> {
+        Ok(InputPin::is_low(self))
     }
 }
 
-impl digital::StatefulOutputPin for IoPin {
-    fn is_set_high(&self) -> bool {
-        IoPin::is_high(self)
+impl v2::InputPin for IoPin {
+    type Error = Error;
+
+    fn is_high(&self) -> Result<bool> {
+        Ok(IoPin::is_high(self))
     }
 
-    fn is_set_low(&self) -> bool {
-        IoPin::is_low(self)
-    }
-}
-
-impl digital::StatefulOutputPin for OutputPin {
-    fn is_set_high(&self) -> bool {
-        OutputPin::is_set_high(self)
-    }
-
-    fn is_set_low(&self) -> bool {
-        OutputPin::is_set_low(self)
+    fn is_low(&self) -> Result<bool> {
+        Ok(IoPin::is_low(self))
     }
 }
 
-impl digital::ToggleableOutputPin for IoPin {
-    fn toggle(&mut self) {
+impl v2::InputPin for OutputPin {
+    type Error = Error;
+
+    fn is_high(&self) -> Result<bool> {
+        Ok(OutputPin::is_set_high(self))
+    }
+
+    fn is_low(&self) -> Result<bool> {
+        Ok(OutputPin::is_set_low(self))
+    }
+}
+
+impl v2::StatefulOutputPin for IoPin {
+    fn is_set_high(&self) -> Result<bool> {
+        Ok(IoPin::is_high(self))
+    }
+
+    fn is_set_low(&self) -> Result<bool> {
+        Ok(IoPin::is_low(self))
+    }
+}
+
+impl v2::StatefulOutputPin for OutputPin {
+    fn is_set_high(&self) -> Result<bool> {
+        Ok(OutputPin::is_set_high(self))
+    }
+
+    fn is_set_low(&self) -> Result<bool> {
+        Ok(OutputPin::is_set_low(self))
+    }
+}
+
+impl v2::ToggleableOutputPin for IoPin {
+    type Error = Error;
+
+    fn toggle(&mut self) -> Result<()> {
         IoPin::toggle(self);
+
+        Ok(())
     }
 }
 
-impl digital::ToggleableOutputPin for OutputPin {
-    fn toggle(&mut self) {
+impl v2::ToggleableOutputPin for OutputPin {
+    type Error = Error;
+
+    fn toggle(&mut self) -> Result<()> {
         OutputPin::toggle(self);
+
+        Ok(())
     }
 }
 
