@@ -18,28 +18,40 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use embedded_hal::digital;
+use embedded_hal::digital::v2;
 use embedded_hal::PwmPin;
 
-use super::{IoPin, OutputPin};
+use super::{Error, IoPin, OutputPin, Result};
 
-impl digital::OutputPin for OutputPin {
-    fn set_low(&mut self) {
+impl v2::OutputPin for OutputPin {
+    type Error = Error;
+
+    fn set_low(&mut self) -> Result<()> {
         OutputPin::set_low(self);
+
+        Ok(())
     }
 
-    fn set_high(&mut self) {
+    fn set_high(&mut self) -> Result<()> {
         OutputPin::set_high(self);
+
+        Ok(())
     }
 }
 
-impl digital::OutputPin for IoPin {
-    fn set_low(&mut self) {
+impl v2::OutputPin for IoPin {
+    type Error = Error;
+
+    fn set_low(&mut self) -> Result<()> {
         IoPin::set_low(self);
+
+        Ok(())
     }
 
-    fn set_high(&mut self) {
+    fn set_high(&mut self) -> Result<()> {
         IoPin::set_high(self);
+
+        Ok(())
     }
 }
 
