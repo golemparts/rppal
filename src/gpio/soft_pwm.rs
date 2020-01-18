@@ -95,11 +95,8 @@ impl SoftPwm {
                 libc::prctl(PR_SET_TIMERSLACK, 1);
             }
 
-            let mut period_ns =
-                (period.as_secs() as i64 * 1_000_000_000) + period.subsec_nanos() as i64;
-
-            let mut pulse_width_ns =
-                (pulse_width.as_secs() as i64 * 1_000_000_000) + pulse_width.subsec_nanos() as i64;
+            let mut period_ns = period.as_nanos() as i64;
+            let mut pulse_width_ns = pulse_width.as_nanos() as i64;
 
             let mut start_ns = get_time_ns();
 
@@ -130,11 +127,8 @@ impl SoftPwm {
                     match msg {
                         Msg::Reconfigure(period, pulse_width) => {
                             // Reconfigure period and pulse width
-                            pulse_width_ns = (pulse_width.as_secs() as i64 * 1_000_000_000)
-                                + pulse_width.subsec_nanos() as i64;
-
-                            period_ns = (period.as_secs() as i64 * 1_000_000_000)
-                                + period.subsec_nanos() as i64;
+                            pulse_width_ns = pulse_width.as_nanos() as i64;
+                            period_ns = period.as_nanos() as i64;
 
                             if pulse_width_ns > period_ns {
                                 pulse_width_ns = period_ns;
