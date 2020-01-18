@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 Rene van der Meer
+// Copyright (c) 2017-2020 Rene van der Meer
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -40,6 +40,8 @@ const SLEEP_THRESHOLD: i64 = 250_000;
 const BUSYWAIT_MAX: i64 = 200_000;
 // Subtract from the remaining busy wait time to account for get_time_ns() overhead
 const BUSYWAIT_REMAINDER: i64 = 100;
+
+const NANOS_PER_SEC: i64 = 1_000_000_000;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 enum Msg {
@@ -210,14 +212,14 @@ fn get_time_ns() -> i64 {
         libc::clock_gettime(CLOCK_MONOTONIC, &mut ts);
     }
 
-    (ts.tv_sec as i64 * 1_000_000_000) + ts.tv_nsec as i64
+    (ts.tv_sec as i64 * NANOS_PER_SEC) + ts.tv_nsec as i64
 }
 
 #[inline(always)]
 fn sleep_ns(ns: i64) {
     let ts = timespec {
-        tv_sec: (ns / 1_000_000_000) as time_t,
-        tv_nsec: (ns % 1_000_000_000) as c_long,
+        tv_sec: (ns / NANOS_PER_SEC) as time_t,
+        tv_nsec: (ns % NANOS_PER_SEC) as c_long,
     };
 
     unsafe {

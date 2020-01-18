@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 Rene van der Meer
+// Copyright (c) 2017-2020 Rene van der Meer
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,8 @@ use std::time::Duration;
 
 use super::soft_pwm::SoftPwm;
 use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown, Result, Trigger};
+
+const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
 // Maximum GPIO pins on the BCM2835. The actual number of pins
 // exposed through the Pi's GPIO header depends on the model.
@@ -137,9 +139,9 @@ macro_rules! impl_output {
             #[cfg(feature = "hal")]
             {
                 let period_s =
-                    period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0);
+                    period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC);
                 let pulse_width_s = pulse_width.as_secs() as f64
-                    + (f64::from(pulse_width.subsec_nanos()) / 1_000_000_000.0);
+                    + (f64::from(pulse_width.subsec_nanos()) / NANOS_PER_SEC);
 
                 if period_s > 0.0 {
                     self.frequency = 1.0 / period_s;
@@ -167,7 +169,7 @@ macro_rules! impl_output {
             let period = if frequency <= 0.0 {
                 0.0
             } else {
-                (1.0 / frequency) * 1_000_000_000.0
+                (1.0 / frequency) * NANOS_PER_SEC
             };
             let pulse_width = period * duty_cycle.max(0.0).min(1.0);
 

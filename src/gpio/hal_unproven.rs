@@ -25,6 +25,8 @@ use embedded_hal::Pwm;
 
 use super::{Error, InputPin, IoPin, Level, OutputPin, Pin, Result};
 
+const NANOS_PER_SEC: f64 = 1_000_000_000.0;
+
 impl v2::InputPin for Pin {
     type Error = Error;
 
@@ -133,7 +135,7 @@ impl Pwm for OutputPin {
         Duration::from_nanos(if self.frequency == 0.0 {
             0
         } else {
-            ((1.0 / self.frequency) * 1_000_000_000.0) as u64
+            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
         })
     }
 
@@ -163,7 +165,7 @@ impl Pwm for OutputPin {
     {
         let period = period.into();
         self.frequency =
-            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0));
+            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
 
         if self.soft_pwm.is_some() {
             let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
@@ -191,7 +193,7 @@ impl Pwm for IoPin {
         Duration::from_nanos(if self.frequency == 0.0 {
             0
         } else {
-            ((1.0 / self.frequency) * 1_000_000_000.0) as u64
+            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
         })
     }
 
@@ -221,7 +223,7 @@ impl Pwm for IoPin {
     {
         let period = period.into();
         self.frequency =
-            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / 1_000_000_000.0));
+            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
 
         if self.soft_pwm.is_some() {
             let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);

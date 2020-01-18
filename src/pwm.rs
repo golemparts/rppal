@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 Rene van der Meer
+// Copyright (c) 2017-2020 Rene van der Meer
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -90,6 +90,8 @@ mod hal;
 #[cfg(feature = "hal-unproven")]
 mod hal_unproven;
 mod sysfs;
+
+const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
 /// Errors that can occur when accessing the PWM peripheral.
 #[derive(Debug)]
@@ -293,7 +295,7 @@ impl Pwm {
         let period = if frequency == 0.0 {
             0.0
         } else {
-            (1.0 / frequency) * 1_000_000_000.0
+            (1.0 / frequency) * NANOS_PER_SEC
         };
         let pulse_width = period * duty_cycle.max(0.0).min(1.0);
 
@@ -321,7 +323,7 @@ impl Pwm {
         sysfs::set_period(
             self.channel as u8,
             u64::from(period.subsec_nanos())
-                .saturating_add(period.as_secs().saturating_mul(1_000_000_000)),
+                .saturating_add(period.as_secs().saturating_mul(NANOS_PER_SEC as u64)),
         )?;
 
         Ok(())
@@ -344,7 +346,7 @@ impl Pwm {
         sysfs::set_pulse_width(
             self.channel as u8,
             u64::from(pulse_width.subsec_nanos())
-                .saturating_add(pulse_width.as_secs().saturating_mul(1_000_000_000)),
+                .saturating_add(pulse_width.as_secs().saturating_mul(NANOS_PER_SEC as u64)),
         )?;
 
         Ok(())
@@ -360,7 +362,7 @@ impl Pwm {
         Ok(if period == 0.0 {
             0.0
         } else {
-            1.0 / (period / 1_000_000_000.0)
+            1.0 / (period / NANOS_PER_SEC)
         })
     }
 
@@ -380,7 +382,7 @@ impl Pwm {
         let period = if frequency == 0.0 {
             0.0
         } else {
-            (1.0 / frequency) * 1_000_000_000.0
+            (1.0 / frequency) * NANOS_PER_SEC
         };
         let pulse_width = period * duty_cycle.max(0.0).min(1.0);
 

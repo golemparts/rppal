@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 Rene van der Meer
+// Copyright (c) 2017-2020 Rene van der Meer
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -95,10 +95,12 @@ impl DelayUs<u64> for Delay {
 /// Newtype wrapper for `f64`. Converts into `Duration`.
 pub struct Hertz(pub f64);
 
+const MICROS_PER_SEC: f64 = 1_000_000.0;
+
 impl From<Hertz> for Duration {
     fn from(item: Hertz) -> Self {
         if item.0 > 0.0 && item.0.is_finite() {
-            Duration::from_micros(((1.0 / item.0) * 1_000_000.0) as u64)
+            Duration::from_micros(((1.0 / item.0) * MICROS_PER_SEC) as u64)
         } else {
             Duration::default()
         }
