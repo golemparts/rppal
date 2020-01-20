@@ -5,6 +5,7 @@
 * (Breaking change) Require rustc v1.33.0 or newer to compile the library due to std API stabilizations.
 * **I2c**: Accept slave addresses below 0x08 (contributed by @Majkl578).
 * **Hal**: (Breaking change) Upgrade `embedded-hal` trait implementations for `digital::v1::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}` to `digital::v2`. These can be explicitly converted back to `digital::v1` through `digital::v1_compat::{OldInputPin, OldOutputPin}` for backwards compatibility with older drivers.
+* **Spi**: (Breaking change) Add support for SPI3, SPI4, SPI5 and SPI6.
 
 ## 0.11.3 (June 24, 2019)
 
