@@ -21,15 +21,16 @@
 //! Interface for the main and auxiliary SPI peripherals.
 //!
 //! RPPAL provides access to the available SPI buses by using the `spidev` device
-//! interface through `/dev/spidevB.S`, where B points to an SPI bus (0, 1, 2), and S to
-//! a Slave Select pin (0, 1, 2). Which of these buses and pins is available depends on
-//! your Raspberry Pi model and configuration, as explained below.
+//! interface through `/dev/spidevB.S`, where B refers to an SPI bus, and S to
+//! a Slave Select pin. Which buses and pins are available depends on your
+//! Raspberry Pi model and configuration, as explained below.
 //!
 //! ## SPI buses
 //!
 //! The Raspberry Pi's GPIO header exposes several SPI buses. SPI0 is available
 //! on all Raspberry Pi models. SPI1 is available on models with a 40-pin
-//! header. SPI2 is only available on the Compute and Compute 3.
+//! header. SPI2 is only available on the Compute and Compute 3. SPI3 through SPI6
+//! are only available on the Raspberry Pi 4 B.
 //!
 //! SPI0 is disabled by default. You can enable it by running
 //! `sudo raspi-config`, or by manually adding `dtparam=spi=on` to
@@ -44,8 +45,8 @@
 //! to the BCM2835 documentation, using higher clock speeds on SPI1 requires
 //! additional CPU time compared to SPI0, caused by smaller FIFOs and no DMA
 //! support. It doesn't support [`Mode1`] or [`Mode3`]. SPI1 can be enabled by
-//! adding `dtoverlay=spi1-3cs` to `/boot/config.txt`. Replace `3cs` with
-//! either `2cs` or `1cs` if you only require 2 or 1 Slave Select pins.
+//! adding `dtoverlay=spi1-1cs` to `/boot/config.txt`. Replace `1cs` with
+//! either `2cs` or `3cs` if you require 2 or 3 Slave Select pins.
 //! The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 19 (physical pin 35)
@@ -54,14 +55,49 @@
 //! * SS: [`Ss0`] BCM GPIO 18 (physical pin 12), [`Ss1`] BCM GPIO 17 (physical pin 11), [`Ss2`] BCM GPIO 16 (physical pin 36)
 //!
 //! SPI2 shares the same characteristics and limitations as SPI1. It can be
-//! enabled by adding `dtoverlay=spi2-3cs` to `/boot/config.txt`. Replace
-//! `3cs` with either `2cs` or `1cs` if you only require 2 or 1 Slave Select
+//! enabled by adding `dtoverlay=spi2-1cs` to `/boot/config.txt`. Replace
+//! `1cs` with either `2cs` or `3cs` if you require 2 or 3 Slave Select
 //! pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 40
 //! * MOSI: BCM GPIO 41
 //! * SCLK: BCM GPIO 42
 //! * SS: [`Ss0`] BCM GPIO 43, [`Ss1`] BCM GPIO 44, [`Ss2`] BCM GPIO 45
+//!
+//! SPI3 can be enabled by adding `dtoverlay=spi3-1cs` to `/boot/config.txt`. Replace
+//! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 1 (physical pin 28)
+//! * MOSI: BCM GPIO 2 (physical pin 3)
+//! * SCLK: BCM GPIO 3 (physical pin 5)
+//! * SS: [`Ss0`] BCM GPIO 0 (physical pin 27), [`Ss1`] BCM GPIO 24 (physical pin 18)
+//!
+//! SPI4 can be enabled by adding `dtoverlay=spi4-1cs` to `/boot/config.txt`. Replace
+//! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 5 (physical pin 29)
+//! * MOSI: BCM GPIO 6 (physical pin 31)
+//! * SCLK: BCM GPIO 7 (physical pin 26)
+//! * SS: [`Ss0`] BCM GPIO 4 (physical pin 7), [`Ss1`] BCM GPIO 25 (physical pin 22)
+//!
+//! SPI5 can be enabled by adding `dtoverlay=spi5-1cs` to `/boot/config.txt`. Replace
+//! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 13 (physical pin 33)
+//! * MOSI: BCM GPIO 14 (physical pin 8)
+//! * SCLK: BCM GPIO 15 (physical pin 10)
+//! * SS: [`Ss0`] BCM GPIO 12 (physical pin 32), [`Ss1`] BCM GPIO 26 (physical pin 37)
+//!
+//! SPI6 can be enabled by adding `dtoverlay=spi6-1cs` to `/boot/config.txt`. Replace
+//! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
+//!
+//! * MISO: BCM GPIO 19 (physical pin 35)
+//! * MOSI: BCM GPIO 20 (physical pin 38)
+//! * SCLK: BCM GPIO 21 (physical pin 40)
+//! * SS: [`Ss0`] BCM GPIO 18 (physical pin 12), [`Ss1`] BCM GPIO 27 (physical pin 13)
+//!
+//! SPI6 is tied to the same GPIO pins as SPI1. It's not possible to enable both
+//! buses at the same time.
 //!
 //! The GPIO pin numbers mentioned above are part of the default configuration.
 //! Some of their functionality can be moved to different pins. Read
