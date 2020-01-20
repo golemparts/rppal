@@ -211,7 +211,7 @@ pub fn reverse_bits(buffer: &mut [u8]) {
 
 /// SPI buses.
 ///
-/// The Raspberry Pi supports up to three SPI buses, depending on the model and
+/// The Raspberry Pi supports up to five SPI buses, depending on the model and
 /// your `/boot/config.txt` configuration. More information can be found [here].
 ///
 /// [here]: index.html
@@ -220,6 +220,10 @@ pub enum Bus {
     Spi0 = 0,
     Spi1 = 1,
     Spi2 = 2,
+    Spi3 = 3,
+    Spi4 = 4,
+    Spi5 = 5,
+    Spi6 = 6,
 }
 
 impl fmt::Display for Bus {
@@ -228,6 +232,10 @@ impl fmt::Display for Bus {
             Bus::Spi0 => write!(f, "Spi0"),
             Bus::Spi1 => write!(f, "Spi1"),
             Bus::Spi2 => write!(f, "Spi2"),
+            Bus::Spi3 => write!(f, "Spi3"),
+            Bus::Spi4 => write!(f, "Spi4"),
+            Bus::Spi5 => write!(f, "Spi5"),
+            Bus::Spi6 => write!(f, "Spi6"),
         }
     }
 }
