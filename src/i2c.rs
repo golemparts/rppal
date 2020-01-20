@@ -26,15 +26,62 @@
 //!
 //! ## I2C buses
 //!
-//! The Raspberry Pi's BCM283x SoC supports three hardware I2C buses, however
-//! only the I2C bus on physical pins 3 and 5 should be used to communicate
+//! The Raspberry Pi 3 B+ and earlier models support three hardware I2C buses,
+//! however only the I2C bus on physical pins 3 and 5 should be used to communicate
 //! with slave devices. The other two buses are used internally as an HDMI
 //! interface, and for HAT identification.
 //!
-//! The I2C bus connected to physical pins 3 (SDA) and 5 (SCL) is disabled by
+//! On the Raspberry Pi 4 B, three additional I2C buses are available, depending
+//! on your configuration, as explained below.
+//!
+//! ### I2C0 / I2C1
+//!
+//! On the Raspberry Pi B Rev 1, physical pins 3 (SDA) and 5 (SCL) are tied to I2C0.
+//! On every other Raspberry Pi model, they're connected to I2C1.
+//!
+//! The I2C bus connected to these pins is disabled by
 //! default. You can enable it through `sudo raspi-config`, or by manually
 //! adding `dtparam=i2c_arm=on` to `/boot/config.txt`. Remember to reboot
 //! the Raspberry Pi afterwards.
+//!
+//! * SDA: BCM GPIO 2 (physical pin 3)
+//! * SCL: BCM GPIO 3 (physical pin 5)
+//!
+//! ### I2C3
+//!
+//! I2C3 can be enabled by adding `dtoverlay=i2c3` to `/boot/config.txt`.
+//!
+//! * SDA: BCM GPIO 4 (physical pin 7)
+//! * SCL: BCM GPIO 5 (physical pin 29)
+//!
+//! ### I2C4
+//!
+//! I2C4 can be enabled by adding `dtoverlay=i2c4` to `/boot/config.txt`.
+//!
+//! * SDA: BCM GPIO 8 (physical pin 24)
+//! * SCL: BCM GPIO 9 (physical pin 21)
+//!
+//! ### I2C5
+//!
+//! I2C5 can be enabled by adding `dtoverlay=i2c5` to `/boot/config.txt`.
+//!
+//! * SDA: BCM GPIO 12 (physical pin 32)
+//! * SCL: BCM GPIO 13 (physical pin 33)
+//!
+//! ### I2C6
+//!
+//! I2C6 can be enabled by adding `dtoverlay=i2c6` to `/boot/config.txt`.
+//!
+//! * SDA: BCM GPIO 22 (physical pin 15)
+//! * SCL: BCM GPIO 23 (physical pin 16)
+//!
+//! ### Alternative pins
+//!
+//! The GPIO pin numbers mentioned above are part of the default configuration.
+//! Some of their functionality can be moved to different pins. Read
+//! `/boot/overlays/README` for more information.
+//!
+//! ### Software I2C
 //!
 //! In addition to the hardware I2C buses, it's possible to configure a
 //! bit-banged software I2C bus on any available GPIO pins through the `i2c-gpio`
@@ -215,8 +262,9 @@ impl I2c {
     ///
     /// `bus` indicates the selected I2C bus. You'll typically want to select the
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
-    /// Pi Model B Rev 1, those pins are tied to bus 0. On every other Raspberry
-    /// Pi model, they're connected to bus 1.
+    /// Pi B Rev 1, those pins are tied to bus 0. On every other Raspberry
+    /// Pi model, they're connected to bus 1. Additional I2C buses are available
+    /// on the Raspberry Pi 4 B.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
@@ -296,8 +344,7 @@ impl I2c {
     /// [`set_addr_10bit`]: #method.set_addr_10bit
     pub fn set_slave_address(&mut self, slave_address: u16) -> Result<()> {
         // Filter out invalid and unsupported addresses
-        if (!self.addr_10bit
-            && ((slave_address >> 3) == 0b1111 || slave_address > 0x7F))
+        if (!self.addr_10bit && ((slave_address >> 3) == 0b1111 || slave_address > 0x7F))
             || (self.addr_10bit && slave_address > 0x03FF)
         {
             return Err(Error::InvalidSlaveAddress(slave_address));
