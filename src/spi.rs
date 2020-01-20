@@ -32,6 +32,8 @@
 //! header. SPI2 is only available on the Compute and Compute 3. SPI3 through SPI6
 //! are only available on the Raspberry Pi 4 B.
 //!
+//! ### SPI0
+//!
 //! SPI0 is disabled by default. You can enable it by running
 //! `sudo raspi-config`, or by manually adding `dtparam=spi=on` to
 //! `/boot/config.txt`. The associated pins are listed below.
@@ -40,6 +42,8 @@
 //! * MOSI: BCM GPIO 10 (physical pin 19)
 //! * SCLK: BCM GPIO 11 (physical pin 23)
 //! * SS: [`Ss0`] BCM GPIO 8 (physical pin 24), [`Ss1`] BCM GPIO 7 (physical pin 26)
+//!
+//! ### SPI1
 //!
 //! SPI1 is an auxiliary peripheral that's referred to as mini SPI. According
 //! to the BCM2835 documentation, using higher clock speeds on SPI1 requires
@@ -54,6 +58,8 @@
 //! * SCLK: BCM GPIO 21 (physical pin 40)
 //! * SS: [`Ss0`] BCM GPIO 18 (physical pin 12), [`Ss1`] BCM GPIO 17 (physical pin 11), [`Ss2`] BCM GPIO 16 (physical pin 36)
 //!
+//! ### SPI2
+//!
 //! SPI2 shares the same characteristics and limitations as SPI1. It can be
 //! enabled by adding `dtoverlay=spi2-1cs` to `/boot/config.txt`. Replace
 //! `1cs` with either `2cs` or `3cs` if you require 2 or 3 Slave Select
@@ -64,6 +70,8 @@
 //! * SCLK: BCM GPIO 42
 //! * SS: [`Ss0`] BCM GPIO 43, [`Ss1`] BCM GPIO 44, [`Ss2`] BCM GPIO 45
 //!
+//! ### SPI3
+//!
 //! SPI3 can be enabled by adding `dtoverlay=spi3-1cs` to `/boot/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
@@ -71,6 +79,8 @@
 //! * MOSI: BCM GPIO 2 (physical pin 3)
 //! * SCLK: BCM GPIO 3 (physical pin 5)
 //! * SS: [`Ss0`] BCM GPIO 0 (physical pin 27), [`Ss1`] BCM GPIO 24 (physical pin 18)
+//!
+//! ### SPI4
 //!
 //! SPI4 can be enabled by adding `dtoverlay=spi4-1cs` to `/boot/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
@@ -80,6 +90,8 @@
 //! * SCLK: BCM GPIO 7 (physical pin 26)
 //! * SS: [`Ss0`] BCM GPIO 4 (physical pin 7), [`Ss1`] BCM GPIO 25 (physical pin 22)
 //!
+//! ### SPI5
+//!
 //! SPI5 can be enabled by adding `dtoverlay=spi5-1cs` to `/boot/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
@@ -87,6 +99,8 @@
 //! * MOSI: BCM GPIO 14 (physical pin 8)
 //! * SCLK: BCM GPIO 15 (physical pin 10)
 //! * SS: [`Ss0`] BCM GPIO 12 (physical pin 32), [`Ss1`] BCM GPIO 26 (physical pin 37)
+//!
+//! ### SPI6
 //!
 //! SPI6 can be enabled by adding `dtoverlay=spi6-1cs` to `/boot/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
@@ -98,6 +112,8 @@
 //!
 //! SPI6 is tied to the same GPIO pins as SPI1. It's not possible to enable both
 //! buses at the same time.
+//!
+//! ### Alternative pins
 //!
 //! The GPIO pin numbers mentioned above are part of the default configuration.
 //! Some of their functionality can be moved to different pins. Read
@@ -247,7 +263,7 @@ pub fn reverse_bits(buffer: &mut [u8]) {
 
 /// SPI buses.
 ///
-/// The Raspberry Pi supports up to five SPI buses, depending on the model and
+/// The Raspberry Pi exposes up to five SPI buses, depending on the model and
 /// your `/boot/config.txt` configuration. More information can be found [here].
 ///
 /// [here]: index.html
