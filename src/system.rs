@@ -203,7 +203,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
             "a02100" => Model::RaspberryPiComputeModule3Plus,
-            "a03111" | "b03111" | "c03111" => Model::RaspberryPi4B,
+            "a03111" | "b03111" | "c03111" | "a03112" | "b03112" | "c03112" => Model::RaspberryPi4B,
             _ => return Err(Error::UnknownModel),
         }
     } else {
