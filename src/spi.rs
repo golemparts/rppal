@@ -311,6 +311,19 @@ pub enum SlaveSelect {
     Ss0 = 0,
     Ss1 = 1,
     Ss2 = 2,
+    Ss3 = 3,
+    Ss4 = 4,
+    Ss5 = 5,
+    Ss6 = 6,
+    Ss7 = 7,
+    Ss8 = 8,
+    Ss9 = 9,
+    Ss10 = 10,
+    Ss11 = 11,
+    Ss12 = 12,
+    Ss13 = 13,
+    Ss14 = 14,
+    Ss15 = 15,
 }
 
 impl fmt::Display for SlaveSelect {
@@ -319,6 +332,19 @@ impl fmt::Display for SlaveSelect {
             SlaveSelect::Ss0 => write!(f, "Ss0"),
             SlaveSelect::Ss1 => write!(f, "Ss1"),
             SlaveSelect::Ss2 => write!(f, "Ss2"),
+            SlaveSelect::Ss3 => write!(f, "Ss3"),
+            SlaveSelect::Ss4 => write!(f, "Ss4"),
+            SlaveSelect::Ss5 => write!(f, "Ss5"),
+            SlaveSelect::Ss6 => write!(f, "Ss6"),
+            SlaveSelect::Ss7 => write!(f, "Ss7"),
+            SlaveSelect::Ss8 => write!(f, "Ss8"),
+            SlaveSelect::Ss9 => write!(f, "Ss9"),
+            SlaveSelect::Ss10 => write!(f, "Ss10"),
+            SlaveSelect::Ss11 => write!(f, "Ss11"),
+            SlaveSelect::Ss12 => write!(f, "Ss12"),
+            SlaveSelect::Ss13 => write!(f, "Ss13"),
+            SlaveSelect::Ss14 => write!(f, "Ss14"),
+            SlaveSelect::Ss15 => write!(f, "Ss15"),
         }
     }
 }
