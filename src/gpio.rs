@@ -442,12 +442,16 @@ impl Gpio {
     /// [`InputPin::set_async_interrupt`]: struct.InputPin.html#method.set_async_interrupt
     /// [`InputPin`]: struct.InputPin.html
     /// [`Level`]: enum.Level.html
-    pub fn poll_interrupts<'a>(
+    pub fn poll_interrupts<'a, I>(
         &self,
-        pins: &[&'a InputPin],
+        pins: I,
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(&'a InputPin, Level)>> {
-        (*self.inner.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
+    ) -> Result<Option<(&'a InputPin, Level)>>
+    where
+        I: IntoIterator<Item = &'a InputPin>,
+        I::IntoIter: Clone,
+    {
+        (*self.inner.sync_interrupts.lock().unwrap()).poll(pins.into_iter(), reset, timeout)
     }
 }

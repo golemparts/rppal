@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use std::iter::once;
 use std::os::unix::io::AsRawFd;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -41,7 +42,7 @@ macro_rules! impl_pin {
         pub fn pin(&self) -> u8 {
             self.pin.pin
         }
-    }
+    };
 }
 
 macro_rules! impl_input {
@@ -67,7 +68,7 @@ macro_rules! impl_input {
         pub fn is_high(&self) -> bool {
             self.pin.read() == Level::High
         }
-    }
+    };
 }
 
 macro_rules! impl_output {
@@ -190,7 +191,7 @@ macro_rules! impl_output {
 
             Ok(())
         }
-    }
+    };
 }
 
 macro_rules! impl_reset_on_drop {
@@ -506,8 +507,11 @@ impl InputPin {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<Level>> {
-        let opt =
-            (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(&[self], reset, timeout)?;
+        let opt = (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(
+            once(&*self),
+            reset,
+            timeout,
+        )?;
 
         if let Some(trigger) = opt {
             Ok(Some(trigger.1))
