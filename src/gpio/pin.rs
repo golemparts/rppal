@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use std::iter::once;
 use std::os::unix::io::AsRawFd;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -506,8 +507,11 @@ impl InputPin {
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<Level>> {
-        let opt =
-            (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(&[self], reset, timeout)?;
+        let opt = (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(
+            once(&*self),
+            reset,
+            timeout,
+        )?;
 
         if let Some(trigger) = opt {
             Ok(Some(trigger.1))

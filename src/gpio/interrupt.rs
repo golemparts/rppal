@@ -127,11 +127,11 @@ impl EventLoop {
 
     pub fn poll<'a>(
         &mut self,
-        pins: &[&'a InputPin],
+        pins: impl Iterator<Item = &'a InputPin> + Clone,
         reset: bool,
         timeout: Option<Duration>,
     ) -> Result<Option<(&'a InputPin, Level)>> {
-        for pin in pins {
+        for pin in pins.clone() {
             let trigger_status = &mut self.trigger_status[pin.pin() as usize];
 
             // Did we cache any trigger events during the previous poll?
@@ -190,7 +190,7 @@ impl EventLoop {
 
             // Were any interrupts triggered? If so, return one. The rest
             // will be saved for the next poll.
-            for pin in pins {
+            for pin in pins.clone() {
                 let trigger_status = &mut self.trigger_status[pin.pin() as usize];
 
                 if trigger_status.triggered {
