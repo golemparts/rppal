@@ -18,6 +18,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
+use crate::system::{DeviceInfo, SoC};
+use libc::{self, c_void, off_t, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 use std::fmt;
 use std::fs::OpenOptions;
 use std::io;
@@ -27,9 +30,6 @@ use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
-use libc::{self, c_void, MAP_FAILED, MAP_SHARED, O_SYNC, off_t, PROT_READ, PROT_WRITE, size_t};
-use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
-use crate::system::{DeviceInfo, SoC};
 
 const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem";
 const PATH_DEV_MEM: &str = "/dev/mem";
@@ -55,10 +55,10 @@ pub struct GpioMem {
 impl fmt::Debug for GpioMem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GpioMem")
-         .field("mem_ptr", &self.mem_ptr)
-         .field("locks", &format_args!("{{ .. }}"))
-         .field("soc", &self.soc)
-         .finish()
+            .field("mem_ptr", &self.mem_ptr)
+            .field("locks", &format_args!("{{ .. }}"))
+            .field("soc", &self.soc)
+            .finish()
     }
 }
 
@@ -88,7 +88,11 @@ impl GpioMem {
         let locks = init_array!(AtomicBool::new(false), GPIO_MEM_REGISTERS);
         // Identify which SoC we're using.
         let soc = DeviceInfo::new().map_err(|_| Error::UnknownModel)?.soc();
-        Ok(GpioMem { mem_ptr, locks, soc })
+        Ok(GpioMem {
+            mem_ptr,
+            locks,
+            soc,
+        })
     }
     fn map_devgpiomem() -> Result<*mut u32> {
         // Open /dev/gpiomem with read/write/sync flags. This might fail if
@@ -191,31 +195,36 @@ impl GpioMem {
         self.locks[offset].store(false, Ordering::SeqCst);
     }
     pub(crate) fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
-        let lock: usize;
+        // Offset for register.
         let offset: usize;
+        // Bit shift for pin position within register value.
         let shift: u8;
+        // Only BCM2711 (RPi4) needs special handling for now.
         if self.soc == SoC::Bcm2711 {
-            lock = GPPUD_CNTRL_REG0 + pin as usize / 32;
             offset = GPPUD_CNTRL_REG0 + pin as usize / 16;
-            shift = (pin & 0xf) << 1;
+            shift = pin % 16 * 2;
+            // Index for lock is different than register.
+            let lock = GPPUD_CNTRL_REG0 + pin as usize / 32;
+            // Pull up vs pull down has a reverse bit pattern on BCM2711 vs others.
+            let pud = match pud {
+                PullUpDown::Off => 0b00u32,
+                PullUpDown::PullDown => 0b10,
+                PullUpDown::PullUp => 0b01,
+            };
             loop {
                 if !self.locks[lock].compare_and_swap(false, true, Ordering::SeqCst) {
                     break;
                 }
             }
             let reg_value = self.read(offset);
-            self.write(
-                offset,
-                (reg_value & !(0b11 << shift)) | ((pud as u32) << shift),
-            );
+            self.write(offset, (reg_value & !(0b11 << shift)) | (pud << shift));
             self.locks[lock].store(false, Ordering::SeqCst);
         } else {
-            lock = GPPUDCLK0 + pin as usize / 32;
-            offset = lock;
+            offset = GPPUDCLK0 + pin as usize / 32;
             shift = pin % 32;
             loop {
                 if !self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
-                    if !self.locks[lock].compare_and_swap(false, true, Ordering::SeqCst) {
+                    if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
                         break;
                     } else {
                         self.locks[GPPUD].store(false, Ordering::SeqCst);
@@ -231,14 +240,14 @@ impl GpioMem {
             // 250MHz or 400MHz, a 5µs delay + overhead is more than adequate.
             // Set-up time for the control signal.
             thread::sleep(Duration::new(0, 5000)); // >= 5µs
-            // Clock the control signal into the selected pin.
+                                                   // Clock the control signal into the selected pin.
             self.write(offset, 1 << shift);
             // Hold time for the control signal.
             thread::sleep(Duration::new(0, 5000)); // >= 5µs
-            // Remove the control signal and clock.
+                                                   // Remove the control signal and clock.
             self.write(GPPUD, reg_value & !0b11);
             self.write(offset, 0);
-            self.locks[lock].store(false, Ordering::SeqCst);
+            self.locks[offset].store(false, Ordering::SeqCst);
             self.locks[GPPUD].store(false, Ordering::SeqCst);
         }
     }
