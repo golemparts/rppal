@@ -20,8 +20,6 @@
 
 use std::time::Duration;
 
-use embedded_hal;
-
 use super::Pwm;
 
 impl embedded_hal::Pwm for Pwm {

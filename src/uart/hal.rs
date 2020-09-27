@@ -20,7 +20,6 @@
 
 use embedded_hal::blocking::serial::write::Default;
 use embedded_hal::serial::{Read, Write};
-use nb;
 
 use super::{Error, Queue, Uart};
 

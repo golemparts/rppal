@@ -20,7 +20,6 @@
 
 use embedded_hal::blocking::spi::{Transfer, Write};
 use embedded_hal::spi::FullDuplex;
-use nb;
 
 use super::{Error, Result, Spi};
 
