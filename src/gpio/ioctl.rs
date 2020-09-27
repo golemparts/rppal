@@ -20,6 +20,7 @@
 
 #![allow(dead_code)]
 
+use crate::gpio::{Error, Level, Result, Trigger};
 use libc::{self, c_int, c_ulong, c_void, ENOENT};
 use std::ffi::CString;
 use std::fmt;
@@ -29,8 +30,6 @@ use std::mem;
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
-use crate::gpio::{Error, Level, Result, Trigger};
-
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
 #[cfg(target_env = "musl")]
@@ -39,24 +38,20 @@ type IoctlLong = c_int;
 const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
 const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
-
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
 const SIZEBITS: u8 = 14;
 const DIRBITS: u8 = 2;
-
 const NRSHIFT: u8 = 0;
-const TYPESHIFT: u8 = (NRSHIFT + NRBITS);
-const SIZESHIFT: u8 = (TYPESHIFT + TYPEBITS);
-const DIRSHIFT: u8 = (SIZESHIFT + SIZEBITS);
-
+const TYPESHIFT: u8 = NRSHIFT + NRBITS;
+const SIZESHIFT: u8 = TYPESHIFT + TYPEBITS;
+const DIRSHIFT: u8 = SIZESHIFT + SIZEBITS;
 const NR_GET_CHIP_INFO: IoctlLong = 0x01 << NRSHIFT;
 const NR_GET_LINE_INFO: IoctlLong = 0x02 << NRSHIFT;
 const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << NRSHIFT;
 const NR_GET_LINE_EVENT: IoctlLong = 0x04 << NRSHIFT;
 const NR_GET_LINE_VALUES: IoctlLong = 0x08 << NRSHIFT;
 const NR_SET_LINE_VALUES: IoctlLong = 0x09 << NRSHIFT;
-
 const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << TYPESHIFT;
 
 const SIZE_CHIP_INFO: IoctlLong = (mem::size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
