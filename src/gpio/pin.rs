@@ -41,7 +41,7 @@ macro_rules! impl_pin {
         pub fn pin(&self) -> u8 {
             self.pin.pin
         }
-    }
+    };
 }
 
 macro_rules! impl_input {
@@ -67,7 +67,7 @@ macro_rules! impl_input {
         pub fn is_high(&self) -> bool {
             self.pin.read() == Level::High
         }
-    }
+    };
 }
 
 macro_rules! impl_output {
@@ -190,7 +190,7 @@ macro_rules! impl_output {
 
             Ok(())
         }
-    }
+    };
 }
 
 macro_rules! impl_reset_on_drop {
