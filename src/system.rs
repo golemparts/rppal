@@ -73,6 +73,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[non_exhaustive]
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
@@ -89,11 +90,6 @@ pub enum Model {
     RaspberryPiComputeModule3Plus,
     RaspberryPiZero,
     RaspberryPiZeroW,
-    /// `Model` might be extended with additional variants in a minor or
-    /// patch revision, and must not be exhaustively matched against.
-    /// Instead, add a `_` catch-all arm to match future variants.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl fmt::Display for Model {
@@ -114,7 +110,6 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
-            Model::__Nonexhaustive => write!(f, "__Nonexhaustive"),
         }
     }
 }
@@ -125,17 +120,13 @@ impl fmt::Display for Model {
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[non_exhaustive]
 pub enum SoC {
     Bcm2835,
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
     Bcm2711,
-    /// `SoC` might be extended with additional variants in a minor or
-    /// patch revision, and must not be exhaustively matched against.
-    /// Instead, add a `_` catch-all arm to match future variants.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl fmt::Display for SoC {
@@ -146,7 +137,6 @@ impl fmt::Display for SoC {
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
             SoC::Bcm2711 => write!(f, "BCM2711"),
-            SoC::__Nonexhaustive => write!(f, "__Nonexhaustive"),
         }
     }
 }
@@ -363,7 +353,6 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::__Nonexhaustive => unreachable!(),
         }
     }
 

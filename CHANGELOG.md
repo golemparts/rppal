@@ -2,7 +2,8 @@
 
 ## 0.12.0 (TBD)
 
-* (Breaking change) Require rustc v1.33.0 or newer to compile the library due to std API stabilizations.
+* (Breaking change) Require rustc v1.40.0 or newer to compile the library due to std API stabilizations.
+* **DeviceInfo**: (Breaking change) Replace manual non-exhaustive pattern implementations for `Model` and `SoC` with `#[non_exhaustive]`.
 * **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2.
 * **Gpio**: Fix built-in pull-up/pull-down resistor support for Raspberry Pi 4 B (contributed by @Dragonrun1).
 * **Hal**: (Breaking change) Upgrade `embedded-hal` trait implementations for `digital::v1::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}` to `digital::v2`. These can be explicitly converted back to `digital::v1` through `digital::v1_compat::{OldInputPin, OldOutputPin}` for backwards compatibility with older drivers.
