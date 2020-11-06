@@ -10,6 +10,7 @@
 * **I2c**: Accept slave addresses below 0x08 (contributed by @Majkl578).
 * **I2c**: Add documentation for I2C3, I2C4, I2C5 and I2C6.
 * **Spi**: (Breaking change) Add support for SPI3, SPI4, SPI5 and SPI6.
+* **Spi**: Automatically chunk transmissions to keep them within the maximum buffer size.
 
 ## 0.11.3 (June 24, 2019)
 

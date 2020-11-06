@@ -197,6 +197,8 @@ pub enum Error {
     ModeNotSupported(Mode),
     /// The specified Slave Select polarity is not supported.
     PolarityNotSupported(Polarity),
+    /// The maximum transfer could not be determined.
+    MaxTransferNotAvailable,
 }
 
 impl fmt::Display for Error {
@@ -215,6 +217,9 @@ impl fmt::Display for Error {
             Error::ModeNotSupported(mode) => write!(f, "Mode value not supported: {:?}", mode),
             Error::PolarityNotSupported(polarity) => {
                 write!(f, "Polarity value not supported: {:?}", polarity)
+            }
+            Error::MaxTransferNotAvailable => {
+                write!(f, "Maximum transfer parameter could not be read")
             }
         }
     }
@@ -431,6 +436,7 @@ pub struct Spi {
     // Sync because of ioctl() and the underlying drivers. This avoids needing
     // #![feature(optin_builtin_traits)] to manually add impl !Sync for Spi.
     not_sync: PhantomData<*const ()>,
+    max_transfer: Option<usize>,
 }
 
 impl Spi {
@@ -473,6 +479,7 @@ impl Spi {
             #[cfg(feature = "hal")]
             last_read: 0,
             not_sync: PhantomData,
+            max_transfer: None,
         };
 
         // Set defaults and user-specified settings
@@ -627,6 +634,36 @@ impl Spi {
         }
     }
 
+    /// Get the current maximum transfer limit.
+    pub fn max_transfer(&self) -> Option<usize> {
+        self.max_transfer
+    }
+
+    /// Set maximum transfer limit.
+    ///
+    /// Sets the maximum amount of data that can be transferred in a single
+    /// operation. Larger operations will be broken up into chunks. `None` does
+    /// not set a maximum amount.
+    pub fn set_max_transfer(&mut self, max_transfer: Option<usize>) {
+        self.max_transfer = max_transfer;
+    }
+
+    /// Automatically detects the maximum transfer limit.
+    ///
+    /// The value is read out of `/sys/module/spidev/parameters/bufsiz`. If the
+    /// file cannot be read or its contents cannot be parsed as an integer, the
+    /// maximum transfer limit is left unset.
+    pub fn detect_max_transfer(&mut self) -> Result<()> {
+        let bytes = std::fs::read("/sys/module/spidev/parameters/bufsiz")?;
+        let string = std::str::from_utf8(&bytes)
+            .map_err(|_| Error::MaxTransferNotAvailable)?
+            .trim();
+
+        self.max_transfer = Some(string.parse().map_err(|_| Error::MaxTransferNotAvailable)?);
+
+        Ok(())
+    }
+
     /// Receives incoming data from the slave device and writes it to `buffer`.
     ///
     /// The SPI protocol doesn't indicate how much incoming data is waiting,
@@ -641,7 +678,16 @@ impl Spi {
     ///
     /// Returns how many bytes were read.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        Ok(self.spidev.read(buffer)?)
+        match self.max_transfer {
+            None => Ok(self.spidev.read(buffer)?),
+            Some(max) => {
+                let mut read = 0;
+                for chunk in buffer.chunks_mut(max) {
+                    read += self.spidev.read(chunk)?
+                }
+                Ok(read)
+            }
+        }
     }
 
     /// Sends the outgoing data contained in `buffer` to the slave device.
@@ -653,7 +699,16 @@ impl Spi {
     ///
     /// Returns how many bytes were written.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
-        Ok(self.spidev.write(buffer)?)
+        match self.max_transfer {
+            None => Ok(self.spidev.write(buffer)?),
+            Some(max) => {
+                let mut written = 0;
+                for chunk in buffer.chunks(max) {
+                    written += self.spidev.write(chunk)?
+                }
+                Ok(written)
+            }
+        }
     }
 
     /// Sends and receives data at the same time.
