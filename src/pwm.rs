@@ -27,10 +27,11 @@
 //!
 //! The BCM283x SoC supports two hardware PWM channels. By default, both channels
 //! are disabled. To enable only PWM0 on its default pin (BCM GPIO 18, physical pin 12),
-//! add `dtoverlay=pwm` to `/boot/config.txt`. If you need both PWM channels, replace
-//! `pwm` with `pwm-2chan`, which enables PWM0 on BCM GPIO 18 (physical pin 12), and PWM1
-//! on BCM GPIO 19 (physical pin 35). More details on enabling and configuring PWM on
-//! other GPIO pins than the default ones can be found in `/boot/overlays/README`.
+//! add `dtoverlay=pwm` to `/boot/config.txt` on Raspberry Pi OS or `boot/firmware/usercfg.txt` on
+//! Ubuntu. If you need both PWM channels, replace `pwm` with `pwm-2chan`, which enables PWM0 on BCM
+//! GPIO 18 (physical pin 12), and PWM1 on BCM GPIO 19 (physical pin 35). More details on enabling
+//! and configuring PWM on other GPIO pins than the default ones can be found in
+//! `/boot/overlays/README`.
 //!
 //! The Raspberry Pi's analog audio output uses both PWM channels. Playing audio and
 //! simultaneously accessing a PWM channel may cause issues.
