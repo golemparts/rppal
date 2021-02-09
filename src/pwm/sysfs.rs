@@ -248,7 +248,17 @@ pub fn enabled(channel: u8) -> Result<bool> {
 
 pub fn set_enabled(channel: u8, enabled: bool) -> Result<()> {
     File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel))?
-        .write_fmt(format_args!("{}", enabled as u8))?;
+        .write_fmt(format_args!("{}", enabled as u8))
+        .map_err(|e| {
+            if e.kind() == io::ErrorKind::InvalidInput {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Make sure you have set either a period or frequency before enabling PWM",
+                )
+            } else {
+                e
+            }
+        })?;
 
     Ok(())
 }
