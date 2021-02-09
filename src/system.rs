@@ -167,7 +167,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
     // solely based on the revision field.
     match &hardware[..] {
         "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-        | "BCM2837B0" => {}
+        | "BCM2837B0" | "BCM2711" => {}
         _ => return Err(Error::UnknownModel),
     }
 
