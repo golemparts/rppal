@@ -38,6 +38,7 @@ type IoctlLong = c_int;
 const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
 const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
+const DRIVER_NAME_CM4: &[u8] = b"pinctrl-bcm2711\0";
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
 const SIZEBITS: u8 = 14;
@@ -381,7 +382,7 @@ impl EventData {
                 std::io::ErrorKind::UnexpectedEof,
                 "failed to fill whole buffer",
             )
-            .into())
+                .into())
         } else {
             Ok(event_data)
         }
@@ -429,7 +430,8 @@ pub fn find_gpiochip() -> Result<File> {
         };
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
-        if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..] {
+        if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..]
+            || chip_info.label[0..DRIVER_NAME_CM4.len()] == DRIVER_NAME_CM4[..] {
             return Ok(gpiochip);
         }
     }
@@ -450,5 +452,5 @@ fn cbuf_to_cstring(buf: &[u8]) -> CString {
             .unwrap_or_else(|| buf.len());
         &buf[..pos]
     })
-    .unwrap_or_default()
+        .unwrap_or_default()
 }

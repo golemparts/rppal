@@ -88,6 +88,7 @@ pub enum Model {
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
     RaspberryPiComputeModule3Plus,
+    RaspberryPiComputeModule4,
     RaspberryPiZero,
     RaspberryPiZeroW,
 }
@@ -107,6 +108,7 @@ impl fmt::Display for Model {
             Model::RaspberryPi4B => write!(f, "Raspberry Pi 4 B"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
+            Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
@@ -193,7 +195,8 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
             "a02100" => Model::RaspberryPiComputeModule3Plus,
-            "a03111" | "b03111" | "c03111" | "a03112" | "b03112" | "c03112" => Model::RaspberryPi4B,
+            "a03111" | "b03111" | "c03111" | "a03112" | "b03112" | "c03112" | "c03114" | "d03114" => Model::RaspberryPi4B,
+            "a03140" => Model::RaspberryPiComputeModule4,
             _ => return Err(Error::UnknownModel),
         }
     } else {
@@ -347,7 +350,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi4B => Ok(DeviceInfo {
+            Model::RaspberryPi4B | Model::RaspberryPiComputeModule4 => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2711,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
