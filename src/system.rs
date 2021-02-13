@@ -85,6 +85,7 @@ pub enum Model {
     RaspberryPi3B,
     RaspberryPi3BPlus,
     RaspberryPi4B,
+    RaspberryPi400,
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
     RaspberryPiComputeModule3Plus,
@@ -106,6 +107,7 @@ impl fmt::Display for Model {
             Model::RaspberryPi3BPlus => write!(f, "Raspberry Pi 3 B+"),
             Model::RaspberryPi3APlus => write!(f, "Raspberry Pi 3 A+"),
             Model::RaspberryPi4B => write!(f, "Raspberry Pi 4 B"),
+            Model::RaspberryPi400 => write!(f, "Raspberry Pi 400"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
@@ -197,6 +199,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             "a02100" => Model::RaspberryPiComputeModule3Plus,
             "a03111" | "a03112" | "b03111" | "b03112" | "b03114" | "c03111" | "c03112"
             | "c03114" | "d03114" => Model::RaspberryPi4B,
+            "c03130" => Model::RaspberryPi400,
             "a03140" | "b03140" => Model::RaspberryPiComputeModule4,
             _ => return Err(Error::UnknownModel),
         }
@@ -351,12 +354,14 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi4B | Model::RaspberryPiComputeModule4 => Ok(DeviceInfo {
-                model,
-                soc: SoC::Bcm2711,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
-                gpio_offset: GPIO_OFFSET,
-            }),
+            Model::RaspberryPi4B | Model::RaspberryPi400 | Model::RaspberryPiComputeModule4 => {
+                Ok(DeviceInfo {
+                    model,
+                    soc: SoC::Bcm2711,
+                    peripheral_base: PERIPHERAL_BASE_RPI2,
+                    gpio_offset: GPIO_OFFSET,
+                })
+            }
         }
     }
 
