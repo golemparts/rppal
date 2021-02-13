@@ -236,6 +236,8 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
             "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
             "raspberrypi,4-model-b" => Model::RaspberryPi4B,
+            "raspberrypi,400" => Model::RaspberryPi400,
+            "raspberrypi,4-compute-module" => Model::RaspberryPiComputeModule4,
             _ => continue,
         };
 
@@ -293,6 +295,8 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model A Plus" => Model::RaspberryPi3APlus,
         "Raspberry Pi 4 Model B" => Model::RaspberryPi4B,
+        "Raspberry Pi 400" => Model::RaspberryPi400,
+        "Raspberry Pi Compute Module 4" => Model::RaspberryPiComputeModule4,
         _ => return Err(Error::UnknownModel),
     };
 
