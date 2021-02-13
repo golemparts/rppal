@@ -18,6 +18,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![allow(clippy::unnecessary_cast)]
 #![allow(dead_code)]
 
 use crate::gpio::{Error, Level, Result, Trigger};
@@ -382,7 +383,7 @@ impl EventData {
                 std::io::ErrorKind::UnexpectedEof,
                 "failed to fill whole buffer",
             )
-                .into())
+            .into())
         } else {
             Ok(event_data)
         }
@@ -431,7 +432,8 @@ pub fn find_gpiochip() -> Result<File> {
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
         if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..]
-            || chip_info.label[0..DRIVER_NAME_CM4.len()] == DRIVER_NAME_CM4[..] {
+            || chip_info.label[0..DRIVER_NAME_CM4.len()] == DRIVER_NAME_CM4[..]
+        {
             return Ok(gpiochip);
         }
     }
@@ -452,5 +454,5 @@ fn cbuf_to_cstring(buf: &[u8]) -> CString {
             .unwrap_or_else(|| buf.len());
         &buf[..pos]
     })
-        .unwrap_or_default()
+    .unwrap_or_default()
 }
