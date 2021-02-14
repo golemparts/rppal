@@ -4,11 +4,14 @@
 
 * (Breaking change) Require rustc v1.40.0 or newer to compile the library due to std API stabilizations.
 * **DeviceInfo**: (Breaking change) Replace manual non-exhaustive pattern implementations for `Model` and `SoC` with `#[non_exhaustive]`.
-* **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2.
+* **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2, Raspberry Pi 400 and Raspberry Pi Compute Module 4.
 * **Gpio**: Fix built-in pull-up/pull-down resistor support for Raspberry Pi 4 B (contributed by @Dragonrun1).
+* **Gpio**: Add BCM2711 ioctl support (contributed by @foxzool).
 * **Hal**: (Breaking change) Upgrade `embedded-hal` trait implementations for `digital::v1::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}` to `digital::v2`. These can be explicitly converted back to `digital::v1` through `digital::v1_compat::{OldInputPin, OldOutputPin}` for backwards compatibility with older drivers.
 * **I2c**: Accept slave addresses below 0x08 (contributed by @Majkl578).
 * **I2c**: Add documentation for I2C3, I2C4, I2C5 and I2C6.
+* **Pwm**: Improve error messages (contributed by @binarybana).
+* **Pwm**: Improve documentation for Ubuntu (contributed by @binarybana).
 * **Spi**: (Breaking change) Add support for SPI3, SPI4, SPI5 and SPI6.
 
 ## 0.11.3 (June 24, 2019)
