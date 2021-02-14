@@ -219,7 +219,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// [specification].
 ///
 /// The `embedded-hal` [`blocking::i2c::Read`], [`blocking::i2c::Write`] and
-/// [`blocking::i2c::WriteRead`] trait implementations for `Spi` can be enabled
+/// [`blocking::i2c::WriteRead`] trait implementations for `I2c` can be enabled
 /// by specifying the optional `hal`
 /// feature in the dependency declaration for the `rppal` crate.
 ///
