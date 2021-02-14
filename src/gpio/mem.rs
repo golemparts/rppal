@@ -209,7 +209,10 @@ impl GpioMem {
         let shift = (pin % 10) * 3;
 
         loop {
-            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if self.locks[offset]
+                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
                 break;
             }
         }
@@ -245,7 +248,10 @@ impl GpioMem {
             };
 
             loop {
-                if !self.locks[lock].compare_and_swap(false, true, Ordering::SeqCst) {
+                if self.locks[lock]
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
                     break;
                 }
             }
@@ -259,8 +265,14 @@ impl GpioMem {
             shift = pin % 32;
 
             loop {
-                if !self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
-                    if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+                if self.locks[GPPUD]
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
+                    if self.locks[offset]
+                        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                        .is_ok()
+                    {
                         break;
                     } else {
                         self.locks[GPPUD].store(false, Ordering::SeqCst);

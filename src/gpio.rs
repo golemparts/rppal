@@ -406,8 +406,11 @@ impl Gpio {
             return Err(Error::PinNotAvailable(pin));
         }
 
-        // Returns true if the pin is already taken, otherwise atomically sets it to true here
-        if self.inner.pins_taken[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
+        // Returns an error if the pin is already taken, otherwise atomically sets it to true here
+        if self.inner.pins_taken[pin as usize]
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
             // Pin is taken
             Err(Error::PinNotAvailable(pin))
         } else {
