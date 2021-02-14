@@ -98,17 +98,17 @@
 //!
 //! ### Permission denied
 //!
-//! In recent releases of Raspbian (December 2017 or later), users that are part of the
+//! In recent releases of Raspberry Pi OS (December 2017 or later), users that are part of the
 //! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
 //! `/dev/gpiochipN` (N = 0-2) without needing additional permissions. If you encounter any
 //! [`PermissionDenied`] errors when constructing a new [`Gpio`] instance, either the current
-//! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
+//! user isn't a member of the `gpio` group, or your Raspberry Pi OS distribution isn't
 //! up-to-date and doesn't automatically configure permissions for the above-mentioned
-//! files. Updating Raspbian to the latest release should fix any permission issues.
+//! files. Updating Raspberry Pi OS to the latest release should fix any permission issues.
 //! Alternatively, although not recommended, you can run your application with superuser
 //! privileges by using `sudo`.
 //!
-//! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
+//! If you're unable to update Raspberry Pi OS and its packages (namely `raspberrypi-sys-mods`) to
 //! the latest available release, or updating hasn't fixed the issue, you might be able to
 //! manually update your `udev` rules to set the appropriate permissions. More information
 //! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
