@@ -40,7 +40,7 @@ pub type Result<T> = result::Result<T, io::Error>;
 // Find user ID for specified user
 pub fn user_to_uid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0_u8; 4096];
+        let mut buf: [libc::c_char; 4096] = [0; 4096];
         let mut res: *mut passwd = ptr::null_mut();
         let mut pwd = passwd {
             pw_name: ptr::null_mut(),
@@ -73,7 +73,7 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 // Find group ID for specified group
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0_u8; 4096];
+        let mut buf: [libc::c_char; 4096] = [0; 4096];
         let mut res: *mut group = ptr::null_mut();
         let mut grp = group {
             gr_name: ptr::null_mut(),
