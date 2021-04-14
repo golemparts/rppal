@@ -3,8 +3,6 @@ cache: cargo
 services: docker
 rust:
   - stable
-  - beta
-  - nightly
 install:
   - cargo install cross || true
   - source ~/.cargo/env || true
