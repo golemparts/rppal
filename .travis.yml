@@ -3,6 +3,8 @@ cache: cargo
 services: docker
 rust:
   - stable
+  - beta
+  - nightly
 install:
   - cargo install cross || true
   - source ~/.cargo/env || true
@@ -15,4 +17,5 @@ env:
   - TARGET=aarch64-unknown-linux-gnu
 matrix:
   allow_failures:
+    - rust: beta
     - rust: nightly
