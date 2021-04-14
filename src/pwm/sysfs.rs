@@ -75,7 +75,7 @@ pub fn user_to_uid(name: &str) -> Option<u32> {
 // Find group ID for specified group
 pub fn group_to_gid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0_u8; 4096];
+        let buf = &mut [0 as c_char; 4096];
         let mut res: *mut group = ptr::null_mut();
         let mut grp = group {
             gr_name: ptr::null_mut(),
