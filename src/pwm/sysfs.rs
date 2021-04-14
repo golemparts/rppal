@@ -18,6 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![allow(clippy::unnecessary_cast)]
+
 use std::ffi::CString;
 use std::fs;
 use std::fs::File;
@@ -30,7 +32,7 @@ use std::result;
 use std::thread;
 use std::time::Duration;
 
-use libc::{group, passwd};
+use libc::{c_char, group, passwd};
 
 use crate::pwm::Polarity;
 
@@ -40,7 +42,7 @@ pub type Result<T> = result::Result<T, io::Error>;
 // Find user ID for specified user
 pub fn user_to_uid(name: &str) -> Option<u32> {
     if let Ok(name_cstr) = CString::new(name) {
-        let buf = &mut [0_u8; 4096];
+        let buf = &mut [0 as c_char; 4096];
         let mut res: *mut passwd = ptr::null_mut();
         let mut pwd = passwd {
             pw_name: ptr::null_mut(),
