@@ -172,12 +172,6 @@ impl EventLoop {
 
                 let trigger_status = &mut self.trigger_status[pin];
 
-                debug_assert!(
-                    trigger_status.interrupt.is_some(),
-                    "No interrupt set for pin {}",
-                    pin
-                );
-
                 if let Some(ref mut interrupt) = trigger_status.interrupt {
                     trigger_status.level = match interrupt.event()?.trigger {
                         Trigger::RisingEdge => Level::High,
