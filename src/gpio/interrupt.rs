@@ -174,7 +174,8 @@ impl EventLoop {
 
                 debug_assert!(
                     trigger_status.interrupt.is_some(),
-                    format!("No interrupt set for pin {}", pin)
+                    "No interrupt set for pin {}",
+                    pin
                 );
 
                 if let Some(ref mut interrupt) = trigger_status.interrupt {
