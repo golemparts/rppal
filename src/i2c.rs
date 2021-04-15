@@ -245,15 +245,20 @@ impl I2c {
     /// Constructs a new `I2c`.
     ///
     /// `new` attempts to identify which I2C bus is bound to physical pins 3 (SDA)
-    /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
-    /// bus 0 is selected. For every other model, bus 1 is used.
+    /// and 5 (SCL) based on the Raspberry Pi model.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
     /// [here]: index.html#i2c-buses
     pub fn new() -> Result<I2c> {
         match DeviceInfo::new()?.model() {
+            // Pi B Rev 1 uses I2C0
             Model::RaspberryPiBRev1 => I2c::with_bus(0),
+            Model::RaspberryPi4B | Model::RaspberryPi400 => {
+                // Pi 4B/400 could have I2C3 enabled on pins 3 and 5
+                I2c::with_bus(1).or_else(|_| I2c::with_bus(3))
+            }
+            // Everything else should be using I2C1
             _ => I2c::with_bus(1),
         }
     }
