@@ -30,7 +30,7 @@
 //! The Raspberry Pi's GPIO header exposes several SPI buses. SPI0 is available
 //! on all Raspberry Pi models. SPI1 is available on models with a 40-pin
 //! header. SPI2 is only available on the Compute and Compute 3. SPI3 through SPI6
-//! are only available on the Raspberry Pi 4 B.
+//! are only available on the Raspberry Pi 4 B and 400.
 //!
 //! ### SPI0
 //!

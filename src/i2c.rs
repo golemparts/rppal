@@ -31,8 +31,8 @@
 //! with slave devices. The other two buses are used internally as an HDMI
 //! interface, and for HAT identification.
 //!
-//! On the Raspberry Pi 4 B, three additional I2C buses are available, depending
-//! on your configuration, as explained below.
+//! On the Raspberry Pi 4 B and 400, three additional I2C buses are available,
+//! depending on your configuration, as explained below.
 //!
 //! ### I2C0 / I2C1
 //!
