@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 (TBD)
+## 0.12.0 (April 17, 2021)
 
 * (Breaking change) Require rustc v1.40.0 or newer to compile the library due to std API stabilizations.
 * **DeviceInfo**: (Breaking change) Replace manual non-exhaustive pattern implementations for `Model` and `SoC` with `#[non_exhaustive]`.
