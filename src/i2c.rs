@@ -269,7 +269,7 @@ impl I2c {
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
     /// Pi B Rev 1, those pins are tied to bus 0. On every other Raspberry
     /// Pi model, they're connected to bus 1. Additional I2C buses are available
-    /// on the Raspberry Pi 4 B.
+    /// on the Raspberry Pi 4 B and 400.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
