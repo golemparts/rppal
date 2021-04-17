@@ -2,7 +2,7 @@
 
 ## 0.12.0 (April 17, 2021)
 
-* (Breaking change) Require rustc v1.40.0 or newer to compile the library due to std API stabilizations.
+* (Breaking change) Require rustc v1.45.0 or newer to compile the library due to std API stabilizations.
 * **DeviceInfo**: (Breaking change) Replace manual non-exhaustive pattern implementations for `Model` and `SoC` with `#[non_exhaustive]`.
 * **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2, Raspberry Pi 400 and Raspberry Pi Compute Module 4.
 * **Gpio**: Fix built-in pull-up/pull-down resistor support for Raspberry Pi 4 B (contributed by @Dragonrun1).
