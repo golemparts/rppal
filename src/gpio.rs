@@ -273,6 +273,16 @@ impl fmt::Display for Level {
     }
 }
 
+impl From<u8> for Level {
+    fn from(value: u8) -> Self {
+        if value == 0 {
+            Level::Low
+        } else {
+            Level::High
+        }
+    }
+}
+
 impl Not for Level {
     type Output = Level;
 

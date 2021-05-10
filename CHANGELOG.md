@@ -3,6 +3,7 @@
 ## 0.13.0 (TBD)
 
 * **Gpio**: Add `into_output_low()` and `into_output_high()` to `Pin` to set the logic level before changing the pin mode.
+* **Gpio**: Implement `From<u8>` trait for `Level`, where `0` is converted into `Level::Low`, and any other value into `Level::High`.
 
 ## 0.12.0 (April 17, 2021)
 
