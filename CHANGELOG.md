@@ -2,6 +2,8 @@
 
 ## 0.13.0 (TBD)
 
+* **Gpio**: Add `into_output_low()` and `into_output_high()` to `Pin` to set the logic level before changing the pin mode.
+
 ## 0.12.0 (April 17, 2021)
 
 * (Breaking change) Require rustc v1.45.0 or newer to compile the library due to std API stabilizations.
