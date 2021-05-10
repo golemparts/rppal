@@ -155,13 +155,11 @@ fn parse_proc_cpuinfo() -> Result<Model> {
 
     let mut hardware: String = String::new();
     let mut revision: String = String::new();
-    for line_result in proc_cpuinfo.lines() {
-        if let Ok(line) = line_result {
-            if let Some(line_value) = line.strip_prefix("Hardware\t: ") {
-                hardware = String::from(line_value);
-            } else if let Some(line_value) = line.strip_prefix("Revision\t: ") {
-                revision = String::from(line_value).to_lowercase();
-            }
+    for line in proc_cpuinfo.lines().flatten() {
+        if let Some(line_value) = line.strip_prefix("Hardware\t: ") {
+            hardware = String::from(line_value);
+        } else if let Some(line_value) = line.strip_prefix("Revision\t: ") {
+            revision = String::from(line_value).to_lowercase();
         }
     }
 
