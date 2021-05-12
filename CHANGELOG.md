@@ -18,6 +18,7 @@
 * **Pwm**: Improve error messages (contributed by @binarybana).
 * **Pwm**: Improve documentation for Ubuntu (contributed by @binarybana).
 * **Spi**: (Breaking change) Add support for SPI3, SPI4, SPI5 and SPI6.
+* **Spi**: Automatically chunk transmissions to keep them within the maximum buffer size.
 
 ## 0.11.3 (June 24, 2019)
 
