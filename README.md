@@ -25,7 +25,7 @@ This library is under active development on the [master branch](https://github.c
   - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
-  - [RLS](#rls)
+  - [RLS / rust-analyzer](#rls--rust-analyzer)
 - [Caution](#caution)
 - [Copyright and license](#copyright-and-license)
 
