@@ -280,7 +280,7 @@ impl SmbusBuffer {
             buffer.data[1..=SMBUS_BLOCK_MAX].copy_from_slice(&value[..SMBUS_BLOCK_MAX]);
             SMBUS_BLOCK_MAX as u8
         } else {
-            buffer.data[1..=value.len()].copy_from_slice(&value);
+            buffer.data[1..=value.len()].copy_from_slice(value);
             value.len() as u8
         };
 
