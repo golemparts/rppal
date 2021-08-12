@@ -26,71 +26,12 @@
 //! This module is only included when either the `hal` or `hal-unproven` feature
 //! flag is enabled.
 
-use std::thread;
 use std::time::{Duration, Instant};
+use core::convert::Infallible;
 
-use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::timer::CountDown;
-use void::Void;
 
-/// Implements the `embedded-hal` `DelayMs` and `DelayUs` traits.
-#[derive(Debug, Default)]
-pub struct Delay {}
-
-impl Delay {
-    /// Constructs a new `Delay`.
-    pub fn new() -> Delay {
-        Delay {}
-    }
-}
-
-impl DelayMs<u8> for Delay {
-    fn delay_ms(&mut self, ms: u8) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
-    }
-}
-
-impl DelayMs<u16> for Delay {
-    fn delay_ms(&mut self, ms: u16) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
-    }
-}
-
-impl DelayMs<u32> for Delay {
-    fn delay_ms(&mut self, ms: u32) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
-    }
-}
-
-impl DelayMs<u64> for Delay {
-    fn delay_ms(&mut self, ms: u64) {
-        thread::sleep(Duration::from_millis(ms));
-    }
-}
-
-impl DelayUs<u8> for Delay {
-    fn delay_us(&mut self, us: u8) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
-    }
-}
-
-impl DelayUs<u16> for Delay {
-    fn delay_us(&mut self, us: u16) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
-    }
-}
-
-impl DelayUs<u32> for Delay {
-    fn delay_us(&mut self, us: u32) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
-    }
-}
-
-impl DelayUs<u64> for Delay {
-    fn delay_us(&mut self, us: u64) {
-        thread::sleep(Duration::from_micros(us));
-    }
-}
+pub use linux_embedded_hal::Delay;
 
 /// Newtype wrapper for `f64`. Converts into `Duration`.
 pub struct Hertz(pub f64);
@@ -110,7 +51,7 @@ impl From<Hertz> for Duration {
 /// Implements the `embedded-hal` `CountDown` trait.
 #[derive(Debug, Copy, Clone)]
 pub struct Timer {
-    now: Instant,
+    start: Instant,
     duration: Duration,
 }
 
@@ -118,7 +59,7 @@ impl Timer {
     /// Constructs a new `Timer`.
     pub fn new() -> Self {
         Self {
-            now: Instant::now(),
+            start: Instant::now(),
             duration: Duration::from_micros(0),
         }
     }
@@ -132,19 +73,21 @@ impl Default for Timer {
 
 impl CountDown for Timer {
     type Time = Duration;
+    type Error = Infallible;
 
     /// Starts the timer with a `timeout`.
-    fn start<T>(&mut self, timeout: T)
+    fn try_start<T>(&mut self, timeout: T) -> Result<(), Self::Error>
     where
         T: Into<Self::Time>,
     {
+        self.start = Instant::now();
         self.duration = timeout.into();
-        self.now = Instant::now();
+        Ok(())
     }
 
     /// Returns `Ok` if the timer has wrapped.
-    fn wait(&mut self) -> nb::Result<(), Void> {
-        if self.now.elapsed() >= self.duration {
+    fn try_wait(&mut self) -> nb::Result<(), Self::Error> {
+        if self.start.elapsed() >= self.duration {
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)

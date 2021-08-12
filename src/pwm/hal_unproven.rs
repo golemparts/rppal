@@ -22,7 +22,7 @@ use std::time::Duration;
 
 use super::Pwm;
 
-impl embedded_hal::Pwm for Pwm {
+impl embedded_hal::pwm::Pwm for Pwm {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;

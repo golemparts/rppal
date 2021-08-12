@@ -18,30 +18,31 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use embedded_hal::PwmPin;
+use embedded_hal::pwm::PwmPin;
 
-use super::Pwm;
+use super::{Pwm, Error};
 
 impl PwmPin for Pwm {
     type Duty = f64;
+    type Error = Error;
 
-    fn disable(&mut self) {
-        let _ = Pwm::disable(self);
+    fn try_disable(&mut self) -> Result<(), Self::Error> {
+        Pwm::disable(self)
     }
 
-    fn enable(&mut self) {
-        let _ = Pwm::enable(self);
+    fn try_enable(&mut self) -> Result<(), Self::Error> {
+        Pwm::enable(self)
     }
 
-    fn get_duty(&self) -> Self::Duty {
-        self.duty_cycle().unwrap_or_default()
+    fn try_get_duty(&self) -> Result<Self::Duty, Self::Error> {
+        self.duty_cycle()
     }
 
-    fn get_max_duty(&self) -> Self::Duty {
-        1.0
+    fn try_get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
+        Ok(1.0)
     }
 
-    fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.set_duty_cycle(duty);
+    fn try_set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
+        self.set_duty_cycle(duty)
     }
 }
