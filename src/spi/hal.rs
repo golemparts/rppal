@@ -34,6 +34,14 @@ impl Transfer<u8> for Spi {
     }
 }
 
+impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
+    type Error = Error;
+
+    fn transfer<'a>(&mut self, buffer: &'a mut [u8]) -> Result<&'a [u8], Self::Error> {
+        self.try_transfer(buffer)
+    }
+}
+
 impl Write<u8> for Spi {
     type Error = Error;
 
@@ -41,6 +49,14 @@ impl Write<u8> for Spi {
         Spi::write(self, buffer)?;
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
+    type Error = Error;
+
+    fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
+        self.try_write(buffer)
     }
 }
 
@@ -58,5 +74,17 @@ impl FullDuplex<u8> for Spi {
         self.last_read = read_buffer[0];
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
+    type Error = Error;
+
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+        self.try_read()
+    }
+
+    fn send(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
+        self.try_send(byte)
     }
 }

@@ -30,6 +30,7 @@ use std::time::{Duration, Instant};
 use core::convert::Infallible;
 
 use embedded_hal::timer::CountDown;
+use void::Void;
 
 pub use linux_embedded_hal::Delay;
 
@@ -92,5 +93,22 @@ impl CountDown for Timer {
         } else {
             Err(nb::Error::WouldBlock)
         }
+    }
+}
+
+impl embedded_hal_0::timer::CountDown for Timer {
+    type Time = Duration;
+
+    /// Starts the timer with a `timeout`.
+    fn start<T>(&mut self, timeout: T)
+    where
+        T: Into<Self::Time>,
+    {
+        self.try_start(timeout).unwrap()
+    }
+
+    /// Returns `Ok` if the timer has wrapped.
+    fn wait(&mut self) -> nb::Result<(), Void> {
+        Ok(self.try_wait().unwrap())
     }
 }

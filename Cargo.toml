@@ -15,6 +15,7 @@ keywords = ["raspberry", "pi", "embedded-hal", "embedded-hal-impl", "hal"]
 libc = "0.2.50"
 lazy_static = "1.3.0"
 nb = { version = "0.1.1", optional = true }
+embedded-hal-0 = { version = "0.2.6", optional = true, package = "embedded-hal" }
 embedded-hal = { version = "1.0.0-alpha.4", optional = true }
 linux-embedded-hal = { version = "0.4.0-alpha.0", optional = true }
 void = { version = "1.0.2", optional = true }
@@ -24,5 +25,5 @@ simple-signal = "1.1.1"
 
 [features]
 default = []
-hal = ["nb", "embedded-hal", "linux-embedded-hal"]
-hal-unproven = ["nb", "embedded-hal/unproven", "hal"]
+hal = ["nb", "embedded-hal", "embedded-hal-0", "linux-embedded-hal"]
+hal-unproven = ["nb", "embedded-hal-0/unproven", "hal"]

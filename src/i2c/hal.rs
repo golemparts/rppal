@@ -33,6 +33,14 @@ impl Write for I2c {
     }
 }
 
+impl embedded_hal_0::blocking::i2c::Write for I2c {
+    type Error = Error;
+
+    fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
+        self.try_write(address, bytes)
+    }
+}
+
 impl Read for I2c {
     type Error = Error;
 
@@ -44,6 +52,14 @@ impl Read for I2c {
     }
 }
 
+impl embedded_hal_0::blocking::i2c::Read for I2c {
+    type Error = Error;
+
+    fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
+        self.try_read(address, buffer)
+    }
+}
+
 impl WriteRead for I2c {
     type Error = Error;
 
@@ -52,5 +68,13 @@ impl WriteRead for I2c {
         I2c::write_read(self, bytes, buffer)?;
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::i2c::WriteRead for I2c {
+    type Error = Error;
+
+    fn write_read(&mut self, address: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<(), Self::Error> {
+        self.try_write_read(address, bytes, buffer)
     }
 }

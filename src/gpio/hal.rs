@@ -20,12 +20,12 @@
 
 use core::convert::Infallible;
 
-use embedded_hal::digital;
+use embedded_hal::digital::OutputPin as OutputPinHal;
 use embedded_hal::pwm::PwmPin;
 
 use super::{Error, IoPin, OutputPin};
 
-impl digital::OutputPin for OutputPin {
+impl OutputPinHal for OutputPin {
     type Error = Infallible;
 
     fn try_set_low(&mut self) -> Result<(), Self::Error> {
@@ -41,7 +41,19 @@ impl digital::OutputPin for OutputPin {
     }
 }
 
-impl digital::OutputPin for IoPin {
+impl embedded_hal_0::digital::v2::OutputPin for OutputPin {
+    type Error = Infallible;
+
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        self.try_set_low()
+    }
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        self.try_set_high()
+    }
+}
+
+impl OutputPinHal for IoPin {
     type Error = Infallible;
 
     fn try_set_low(&mut self) -> Result<(), Self::Error> {
@@ -54,6 +66,18 @@ impl digital::OutputPin for IoPin {
         IoPin::set_high(self);
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::digital::v2::OutputPin for IoPin {
+    type Error = Infallible;
+
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        self.try_set_low()
+    }
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        self.try_set_high()
     }
 }
 
@@ -88,6 +112,30 @@ impl PwmPin for OutputPin {
     }
 }
 
+impl embedded_hal_0::PwmPin for OutputPin {
+    type Duty = f64;
+
+    fn disable(&mut self) {
+        let _ = self.try_disable();
+    }
+
+    fn enable(&mut self) {
+        let _ = self.try_enable();
+    }
+
+    fn get_duty(&self) -> Self::Duty {
+        self.try_get_duty().unwrap_or_default()
+    }
+
+    fn get_max_duty(&self) -> Self::Duty {
+        self.try_get_max_duty().unwrap_or(1.0)
+    }
+
+    fn set_duty(&mut self, duty: Self::Duty) {
+        let _ = self.try_set_duty(duty);
+    }
+}
+
 impl PwmPin for IoPin {
     type Duty = f64;
     type Error = Error;
@@ -116,5 +164,29 @@ impl PwmPin for IoPin {
         }
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::PwmPin for IoPin {
+    type Duty = f64;
+
+    fn disable(&mut self) {
+        let _ = self.try_disable();
+    }
+
+    fn enable(&mut self) {
+        let _ = self.try_enable();
+    }
+
+    fn get_duty(&self) -> Self::Duty {
+        self.try_get_duty().unwrap_or_default()
+    }
+
+    fn get_max_duty(&self) -> Self::Duty {
+        self.try_get_max_duty().unwrap_or(1.0)
+    }
+
+    fn set_duty(&mut self, duty: Self::Duty) {
+        let _ = self.try_set_duty(duty);
     }
 }

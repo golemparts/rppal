@@ -46,3 +46,27 @@ impl PwmPin for Pwm {
         self.set_duty_cycle(duty)
     }
 }
+
+impl embedded_hal_0::PwmPin for Pwm {
+    type Duty = f64;
+
+    fn disable(&mut self) {
+        let _ = self.try_disable();
+    }
+
+    fn enable(&mut self) {
+        let _ = self.try_enable();
+    }
+
+    fn get_duty(&self) -> Self::Duty {
+        self.try_get_duty().unwrap_or_default()
+    }
+
+    fn get_max_duty(&self) -> Self::Duty {
+        self.try_get_max_duty().unwrap()
+    }
+
+    fn set_duty(&mut self, duty: Self::Duty) {
+        let _ = self.try_set_duty(duty);
+    }
+}
