@@ -19,14 +19,16 @@
 // DEALINGS IN THE SOFTWARE.
 
 use core::convert::Infallible;
+use std::time::Duration;
 
 use embedded_hal::digital::{
     InputPin as InputPinHal,
     StatefulOutputPin as StatefulOutputPinHal,
     ToggleableOutputPin as ToggleableOutputPinHal,
 };
+use embedded_hal::pwm::Pwm;
 
-use super::{InputPin, IoPin, Level, OutputPin, Pin, Error};
+use super::{InputPin, IoPin, Level, OutputPin, Pin};
 
 impl InputPinHal for Pin {
     type Error = Infallible;

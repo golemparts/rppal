@@ -22,7 +22,7 @@ use std::time::Duration;
 
 use embedded_hal::pwm::Pwm as PwmHal;
 
-use super::{Pwm, Error};
+use super::Pwm;
 
 impl embedded_hal_0::Pwm for Pwm {
     type Duty = f64;
