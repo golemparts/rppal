@@ -26,13 +26,144 @@
 //! This module is only included when either the `hal` or `hal-unproven` feature
 //! flag is enabled.
 
-use std::time::{Duration, Instant};
 use core::convert::Infallible;
+use std::time::{Duration, Instant};
 
+use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::timer::CountDown;
+use spin_sleep::sleep;
 use void::Void;
 
-pub use linux_embedded_hal::Delay;
+/// Implements the `embedded-hal` `DelayMs` and `DelayUs` traits.
+#[derive(Debug, Default)]
+pub struct Delay {}
+
+impl Delay {
+    /// Constructs a new `Delay`.
+    pub fn new() -> Delay {
+        Delay {}
+    }
+}
+
+impl DelayMs<u8> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_ms(&mut self, ms: u8) -> Result<(), Self::Error> {
+        sleep(Duration::from_millis(u64::from(ms)));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
+    fn delay_ms(&mut self, ms: u8) {
+        self.try_delay_ms(ms).unwrap()
+    }
+}
+
+impl DelayMs<u16> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_ms(&mut self, ms: u16) -> Result<(), Self::Error> {
+        sleep(Duration::from_millis(u64::from(ms)));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
+    fn delay_ms(&mut self, ms: u16) {
+        self.try_delay_ms(ms).unwrap()
+    }
+}
+
+impl DelayMs<u32> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_ms(&mut self, ms: u32) -> Result<(), Self::Error> {
+        sleep(Duration::from_millis(u64::from(ms)));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
+    fn delay_ms(&mut self, ms: u32) {
+        self.try_delay_ms(ms).unwrap()
+    }
+}
+
+impl DelayMs<u64> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_ms(&mut self, ms: u64) -> Result<(), Self::Error> {
+        sleep(Duration::from_millis(ms));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
+    fn delay_ms(&mut self, ms: u64) {
+        self.try_delay_ms(ms).unwrap()
+    }
+}
+
+impl DelayUs<u8> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_us(&mut self, us: u8) -> Result<(), Self::Error> {
+        sleep(Duration::from_micros(us.into()));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
+    fn delay_us(&mut self, us: u8) {
+        self.try_delay_us(us).unwrap()
+    }
+}
+
+impl DelayUs<u16> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_us(&mut self, us: u16) -> Result<(), Self::Error> {
+        sleep(Duration::from_micros(us.into()));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
+    fn delay_us(&mut self, us: u16) {
+        self.try_delay_us(us).unwrap()
+    }
+}
+
+impl DelayUs<u32> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_us(&mut self, us: u32) -> Result<(), Self::Error> {
+        sleep(Duration::from_micros(us.into()));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
+    fn delay_us(&mut self, us: u32) {
+        self.try_delay_us(us).unwrap()
+    }
+}
+
+impl DelayUs<u64> for Delay {
+    type Error = Infallible;
+
+    fn try_delay_us(&mut self, us: u64) -> Result<(), Self::Error> {
+        sleep(Duration::from_micros(us));
+        Ok(())
+    }
+}
+
+impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
+    fn delay_us(&mut self, us: u64) {
+        self.try_delay_us(us).unwrap()
+    }
+}
 
 /// Newtype wrapper for `f64`. Converts into `Duration`.
 pub struct Hertz(pub f64);
