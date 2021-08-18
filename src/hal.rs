@@ -36,7 +36,7 @@ use void::Void;
 
 /// Implements the `embedded-hal` `DelayMs` and `DelayUs` traits.
 #[derive(Debug, Default)]
-pub struct Delay {}
+pub struct Delay;
 
 impl Delay {
     /// Constructs a new `Delay`.
