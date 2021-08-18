@@ -24,51 +24,6 @@ use embedded_hal::pwm::Pwm as PwmHal;
 
 use super::{Pwm, Error};
 
-impl PwmHal for Pwm {
-    type Duty = f64;
-    type Channel = ();
-    type Time = Duration;
-    type Error = Error;
-
-    /// Disables a PWM `channel`
-    fn try_disable(&mut self, _channel: Self::Channel) -> Result<(), Self::Error> {
-        Pwm::disable(self)
-    }
-
-    /// Enables a PWM `channel`
-    fn try_enable(&mut self, _channel: Self::Channel) -> Result<(), Self::Error> {
-        Pwm::enable(self)
-    }
-
-    /// Returns the current PWM period
-    fn try_get_period(&self) -> Result<Self::Time, Self::Error> {
-        self.period()
-    }
-
-    /// Returns the current duty cycle
-    fn try_get_duty(&self, _channel: Self::Channel) -> Result<Self::Duty, Self::Error> {
-        self.duty_cycle()
-    }
-
-    /// Returns the maximum duty cycle value
-    fn try_get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(1.0)
-    }
-
-    /// Sets a new duty cycle
-    fn try_set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
-        self.set_duty_cycle(duty)
-    }
-
-    /// Sets a new PWM period
-    fn try_set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
-    where
-        P: Into<Self::Time>,
-    {
-        Pwm::set_period(self, period.into())
-    }
-}
-
 impl embedded_hal_0::Pwm for Pwm {
     type Duty = f64;
     type Channel = ();
