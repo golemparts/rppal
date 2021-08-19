@@ -2,6 +2,7 @@
 
 ## 0.13.0 (TBD)
 
+* Add support for `embedded-hal` v1.0.0-alpha.4 (contributed by @reitermarkus).
 * **Gpio**: Add `into_output_low()` and `into_output_high()` to `Pin` to set the logic level before changing the pin mode.
 * **Gpio**: Implement `From<u8>` trait for `Level`, where `0` is converted into `Level::Low`, and any other value into `Level::High`.
 
