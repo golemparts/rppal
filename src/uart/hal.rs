@@ -26,7 +26,7 @@ use super::{Error, Queue, Uart};
 impl Read<u8> for Uart {
     type Error = Error;
 
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+    fn try_read(&mut self) -> nb::Result<u8, Self::Error> {
         let mut buffer = [0u8; 1];
         if Uart::read(self, &mut buffer)? == 0 {
             Err(nb::Error::WouldBlock)
@@ -36,10 +36,18 @@ impl Read<u8> for Uart {
     }
 }
 
+impl embedded_hal_0::serial::Read<u8> for Uart {
+    type Error = Error;
+
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+        self.try_read()
+    }
+}
+
 impl Write<u8> for Uart {
     type Error = Error;
 
-    fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+    fn try_write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
         if Uart::write(self, &[word])? == 0 {
             Err(nb::Error::WouldBlock)
         } else {
@@ -47,10 +55,22 @@ impl Write<u8> for Uart {
         }
     }
 
-    fn flush(&mut self) -> nb::Result<(), Self::Error> {
+    fn try_flush(&mut self) -> nb::Result<(), Self::Error> {
         Uart::flush(self, Queue::Output)?;
 
         Ok(())
+    }
+}
+
+impl embedded_hal_0::serial::Write<u8> for Uart {
+    type Error = Error;
+
+    fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+        self.try_write(word)
+    }
+
+    fn flush(&mut self) -> nb::Result<(), Self::Error> {
+        self.try_flush()
     }
 }
 
