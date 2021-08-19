@@ -63,7 +63,12 @@ impl embedded_hal_0::blocking::i2c::Read for I2c {
 impl WriteRead for I2c {
     type Error = Error;
 
-    fn try_write_read(&mut self, address: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn try_write_read(
+        &mut self,
+        address: u8,
+        bytes: &[u8],
+        buffer: &mut [u8],
+    ) -> Result<(), Self::Error> {
         self.set_slave_address(u16::from(address))?;
         I2c::write_read(self, bytes, buffer)?;
 
@@ -74,7 +79,12 @@ impl WriteRead for I2c {
 impl embedded_hal_0::blocking::i2c::WriteRead for I2c {
     type Error = Error;
 
-    fn write_read(&mut self, address: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn write_read(
+        &mut self,
+        address: u8,
+        bytes: &[u8],
+        buffer: &mut [u8],
+    ) -> Result<(), Self::Error> {
         self.try_write_read(address, bytes, buffer)
     }
 }

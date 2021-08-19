@@ -22,7 +22,7 @@ use std::time::Duration;
 
 use embedded_hal::pwm::PwmPin;
 
-use super::{Pwm, Error};
+use super::{Error, Pwm};
 
 impl embedded_hal::pwm::Pwm for Pwm {
     type Duty = f64;
@@ -56,7 +56,11 @@ impl embedded_hal::pwm::Pwm for Pwm {
     }
 
     /// Sets a new duty cycle
-    fn try_set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
+    fn try_set_duty(
+        &mut self,
+        _channel: Self::Channel,
+        duty: Self::Duty,
+    ) -> Result<(), Self::Error> {
         self.set_duty_cycle(duty)
     }
 

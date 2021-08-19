@@ -120,7 +120,11 @@ impl embedded_hal::pwm::Pwm for OutputPin {
     }
 
     /// Sets a new duty cycle
-    fn try_set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
+    fn try_set_duty(
+        &mut self,
+        _channel: Self::Channel,
+        duty: Self::Duty,
+    ) -> Result<(), Self::Error> {
         self.duty_cycle = duty.max(0.0).min(1.0);
 
         if self.soft_pwm.is_some() {
@@ -152,7 +156,7 @@ impl PwmPin for OutputPin {
     type Error = Error;
 
     fn try_disable(&mut self) -> Result<(), Self::Error> {
-       self.clear_pwm()
+        self.clear_pwm()
     }
 
     fn try_enable(&mut self) -> Result<(), Self::Error> {
@@ -238,7 +242,11 @@ impl embedded_hal::pwm::Pwm for IoPin {
     }
 
     /// Sets a new duty cycle
-    fn try_set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
+    fn try_set_duty(
+        &mut self,
+        _channel: Self::Channel,
+        duty: Self::Duty,
+    ) -> Result<(), Self::Error> {
         self.duty_cycle = duty.max(0.0).min(1.0);
 
         if self.soft_pwm.is_some() {

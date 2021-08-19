@@ -22,8 +22,7 @@ use core::convert::Infallible;
 use std::time::Duration;
 
 use embedded_hal::digital::{
-    InputPin as InputPinHal,
-    StatefulOutputPin as StatefulOutputPinHal,
+    InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal,
     ToggleableOutputPin as ToggleableOutputPinHal,
 };
 use embedded_hal::pwm::Pwm;
