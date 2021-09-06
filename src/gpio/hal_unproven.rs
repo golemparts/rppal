@@ -21,25 +21,10 @@
 use core::convert::Infallible;
 use std::time::Duration;
 
-use embedded_hal::digital::{
-    InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal,
-    ToggleableOutputPin as ToggleableOutputPinHal,
-};
-use embedded_hal::pwm::Pwm;
+use embedded_hal::digital::{InputPin as _, StatefulOutputPin as _, ToggleableOutputPin as _};
+use embedded_hal::pwm::Pwm as PwmHal;
 
-use super::{InputPin, IoPin, Level, OutputPin, Pin};
-
-impl InputPinHal for Pin {
-    type Error = Infallible;
-
-    fn try_is_high(&self) -> Result<bool, Self::Error> {
-        Ok(Pin::read(self) == Level::High)
-    }
-
-    fn try_is_low(&self) -> Result<bool, Self::Error> {
-        Ok(Pin::read(self) == Level::Low)
-    }
-}
+use super::{InputPin, IoPin, OutputPin, Pin};
 
 impl embedded_hal_0::digital::v2::InputPin for Pin {
     type Error = Infallible;
@@ -50,18 +35,6 @@ impl embedded_hal_0::digital::v2::InputPin for Pin {
 
     fn is_low(&self) -> Result<bool, Self::Error> {
         self.try_is_low()
-    }
-}
-
-impl InputPinHal for InputPin {
-    type Error = Infallible;
-
-    fn try_is_high(&self) -> Result<bool, Self::Error> {
-        Ok(InputPin::is_high(self))
-    }
-
-    fn try_is_low(&self) -> Result<bool, Self::Error> {
-        Ok(InputPin::is_low(self))
     }
 }
 
@@ -77,18 +50,6 @@ impl embedded_hal_0::digital::v2::InputPin for InputPin {
     }
 }
 
-impl InputPinHal for IoPin {
-    type Error = Infallible;
-
-    fn try_is_high(&self) -> Result<bool, Self::Error> {
-        Ok(IoPin::is_high(self))
-    }
-
-    fn try_is_low(&self) -> Result<bool, Self::Error> {
-        Ok(IoPin::is_low(self))
-    }
-}
-
 impl embedded_hal_0::digital::v2::InputPin for IoPin {
     type Error = Infallible;
 
@@ -98,18 +59,6 @@ impl embedded_hal_0::digital::v2::InputPin for IoPin {
 
     fn is_low(&self) -> Result<bool, Self::Error> {
         self.try_is_low()
-    }
-}
-
-impl InputPinHal for OutputPin {
-    type Error = Infallible;
-
-    fn try_is_high(&self) -> Result<bool, Self::Error> {
-        Ok(OutputPin::is_set_high(self))
-    }
-
-    fn try_is_low(&self) -> Result<bool, Self::Error> {
-        Ok(OutputPin::is_set_low(self))
     }
 }
 
@@ -125,16 +74,6 @@ impl embedded_hal_0::digital::v2::InputPin for OutputPin {
     }
 }
 
-impl StatefulOutputPinHal for IoPin {
-    fn try_is_set_high(&self) -> Result<bool, Self::Error> {
-        Ok(IoPin::is_high(self))
-    }
-
-    fn try_is_set_low(&self) -> Result<bool, Self::Error> {
-        Ok(IoPin::is_low(self))
-    }
-}
-
 impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         self.try_is_set_high()
@@ -142,16 +81,6 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
         self.try_is_set_low()
-    }
-}
-
-impl StatefulOutputPinHal for OutputPin {
-    fn try_is_set_high(&self) -> Result<bool, Self::Error> {
-        Ok(OutputPin::is_set_high(self))
-    }
-
-    fn try_is_set_low(&self) -> Result<bool, Self::Error> {
-        Ok(OutputPin::is_set_low(self))
     }
 }
 
@@ -165,31 +94,11 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for OutputPin {
     }
 }
 
-impl ToggleableOutputPinHal for IoPin {
-    type Error = Infallible;
-
-    fn try_toggle(&mut self) -> Result<(), Self::Error> {
-        IoPin::toggle(self);
-
-        Ok(())
-    }
-}
-
 impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     type Error = Infallible;
 
     fn toggle(&mut self) -> Result<(), Self::Error> {
         self.try_toggle()
-    }
-}
-
-impl ToggleableOutputPinHal for OutputPin {
-    type Error = Infallible;
-
-    fn try_toggle(&mut self) -> Result<(), Self::Error> {
-        OutputPin::toggle(self);
-
-        Ok(())
     }
 }
 
@@ -228,7 +137,7 @@ impl embedded_hal_0::Pwm for OutputPin {
 
     /// Returns the maximum duty cycle value
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap_or(1.0)
+        PwmHal::try_get_max_duty(self).unwrap_or(1.0)
     }
 
     /// Sets a new duty cycle
@@ -272,7 +181,7 @@ impl embedded_hal_0::Pwm for IoPin {
 
     /// Returns the maximum duty cycle value
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap_or(1.0)
+        PwmHal::try_get_max_duty(self).unwrap_or(1.0)
     }
 
     /// Sets a new duty cycle

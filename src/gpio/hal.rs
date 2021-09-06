@@ -21,12 +21,61 @@
 use core::convert::Infallible;
 use std::time::Duration;
 
-use embedded_hal::digital::OutputPin as OutputPinHal;
-use embedded_hal::pwm::PwmPin;
+use embedded_hal::digital::{
+    InputPin as InputPinHal, OutputPin as OutputPinHal, StatefulOutputPin as StatefulOutputPinHal,
+    ToggleableOutputPin as ToggleableOutputPinHal,
+};
+use embedded_hal::pwm::{Pwm, PwmPin};
 
-use super::{Error, IoPin, OutputPin};
+use super::{Error, InputPin, IoPin, Level, OutputPin, Pin};
 
-const NANOS_PER_SEC: f64 = 1_000_000_000.0;
+impl InputPinHal for Pin {
+    type Error = Infallible;
+
+    fn try_is_high(&self) -> Result<bool, Self::Error> {
+        Ok(Self::read(self) == Level::High)
+    }
+
+    fn try_is_low(&self) -> Result<bool, Self::Error> {
+        Ok(Self::read(self) == Level::Low)
+    }
+}
+
+impl InputPinHal for InputPin {
+    type Error = Infallible;
+
+    fn try_is_high(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_high(self))
+    }
+
+    fn try_is_low(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_low(self))
+    }
+}
+
+impl InputPinHal for IoPin {
+    type Error = Infallible;
+
+    fn try_is_high(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_high(self))
+    }
+
+    fn try_is_low(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_low(self))
+    }
+}
+
+impl InputPinHal for OutputPin {
+    type Error = Infallible;
+
+    fn try_is_high(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_set_high(self))
+    }
+
+    fn try_is_low(&self) -> Result<bool, Self::Error> {
+        Ok(Self::is_set_low(self))
+    }
+}
 
 impl OutputPinHal for OutputPin {
     type Error = Infallible;
@@ -53,6 +102,26 @@ impl embedded_hal_0::digital::v2::OutputPin for OutputPin {
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.try_set_high()
+    }
+}
+
+impl StatefulOutputPinHal for OutputPin {
+    fn try_is_set_high(&self) -> Result<bool, Self::Error> {
+        Ok(OutputPin::is_set_high(self))
+    }
+
+    fn try_is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(OutputPin::is_set_low(self))
+    }
+}
+
+impl ToggleableOutputPinHal for OutputPin {
+    type Error = Infallible;
+
+    fn try_toggle(&mut self) -> Result<(), Self::Error> {
+        OutputPin::toggle(self);
+
+        Ok(())
     }
 }
 
@@ -83,6 +152,28 @@ impl embedded_hal_0::digital::v2::OutputPin for IoPin {
         self.try_set_high()
     }
 }
+
+impl StatefulOutputPinHal for IoPin {
+    fn try_is_set_high(&self) -> Result<bool, Self::Error> {
+        Ok(IoPin::is_high(self))
+    }
+
+    fn try_is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(IoPin::is_low(self))
+    }
+}
+
+impl ToggleableOutputPinHal for IoPin {
+    type Error = Infallible;
+
+    fn try_toggle(&mut self) -> Result<(), Self::Error> {
+        IoPin::toggle(self);
+
+        Ok(())
+    }
+}
+
+const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
 impl embedded_hal::pwm::Pwm for OutputPin {
     type Duty = f64;
@@ -186,27 +277,27 @@ impl embedded_hal_0::PwmPin for OutputPin {
     type Duty = f64;
 
     fn disable(&mut self) {
-        let _ = self.try_disable();
+        let _ = PwmPin::try_disable(self);
     }
 
     fn enable(&mut self) {
-        let _ = self.try_enable();
+        let _ = PwmPin::try_enable(self);
     }
 
     fn get_duty(&self) -> Self::Duty {
-        self.try_get_duty().unwrap_or_default()
+        PwmPin::try_get_duty(self).unwrap_or_default()
     }
 
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap_or(1.0)
+        PwmPin::try_get_max_duty(self).unwrap_or(1.0)
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.try_set_duty(duty);
+        let _ = PwmPin::try_set_duty(self, duty);
     }
 }
 
-impl embedded_hal::pwm::Pwm for IoPin {
+impl Pwm for IoPin {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;
@@ -308,22 +399,22 @@ impl embedded_hal_0::PwmPin for IoPin {
     type Duty = f64;
 
     fn disable(&mut self) {
-        let _ = self.try_disable();
+        let _ = PwmPin::try_disable(self);
     }
 
     fn enable(&mut self) {
-        let _ = self.try_enable();
+        let _ = PwmPin::try_enable(self);
     }
 
     fn get_duty(&self) -> Self::Duty {
-        self.try_get_duty().unwrap_or_default()
+        PwmPin::try_get_duty(self).unwrap_or_default()
     }
 
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap_or(1.0)
+        PwmPin::try_get_max_duty(self).unwrap_or(1.0)
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.try_set_duty(duty);
+        let _ = PwmPin::try_set_duty(self, duty);
     }
 }
