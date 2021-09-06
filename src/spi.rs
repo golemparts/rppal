@@ -433,7 +433,7 @@ pub struct Spi {
     spidev: File,
     // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
     #[cfg(feature = "hal")]
-    last_read: u8,
+    last_read: Option<u8>,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
     // #![feature(optin_builtin_traits)] to manually add impl !Sync for Spi.
@@ -478,7 +478,7 @@ impl Spi {
         let spi = Spi {
             spidev,
             #[cfg(feature = "hal")]
-            last_read: 0,
+            last_read: None,
             not_sync: PhantomData,
         };
 
