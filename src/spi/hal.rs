@@ -64,14 +64,18 @@ impl FullDuplex<u8> for Spi {
     type Error = Error;
 
     fn try_read(&mut self) -> nb::Result<u8, Self::Error> {
-        Ok(self.last_read)
+        if let Some(last_read) = self.last_read.take() {
+            Ok(last_read)
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
     }
 
     fn try_send(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
         let mut read_buffer: [u8; 1] = [0];
 
         Spi::transfer(self, &mut read_buffer, &[byte])?;
-        self.last_read = read_buffer[0];
+        self.last_read = Some(read_buffer[0]);
 
         Ok(())
     }

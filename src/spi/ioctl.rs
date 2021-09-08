@@ -20,11 +20,13 @@
 
 #![allow(dead_code)]
 
-use super::segment::Segment;
-use libc::{self, c_int, ioctl};
 use std::io;
 use std::mem;
 use std::result;
+
+use libc::{self, c_int, ioctl};
+
+use super::segment::Segment;
 
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
