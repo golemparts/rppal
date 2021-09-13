@@ -20,7 +20,7 @@
 
 use std::time::Duration;
 
-use embedded_hal::pwm::Pwm as PwmHal;
+use embedded_hal::pwm::blocking::Pwm as PwmHal;
 
 use super::Pwm;
 
@@ -31,32 +31,32 @@ impl embedded_hal_0::Pwm for Pwm {
 
     /// Disables a PWM `channel`
     fn disable(&mut self, channel: Self::Channel) {
-        let _ = self.try_disable(channel);
+        let _ = PwmHal::disable(self, channel);
     }
 
     /// Enables a PWM `channel`
     fn enable(&mut self, channel: Self::Channel) {
-        let _ = self.try_enable(channel);
+        let _ = PwmHal::enable(self, channel);
     }
 
     /// Returns the current PWM period
     fn get_period(&self) -> Self::Time {
-        self.try_get_period().unwrap_or_default()
+        PwmHal::get_period(self).unwrap_or_default()
     }
 
     /// Returns the current duty cycle
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        self.try_get_duty(channel).unwrap_or_default()
+        PwmHal::get_duty(self, channel).unwrap_or_default()
     }
 
     /// Returns the maximum duty cycle value
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap_or(1.0)
+        PwmHal::get_max_duty(self).unwrap_or(1.0)
     }
 
     /// Sets a new duty cycle
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = self.try_set_duty(channel, duty);
+        let _ = PwmHal::set_duty(self, channel, duty);
     }
 
     /// Sets a new PWM period
@@ -64,6 +64,6 @@ impl embedded_hal_0::Pwm for Pwm {
     where
         P: Into<Self::Time>,
     {
-        let _ = self.try_set_period(period);
+        let _ = PwmHal::set_period(self, period);
     }
 }

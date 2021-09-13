@@ -20,52 +20,52 @@
 
 use std::time::Duration;
 
-use embedded_hal::pwm::PwmPin;
+use embedded_hal::pwm::blocking::{Pwm as PwmHal, PwmPin as PwmPinHal};
 
 use super::{Error, Pwm};
 
-impl embedded_hal::pwm::Pwm for Pwm {
+impl PwmHal for Pwm {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;
     type Error = Error;
 
     /// Disables a PWM `channel`
-    fn try_disable(&mut self, _channel: Self::Channel) -> Result<(), Self::Error> {
+    fn disable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
         Pwm::disable(self)
     }
 
     /// Enables a PWM `channel`
-    fn try_enable(&mut self, _channel: Self::Channel) -> Result<(), Self::Error> {
+    fn enable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
         Pwm::enable(self)
     }
 
     /// Returns the current PWM period
-    fn try_get_period(&self) -> Result<Self::Time, Self::Error> {
+    fn get_period(&self) -> Result<Self::Time, Self::Error> {
         self.period()
     }
 
     /// Returns the current duty cycle
-    fn try_get_duty(&self, _channel: Self::Channel) -> Result<Self::Duty, Self::Error> {
+    fn get_duty(&self, _channel: &Self::Channel) -> Result<Self::Duty, Self::Error> {
         self.duty_cycle()
     }
 
     /// Returns the maximum duty cycle value
-    fn try_get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
+    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
         Ok(1.0)
     }
 
     /// Sets a new duty cycle
-    fn try_set_duty(
+    fn set_duty(
         &mut self,
-        _channel: Self::Channel,
+        _channel: &Self::Channel,
         duty: Self::Duty,
     ) -> Result<(), Self::Error> {
         self.set_duty_cycle(duty)
     }
 
     /// Sets a new PWM period
-    fn try_set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
+    fn set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
     where
         P: Into<Self::Time>,
     {
@@ -73,27 +73,27 @@ impl embedded_hal::pwm::Pwm for Pwm {
     }
 }
 
-impl PwmPin for Pwm {
+impl PwmPinHal for Pwm {
     type Duty = f64;
     type Error = Error;
 
-    fn try_disable(&mut self) -> Result<(), Self::Error> {
+    fn disable(&mut self) -> Result<(), Self::Error> {
         Pwm::disable(self)
     }
 
-    fn try_enable(&mut self) -> Result<(), Self::Error> {
+    fn enable(&mut self) -> Result<(), Self::Error> {
         Pwm::enable(self)
     }
 
-    fn try_get_duty(&self) -> Result<Self::Duty, Self::Error> {
+    fn get_duty(&self) -> Result<Self::Duty, Self::Error> {
         self.duty_cycle()
     }
 
-    fn try_get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
+    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
         Ok(1.0)
     }
 
-    fn try_set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
+    fn set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
         self.set_duty_cycle(duty)
     }
 }
@@ -102,22 +102,22 @@ impl embedded_hal_0::PwmPin for Pwm {
     type Duty = f64;
 
     fn disable(&mut self) {
-        let _ = self.try_disable();
+        let _ = PwmPinHal::disable(self);
     }
 
     fn enable(&mut self) {
-        let _ = self.try_enable();
+        let _ = PwmPinHal::enable(self);
     }
 
     fn get_duty(&self) -> Self::Duty {
-        self.try_get_duty().unwrap_or_default()
+        PwmPinHal::get_duty(self).unwrap_or_default()
     }
 
     fn get_max_duty(&self) -> Self::Duty {
-        self.try_get_max_duty().unwrap()
+        PwmPinHal::get_max_duty(self).unwrap()
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = self.try_set_duty(duty);
+        let _ = PwmPinHal::set_duty(self, duty);
     }
 }
