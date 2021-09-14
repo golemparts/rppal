@@ -18,14 +18,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use embedded_hal::blocking::i2c::{Read, Write, WriteRead};
+use embedded_hal::i2c::blocking::{Read, Write, WriteRead};
 
 use super::{Error, I2c};
 
 impl Write for I2c {
     type Error = Error;
 
-    fn try_write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
+    fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         self.set_slave_address(u16::from(address))?;
         I2c::write(self, bytes)?;
 
@@ -37,14 +37,14 @@ impl embedded_hal_0::blocking::i2c::Write for I2c {
     type Error = Error;
 
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        self.try_write(address, bytes)
+        Write::write(self, address, bytes)
     }
 }
 
 impl Read for I2c {
     type Error = Error;
 
-    fn try_read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
+    fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
         self.set_slave_address(u16::from(address))?;
         I2c::read(self, buffer)?;
 
@@ -56,14 +56,14 @@ impl embedded_hal_0::blocking::i2c::Read for I2c {
     type Error = Error;
 
     fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        self.try_read(address, buffer)
+        Read::read(self, address, buffer)
     }
 }
 
 impl WriteRead for I2c {
     type Error = Error;
 
-    fn try_write_read(
+    fn write_read(
         &mut self,
         address: u8,
         bytes: &[u8],
@@ -85,6 +85,6 @@ impl embedded_hal_0::blocking::i2c::WriteRead for I2c {
         bytes: &[u8],
         buffer: &mut [u8],
     ) -> Result<(), Self::Error> {
-        self.try_write_read(address, bytes, buffer)
+        WriteRead::write_read(self, address, bytes, buffer)
     }
 }
