@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0 (TBD)
+## 0.13.0 (September 27, 2021)
 
 * Add support for `embedded-hal` v1.0.0-alpha.5 (contributed by @reitermarkus).
 * **Gpio**: Add `into_output_low()` and `into_output_high()` to `Pin` to set the logic level before changing the pin mode.
