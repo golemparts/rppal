@@ -22,6 +22,7 @@ use embedded_hal::i2c::blocking::{Read, Write, WriteRead};
 
 use super::{Error, I2c};
 
+/// `Write` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Write for I2c {
     type Error = Error;
 
@@ -33,6 +34,7 @@ impl Write for I2c {
     }
 }
 
+/// `Write` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::i2c::Write for I2c {
     type Error = Error;
 
@@ -41,6 +43,7 @@ impl embedded_hal_0::blocking::i2c::Write for I2c {
     }
 }
 
+/// `Read` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Read for I2c {
     type Error = Error;
 
@@ -52,6 +55,7 @@ impl Read for I2c {
     }
 }
 
+/// `Read` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::i2c::Read for I2c {
     type Error = Error;
 
@@ -60,6 +64,7 @@ impl embedded_hal_0::blocking::i2c::Read for I2c {
     }
 }
 
+/// `WriteRead` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl WriteRead for I2c {
     type Error = Error;
 
@@ -76,6 +81,7 @@ impl WriteRead for I2c {
     }
 }
 
+/// `WriteRead` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::i2c::WriteRead for I2c {
     type Error = Error;
 

@@ -29,6 +29,7 @@ use embedded_hal::pwm::blocking::Pwm as PwmHal;
 
 use super::{InputPin, IoPin, OutputPin, Pin};
 
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::InputPin for Pin {
     type Error = Infallible;
 
@@ -41,6 +42,7 @@ impl embedded_hal_0::digital::v2::InputPin for Pin {
     }
 }
 
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::InputPin for InputPin {
     type Error = Infallible;
 
@@ -53,6 +55,7 @@ impl embedded_hal_0::digital::v2::InputPin for InputPin {
     }
 }
 
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::InputPin for IoPin {
     type Error = Infallible;
 
@@ -65,6 +68,7 @@ impl embedded_hal_0::digital::v2::InputPin for IoPin {
     }
 }
 
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::InputPin for OutputPin {
     type Error = Infallible;
 
@@ -77,6 +81,7 @@ impl embedded_hal_0::digital::v2::InputPin for OutputPin {
     }
 }
 
+/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         StatefulOutputPinHal::is_set_high(self)
@@ -87,6 +92,7 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
     }
 }
 
+/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::StatefulOutputPin for OutputPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         StatefulOutputPinHal::is_set_high(self)
@@ -97,6 +103,7 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for OutputPin {
     }
 }
 
+/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     type Error = Infallible;
 
@@ -105,6 +112,7 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     }
 }
 
+/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::ToggleableOutputPin for OutputPin {
     type Error = Infallible;
 
@@ -113,42 +121,43 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for OutputPin {
     }
 }
 
+/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::Pwm for OutputPin {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;
 
-    /// Disables a PWM `channel`
+    /// Disables a PWM `channel`.
     fn disable(&mut self, channel: Self::Channel) {
         let _ = PwmHal::disable(self, &channel);
     }
 
-    /// Enables a PWM `channel`
+    /// Enables a PWM `channel`.
     fn enable(&mut self, channel: Self::Channel) {
         let _ = PwmHal::enable(self, &channel);
     }
 
-    /// Returns the current PWM period
+    /// Returns the current PWM period.
     fn get_period(&self) -> Self::Time {
         PwmHal::get_period(self).unwrap_or_default()
     }
 
-    /// Returns the current duty cycle
+    /// Returns the current duty cycle.
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
         PwmHal::get_duty(self, &channel).unwrap_or_default()
     }
 
-    /// Returns the maximum duty cycle value
+    /// Returns the maximum duty cycle value.
     fn get_max_duty(&self) -> Self::Duty {
         PwmHal::get_max_duty(self).unwrap_or(1.0)
     }
 
-    /// Sets a new duty cycle
+    /// Sets a new duty cycle.
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
         let _ = PwmHal::set_duty(self, &channel, duty);
     }
 
-    /// Sets a new PWM period
+    /// Sets a new PWM period.
     fn set_period<P>(&mut self, period: P)
     where
         P: Into<Self::Time>,
@@ -157,42 +166,43 @@ impl embedded_hal_0::Pwm for OutputPin {
     }
 }
 
+/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::Pwm for IoPin {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;
 
-    /// Disables a PWM `channel`
+    /// Disables a PWM `channel`.
     fn disable(&mut self, channel: Self::Channel) {
         let _ = PwmHal::disable(self, &channel);
     }
 
-    /// Enables a PWM `channel`
+    /// Enables a PWM `channel`.
     fn enable(&mut self, channel: Self::Channel) {
         let _ = PwmHal::enable(self, &channel);
     }
 
-    /// Returns the current PWM period
+    /// Returns the current PWM period.
     fn get_period(&self) -> Self::Time {
         PwmHal::get_period(self).unwrap_or_default()
     }
 
-    /// Returns the current duty cycle
+    /// Returns the current duty cycle.
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
         PwmHal::get_duty(self, &channel).unwrap_or_default()
     }
 
-    /// Returns the maximum duty cycle value
+    /// Returns the maximum duty cycle value.
     fn get_max_duty(&self) -> Self::Duty {
         PwmHal::get_max_duty(self).unwrap_or(1.0)
     }
 
-    /// Sets a new duty cycle
+    /// Sets a new duty cycle.
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
         let _ = PwmHal::set_duty(self, &channel, duty);
     }
 
-    /// Sets a new PWM period
+    /// Sets a new PWM period.
     fn set_period<P>(&mut self, period: P)
     where
         P: Into<Self::Time>,

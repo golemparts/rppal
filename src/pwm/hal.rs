@@ -24,47 +24,44 @@ use embedded_hal::pwm::blocking::{Pwm as PwmHal, PwmPin as PwmPinHal};
 
 use super::{Error, Pwm};
 
+/// `Pwm` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl PwmHal for Pwm {
     type Duty = f64;
     type Channel = ();
     type Time = Duration;
     type Error = Error;
 
-    /// Disables a PWM `channel`
+    /// Disables a PWM `channel`.
     fn disable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
         Pwm::disable(self)
     }
 
-    /// Enables a PWM `channel`
+    /// Enables a PWM `channel`.
     fn enable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
         Pwm::enable(self)
     }
 
-    /// Returns the current PWM period
+    /// Returns the current PWM period.
     fn get_period(&self) -> Result<Self::Time, Self::Error> {
         self.period()
     }
 
-    /// Returns the current duty cycle
+    /// Returns the current duty cycle.
     fn get_duty(&self, _channel: &Self::Channel) -> Result<Self::Duty, Self::Error> {
         self.duty_cycle()
     }
 
-    /// Returns the maximum duty cycle value
+    /// Returns the maximum duty cycle value.
     fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
         Ok(1.0)
     }
 
-    /// Sets a new duty cycle
-    fn set_duty(
-        &mut self,
-        _channel: &Self::Channel,
-        duty: Self::Duty,
-    ) -> Result<(), Self::Error> {
+    /// Sets a new duty cycle.
+    fn set_duty(&mut self, _channel: &Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
         self.set_duty_cycle(duty)
     }
 
-    /// Sets a new PWM period
+    /// Sets a new PWM period.
     fn set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
     where
         P: Into<Self::Time>,
@@ -73,6 +70,7 @@ impl PwmHal for Pwm {
     }
 }
 
+/// `PwmPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl PwmPinHal for Pwm {
     type Duty = f64;
     type Error = Error;
@@ -98,6 +96,7 @@ impl PwmPinHal for Pwm {
     }
 }
 
+/// `PwmPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::PwmPin for Pwm {
     type Duty = f64;
 

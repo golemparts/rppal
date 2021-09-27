@@ -23,6 +23,7 @@ use embedded_hal::spi::nb::FullDuplex;
 
 use super::{Error, Spi};
 
+/// `Transfer<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Transfer<u8> for Spi {
     type Error = Error;
 
@@ -34,6 +35,7 @@ impl Transfer<u8> for Spi {
     }
 }
 
+/// `Transfer<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     type Error = Error;
 
@@ -43,6 +45,7 @@ impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     }
 }
 
+/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Write<u8> for Spi {
     type Error = Error;
 
@@ -53,6 +56,7 @@ impl Write<u8> for Spi {
     }
 }
 
+/// `Write<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     type Error = Error;
 
@@ -61,6 +65,7 @@ impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     }
 }
 
+/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl FullDuplex<u8> for Spi {
     type Error = Error;
 
@@ -82,6 +87,7 @@ impl FullDuplex<u8> for Spi {
     }
 }
 
+/// `FullDuplex<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
     type Error = Error;
 

@@ -38,6 +38,7 @@ use void::Void;
 #[derive(Debug, Default)]
 pub struct Delay;
 
+/// `Delay` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Delay {
     /// Constructs a new `Delay`.
     pub fn new() -> Delay {
@@ -45,6 +46,7 @@ impl Delay {
     }
 }
 
+/// `DelayMs<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayMs<u8> for Delay {
     type Error = Infallible;
 
@@ -54,12 +56,14 @@ impl DelayMs<u8> for Delay {
     }
 }
 
+/// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
         DelayMs::delay_ms(self, ms).unwrap()
     }
 }
 
+/// `DelayMs<u16>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayMs<u16> for Delay {
     type Error = Infallible;
 
@@ -69,12 +73,14 @@ impl DelayMs<u16> for Delay {
     }
 }
 
+/// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
         DelayMs::delay_ms(self, ms).unwrap()
     }
 }
 
+/// `DelayMs<u32>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayMs<u32> for Delay {
     type Error = Infallible;
 
@@ -84,12 +90,14 @@ impl DelayMs<u32> for Delay {
     }
 }
 
+/// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
     fn delay_ms(&mut self, ms: u32) {
         DelayMs::delay_ms(self, ms).unwrap()
     }
 }
 
+/// `DelayMs<u64>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayMs<u64> for Delay {
     type Error = Infallible;
 
@@ -99,12 +107,14 @@ impl DelayMs<u64> for Delay {
     }
 }
 
+/// `DelayMs<u64>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
     fn delay_ms(&mut self, ms: u64) {
         DelayMs::delay_ms(self, ms).unwrap()
     }
 }
 
+/// `DelayUs<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayUs<u8> for Delay {
     type Error = Infallible;
 
@@ -114,12 +124,14 @@ impl DelayUs<u8> for Delay {
     }
 }
 
+/// `DelayUs<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
         DelayUs::delay_us(self, us).unwrap()
     }
 }
 
+/// `DelayUs<u16>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayUs<u16> for Delay {
     type Error = Infallible;
 
@@ -129,12 +141,14 @@ impl DelayUs<u16> for Delay {
     }
 }
 
+/// `DelayUs<u16>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
         DelayUs::delay_us(self, us).unwrap()
     }
 }
 
+/// `DelayUs<u32>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayUs<u32> for Delay {
     type Error = Infallible;
 
@@ -144,12 +158,14 @@ impl DelayUs<u32> for Delay {
     }
 }
 
+/// `DelayUs<u32>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
         DelayUs::delay_us(self, us).unwrap()
     }
 }
 
+/// `DelayUs<u64>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl DelayUs<u64> for Delay {
     type Error = Infallible;
 
@@ -159,6 +175,7 @@ impl DelayUs<u64> for Delay {
     }
 }
 
+/// `DelayUs<u64>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
     fn delay_us(&mut self, us: u64) {
         DelayUs::delay_us(self, us).unwrap()
@@ -203,6 +220,7 @@ impl Default for Timer {
     }
 }
 
+/// `CountDown` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl CountDown for Timer {
     type Time = Duration;
     type Error = Infallible;
@@ -227,6 +245,7 @@ impl CountDown for Timer {
     }
 }
 
+/// `CountDown` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::timer::CountDown for Timer {
     type Time = Duration;
 

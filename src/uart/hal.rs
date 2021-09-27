@@ -22,6 +22,7 @@ use embedded_hal::serial::nb::{Read, Write};
 
 use super::{Error, Queue, Uart};
 
+/// `Read<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Read<u8> for Uart {
     type Error = Error;
 
@@ -35,6 +36,7 @@ impl Read<u8> for Uart {
     }
 }
 
+/// `Read<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::serial::Read<u8> for Uart {
     type Error = Error;
 
@@ -43,6 +45,7 @@ impl embedded_hal_0::serial::Read<u8> for Uart {
     }
 }
 
+/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
 impl Write<u8> for Uart {
     type Error = Error;
 
@@ -61,6 +64,7 @@ impl Write<u8> for Uart {
     }
 }
 
+/// `Write<u8>` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::serial::Write<u8> for Uart {
     type Error = Error;
 
