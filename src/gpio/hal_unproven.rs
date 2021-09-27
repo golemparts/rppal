@@ -21,7 +21,10 @@
 use core::convert::Infallible;
 use std::time::Duration;
 
-use embedded_hal::digital::{InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal, ToggleableOutputPin as ToggleableOutputPinHal};
+use embedded_hal::digital::blocking::{
+    InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal,
+    ToggleableOutputPin as ToggleableOutputPinHal,
+};
 use embedded_hal::pwm::blocking::Pwm as PwmHal;
 
 use super::{InputPin, IoPin, OutputPin, Pin};
@@ -98,7 +101,7 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     type Error = Infallible;
 
     fn toggle(&mut self) -> Result<(), Self::Error> {
-        ToggleableOutputPin::toggle(self)
+        ToggleableOutputPinHal::toggle(self)
     }
 }
 
@@ -106,7 +109,7 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for OutputPin {
     type Error = Infallible;
 
     fn toggle(&mut self) -> Result<(), Self::Error> {
-        ToggleableOutputPin::toggle(self)
+        ToggleableOutputPinHal::toggle(self)
     }
 }
 
@@ -117,12 +120,12 @@ impl embedded_hal_0::Pwm for OutputPin {
 
     /// Disables a PWM `channel`
     fn disable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::disable(self, channel);
+        let _ = PwmHal::disable(self, &channel);
     }
 
     /// Enables a PWM `channel`
     fn enable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::enable(self, channel);
+        let _ = PwmHal::enable(self, &channel);
     }
 
     /// Returns the current PWM period
@@ -132,7 +135,7 @@ impl embedded_hal_0::Pwm for OutputPin {
 
     /// Returns the current duty cycle
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        PwmHal::get_duty(self, channel).unwrap_or_default()
+        PwmHal::get_duty(self, &channel).unwrap_or_default()
     }
 
     /// Returns the maximum duty cycle value
@@ -142,7 +145,7 @@ impl embedded_hal_0::Pwm for OutputPin {
 
     /// Sets a new duty cycle
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = PwmHal::set_duty(self, channel, duty);
+        let _ = PwmHal::set_duty(self, &channel, duty);
     }
 
     /// Sets a new PWM period
@@ -161,12 +164,12 @@ impl embedded_hal_0::Pwm for IoPin {
 
     /// Disables a PWM `channel`
     fn disable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::disable(self, channel);
+        let _ = PwmHal::disable(self, &channel);
     }
 
     /// Enables a PWM `channel`
     fn enable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::enable(self, channel);
+        let _ = PwmHal::enable(self, &channel);
     }
 
     /// Returns the current PWM period
@@ -176,7 +179,7 @@ impl embedded_hal_0::Pwm for IoPin {
 
     /// Returns the current duty cycle
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        PwmHal::get_duty(self, channel).unwrap_or_default()
+        PwmHal::get_duty(self, &channel).unwrap_or_default()
     }
 
     /// Returns the maximum duty cycle value
@@ -186,7 +189,7 @@ impl embedded_hal_0::Pwm for IoPin {
 
     /// Sets a new duty cycle
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = PwmHal::set_duty(self, channel, duty);
+        let _ = PwmHal::set_duty(self, &channel, duty);
     }
 
     /// Sets a new PWM period

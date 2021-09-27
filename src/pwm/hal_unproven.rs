@@ -31,12 +31,12 @@ impl embedded_hal_0::Pwm for Pwm {
 
     /// Disables a PWM `channel`
     fn disable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::disable(self, channel);
+        let _ = PwmHal::disable(self, &channel);
     }
 
     /// Enables a PWM `channel`
     fn enable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::enable(self, channel);
+        let _ = PwmHal::enable(self, &channel);
     }
 
     /// Returns the current PWM period
@@ -46,7 +46,7 @@ impl embedded_hal_0::Pwm for Pwm {
 
     /// Returns the current duty cycle
     fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        PwmHal::get_duty(self, channel).unwrap_or_default()
+        PwmHal::get_duty(self, &channel).unwrap_or_default()
     }
 
     /// Returns the maximum duty cycle value
@@ -56,7 +56,7 @@ impl embedded_hal_0::Pwm for Pwm {
 
     /// Sets a new duty cycle
     fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = PwmHal::set_duty(self, channel, duty);
+        let _ = PwmHal::set_duty(self, &channel, duty);
     }
 
     /// Sets a new PWM period
