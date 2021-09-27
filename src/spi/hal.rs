@@ -18,6 +18,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+#![allow(clippy::needless_lifetimes)]
+
 use embedded_hal::spi::blocking::{Transfer, Write};
 use embedded_hal::spi::nb::FullDuplex;
 

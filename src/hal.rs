@@ -259,6 +259,10 @@ impl embedded_hal_0::timer::CountDown for Timer {
 
     /// Returns `Ok` if the timer has wrapped.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        Ok(CountDown::wait(self).unwrap())
+        if self.start.elapsed() >= self.duration {
+            Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
     }
 }
