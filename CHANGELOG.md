@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0 (TBD)
+
+* **DeviceInfo**: Add device identification support for Raspberry Pi Compute Module 4 models with 4GB and 8GB RAM.
+
 ## 0.13.0 (September 27, 2021)
 
 * Add support for `embedded-hal` v1.0.0-alpha.5 (contributed by @reitermarkus).
