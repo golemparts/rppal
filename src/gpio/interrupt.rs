@@ -173,12 +173,7 @@ impl EventLoop {
                 let trigger_status = &mut self.trigger_status[pin];
 
                 if let Some(ref mut interrupt) = trigger_status.interrupt {
-                    trigger_status.level = match interrupt.event()?.trigger {
-                        Trigger::RisingEdge => Level::High,
-                        Trigger::FallingEdge => Level::Low,
-                        _ => unsafe { std::hint::unreachable_unchecked() },
-                    };
-
+                    trigger_status.level = interrupt.event()?.level();
                     trigger_status.triggered = true;
                 };
             }
@@ -278,11 +273,7 @@ impl AsyncInterrupt {
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
                         } else if fd == interrupt.fd() {
-                            let level = match interrupt.event()?.trigger {
-                                Trigger::RisingEdge => Level::High,
-                                _ => Level::Low,
-                            };
-
+                            let level = interrupt.event()?.level();
                             callback(level);
                         }
                     }

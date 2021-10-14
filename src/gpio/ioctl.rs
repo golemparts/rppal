@@ -392,8 +392,8 @@ impl EventData {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Event {
-    pub trigger: Trigger,
-    pub timestamp: Duration,
+    trigger: Trigger,
+    timestamp: Duration,
 }
 
 impl Event {
@@ -405,6 +405,21 @@ impl Event {
                 _ => unreachable!(),
             },
             timestamp: Duration::from_nanos(event_data.timestamp),
+        }
+    }
+
+    pub fn trigger(&self) -> Trigger {
+      self.trigger
+    }
+
+    pub fn level(&self) -> Level {
+        match self.trigger {
+            Trigger::RisingEdge => Level::High,
+            Trigger::FallingEdge => Level::Low,
+            _ => {
+                // SAFETY: `Event` can only be constructed with either `RisingEdge` or `FallingEdge`.
+                unsafe { std::hint::unreachable_unchecked() }
+            },
         }
     }
 }
