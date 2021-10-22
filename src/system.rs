@@ -252,10 +252,9 @@ fn parse_base_model() -> Result<Model> {
         Ok(mut buffer) => {
             if let Some(idx) = buffer.find('\0') {
                 buffer.truncate(idx);
-                buffer
-            } else {
-                buffer
             }
+
+            buffer
         }
         Err(_) => return Err(Error::UnknownModel),
     };
