@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.14.0 (TBD)
+## 0.13.1 (October 28, 2021)
 
 * **DeviceInfo**: Add device identification support for Raspberry Pi Compute Module 4 models with 4GB and 8GB RAM.
+* **DeviceInfo**: Add device identification support for Raspberry Pi Zero 2 W.
 
 ## 0.13.0 (September 27, 2021)
 

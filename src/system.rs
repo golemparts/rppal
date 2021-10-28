@@ -93,6 +93,7 @@ pub enum Model {
     RaspberryPiComputeModule4,
     RaspberryPiZero,
     RaspberryPiZeroW,
+    RaspberryPiZero2W,
 }
 
 impl fmt::Display for Model {
@@ -115,6 +116,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
+            Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
         }
     }
 }
@@ -131,6 +133,7 @@ pub enum SoC {
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
+    Bcm2710A1,
     Bcm2711,
 }
 
@@ -141,6 +144,7 @@ impl fmt::Display for SoC {
             SoC::Bcm2836 => write!(f, "BCM2836"),
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
+            SoC::Bcm2710A1 => write!(f, "BCM2710A1"),
             SoC::Bcm2711 => write!(f, "BCM2711"),
         }
     }
@@ -168,7 +172,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
     // solely based on the revision field.
     match &hardware[..] {
         "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-        | "BCM2837B0" | "BCM2711" => {}
+        | "BCM2837B0" | "RP3A0-AU" | "BCM2710A1" | "BCM2711" => {}
         _ => return Err(Error::UnknownModel),
     }
 
@@ -232,6 +236,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-compute-module" => Model::RaspberryPiComputeModule3,
             "raspberrypi,3-compute-module-plus" => Model::RaspberryPiComputeModule3Plus,
             "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
+            "raspberrypi,2-model-zero-w" => Model::RaspberryPiZero2W,
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
             "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
             "raspberrypi,4-model-b" => Model::RaspberryPi4B,
@@ -289,6 +294,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Compute Module 3" => Model::RaspberryPiComputeModule3,
         "Raspberry Pi Compute Module 3 Plus" => Model::RaspberryPiComputeModule3Plus,
         "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
+        "Raspberry Pi Zero 2 W" => Model::RaspberryPiZero2W,
         "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model A Plus" => Model::RaspberryPi3APlus,
@@ -353,6 +359,12 @@ impl DeviceInfo {
             | Model::RaspberryPiComputeModule3Plus => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2837B0,
+                peripheral_base: PERIPHERAL_BASE_RPI2,
+                gpio_offset: GPIO_OFFSET,
+            }),
+            Model::RaspberryPiZero2W => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2710A1,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
