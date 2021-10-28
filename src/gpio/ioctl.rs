@@ -409,7 +409,7 @@ impl Event {
     }
 
     pub fn trigger(&self) -> Trigger {
-      self.trigger
+        self.trigger
     }
 
     pub fn level(&self) -> Level {
@@ -419,7 +419,7 @@ impl Event {
             _ => {
                 // SAFETY: `Event` can only be constructed with either `RisingEdge` or `FallingEdge`.
                 unsafe { std::hint::unreachable_unchecked() }
-            },
+            }
         }
     }
 }
