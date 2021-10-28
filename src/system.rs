@@ -348,23 +348,19 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
-                model,
-                soc: SoC::Bcm2837A1,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
-                gpio_offset: GPIO_OFFSET,
-            }),
+            Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
+                Ok(DeviceInfo {
+                    model,
+                    soc: SoC::Bcm2837A1,
+                    peripheral_base: PERIPHERAL_BASE_RPI2,
+                    gpio_offset: GPIO_OFFSET,
+                })
+            }
             Model::RaspberryPi3BPlus
             | Model::RaspberryPi3APlus
             | Model::RaspberryPiComputeModule3Plus => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2837B0,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
-                gpio_offset: GPIO_OFFSET,
-            }),
-            Model::RaspberryPiZero2W => Ok(DeviceInfo {
-                model,
-                soc: SoC::Bcm2710A1,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
