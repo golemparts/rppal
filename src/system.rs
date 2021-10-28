@@ -133,7 +133,6 @@ pub enum SoC {
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
-    Bcm2710A1,
     Bcm2711,
 }
 
@@ -144,7 +143,6 @@ impl fmt::Display for SoC {
             SoC::Bcm2836 => write!(f, "BCM2836"),
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
-            SoC::Bcm2710A1 => write!(f, "BCM2710A1"),
             SoC::Bcm2711 => write!(f, "BCM2711"),
         }
     }
