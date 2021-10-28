@@ -34,8 +34,8 @@
 //! [documentation].
 //!
 //! On earlier Raspberry Pi models without Bluetooth, `/dev/ttyAMA0` is
-//! configured as a Linux serial console. On more recent models with Bluetooth
-//! (3A+, 3B, 3B+, Zero W), `/dev/ttyAMA0` is connected to the Bluetooth
+//! configured as a Linux serial console. On more recent models with Bluetooth,
+//! `/dev/ttyAMA0` is connected to the Bluetooth
 //! module, and `/dev/ttyS0` is used as a serial console instead. Due to the
 //! limitations of `/dev/ttyS0` and the requirement for a fixed core frequency,
 //! in most cases you'll want to use `/dev/ttyAMA0` for serial communication.
