@@ -123,7 +123,7 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Configure built-in pull-up/pull-down resistors
 * Synchronous and asynchronous interrupt handlers
 * Software-based PWM implementation
-* Optional `embedded-hal` trait implementations (`digital::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}`, `Pwm`, `PwmPin`)
+* Optional `embedded-hal` trait implementations
 
 ### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
@@ -134,7 +134,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * Single master, 7-bit slave addresses, transfer rates up to 400 kbit/s (Fast-mode)
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
-* Optional `embedded-hal` trait implementations (`blocking::i2c::{Read, Write, WriteRead}`)
+* Optional `embedded-hal` trait implementations
 
 ### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
@@ -144,7 +144,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interfa
 
 * Up to two hardware PWM channels
 * Configurable frequency, duty cycle and polarity
-* Optional `embedded-hal` trait implementations (`Pwm`, `PwmPin`)
+* Optional `embedded-hal` trait implementations
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
@@ -157,7 +157,7 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
-* Optional `embedded-hal` trait implementations (`blocking::spi::{Transfer, Write}`, `spi::FullDuplex`)
+* Optional `embedded-hal` trait implementations
 
 ### [UART](https://docs.golemparts.com/rppal/latest/uart)
 
@@ -170,7 +170,7 @@ RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011)
 * Transfer rates up to 4 Mbit/s (device-dependent)
 * XON/XOFF software flow control
 * RTS/CTS hardware flow control with automatic pin configuration
-* Optional `embedded-hal` trait implementations (`blocking::serial::Write`, `serial::{Read, Write}`)
+* Optional `embedded-hal` trait implementations
 
 ## Cross compilation
 
