@@ -135,14 +135,13 @@
 use std::error;
 use std::fmt;
 use std::io;
+use std::mem::MaybeUninit;
 use std::ops::Not;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex, Once, Weak};
 use std::time::Duration;
-
-use lazy_static::lazy_static;
 
 mod epoll;
 #[cfg(feature = "hal")]
@@ -352,13 +351,6 @@ impl fmt::Debug for GpioState {
     }
 }
 
-// Share state between Gpio and Pin instances. GpioState is dropped after
-// all Gpio and Pin instances go out of scope, guaranteeing we won't have
-// any pins simultaneously using different EventLoop or GpioMem instances.
-lazy_static! {
-    static ref GPIO_STATE: Mutex<Weak<GpioState>> = Mutex::new(Weak::new());
-}
-
 /// Provides access to the Raspberry Pi's GPIO peripheral.
 #[derive(Clone, Debug)]
 pub struct Gpio {
@@ -368,11 +360,28 @@ pub struct Gpio {
 impl Gpio {
     /// Constructs a new `Gpio`.
     pub fn new() -> Result<Gpio> {
-        let mut static_state = GPIO_STATE.lock().unwrap();
+        // Replace this when std::sync::SyncLazy is stabilized. https://github.com/rust-lang/rust/issues/74465
+
+        // Shared state between Gpio and Pin instances. GpioState is dropped after
+        // all Gpio and Pin instances go out of scope, guaranteeing we won't have
+        // any pins simultaneously using different EventLoop or GpioMem instances.
+        static mut GPIO_STATE: MaybeUninit<Mutex<Weak<GpioState>>> = MaybeUninit::uninit();
+        static ONCE: Once = Once::new();
+
+        // call_once is thread-safe, guaranteed to be called only once, and memory writes performed
+        // by the closure can be observed by other threads after execution completes.
+        let mut weak_state = unsafe {
+            ONCE.call_once(|| {
+                GPIO_STATE.write(Mutex::new(Weak::new()));
+            });
+
+            // GPIO_STATE will always be initialized at this point.
+            GPIO_STATE.assume_init_ref().lock().unwrap()
+        };
 
         // Clone a strong reference if a GpioState instance already exists, otherwise
         // initialize it here so we can return any relevant errors.
-        if let Some(ref state) = static_state.upgrade() {
+        if let Some(ref state) = weak_state.upgrade() {
             Ok(Gpio {
                 inner: state.clone(),
             })
@@ -392,7 +401,7 @@ impl Gpio {
 
             // Store a weak reference to our state. This gets dropped when
             // all Gpio and Pin instances go out of scope.
-            *static_state = Arc::downgrade(&gpio_state);
+            *weak_state = Arc::downgrade(&gpio_state);
 
             Ok(Gpio { inner: gpio_state })
         }
