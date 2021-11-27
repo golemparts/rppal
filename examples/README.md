@@ -6,6 +6,8 @@ Before running any examples that interface with external components, read throug
 
 `gpio_blinkled_signals.rs` - Blinks an LED in a loop, while handling any incoming `SIGINT` (<kbd>Ctrl</kbd> + <kbd>C</kbd>) and `SIGTERM` signals so the pin's state can be reset before the application exits.
 
+`gpio_multithreaded_mpsc.rs` - Blinks an LED on a separate thread using an MPSC channel.
+
 `gpio_multithreaded_mutex.rs` - Blinks an LED from multiple threads.
 
 `gpio_servo_softpwm.rs` - Rotates a servo using software-based PWM.
