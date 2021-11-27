@@ -1,4 +1,4 @@
-// gpio_blinkled.rs - Blinks an LED connected to a GPIO pin in a loop.
+// gpio_blinkled.rs - Blinks an LED in a loop.
 //
 // Remember to add a resistor of an appropriate value in series, to prevent
 // exceeding the maximum current rating of the GPIO pin and the LED.

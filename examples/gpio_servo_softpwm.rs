@@ -1,5 +1,4 @@
-// gpio_servo_softpwm.rs - Rotates a servo connected to a GPIO pin using
-// software-based PWM.
+// gpio_servo_softpwm.rs - Rotates a servo using software-based PWM.
 //
 // Calibrate your servo beforehand, and change the values listed below to fall
 // within your servo's safe limits to prevent potential damage. Don't power the
