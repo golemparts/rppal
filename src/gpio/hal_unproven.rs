@@ -239,6 +239,10 @@ impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
         let now_mode = self.mode();
 
         return if now_mode == Mode::Output {
+            match state {
+                embedded_hal_0::digital::v2::PinState::Low => self.set_low() ,
+                embedded_hal_0::digital::v2::PinState::High => self.set_high()
+            }
             Ok(self)
         } else {
             self.set_mode(Mode::Output);
