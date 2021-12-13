@@ -212,10 +212,8 @@ impl embedded_hal_0::Pwm for IoPin {
     }
 }
 
-
 /// Unproven `IoPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
-
     type Error = Infallible;
 
     /// Tries to convert this pin to input mode.
@@ -235,20 +233,23 @@ impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
     ///
     /// If the pin is already in the requested state, this method should
     /// succeed.
-    fn into_output_pin(mut self, state: embedded_hal_0::digital::v2::PinState) -> Result<IoPin, Self::Error> {
+    fn into_output_pin(
+        mut self,
+        state: embedded_hal_0::digital::v2::PinState,
+    ) -> Result<IoPin, Self::Error> {
         let now_mode = self.mode();
 
         return if now_mode == Mode::Output {
             match state {
-                embedded_hal_0::digital::v2::PinState::Low => self.set_low() ,
-                embedded_hal_0::digital::v2::PinState::High => self.set_high()
+                embedded_hal_0::digital::v2::PinState::Low => self.set_low(),
+                embedded_hal_0::digital::v2::PinState::High => self.set_high(),
             }
             Ok(self)
         } else {
             self.set_mode(Mode::Output);
             match state {
-                embedded_hal_0::digital::v2::PinState::Low => self.set_low() ,
-                embedded_hal_0::digital::v2::PinState::High => self.set_high()
+                embedded_hal_0::digital::v2::PinState::Low => self.set_low(),
+                embedded_hal_0::digital::v2::PinState::High => self.set_high(),
             }
             Ok(self)
         };
