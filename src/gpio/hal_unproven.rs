@@ -220,13 +220,12 @@ impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
     ///
     /// If the pin is already in input mode, this method should succeed.
     fn into_input_pin(mut self) -> Result<IoPin, Self::Error> {
-        let now_mode = self.mode();
-        return if now_mode == Mode::Input {
+        if self.mode() == Mode::Input {
             Ok(self)
         } else {
             self.set_mode(Mode::Input);
             Ok(self)
-        };
+        }
     }
 
     /// Tries to convert this pin to output mode with the given initial state.
@@ -237,9 +236,7 @@ impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
         mut self,
         state: embedded_hal_0::digital::v2::PinState,
     ) -> Result<IoPin, Self::Error> {
-        let now_mode = self.mode();
-
-        return if now_mode == Mode::Output {
+        if self.mode() == Mode::Output {
             match state {
                 embedded_hal_0::digital::v2::PinState::Low => self.set_low(),
                 embedded_hal_0::digital::v2::PinState::High => self.set_high(),
@@ -252,6 +249,6 @@ impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
                 embedded_hal_0::digital::v2::PinState::High => self.set_high(),
             }
             Ok(self)
-        };
+        }
     }
 }
