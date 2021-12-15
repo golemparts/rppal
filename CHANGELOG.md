@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2 (TBD)
+
+* **Gpio**: Implement `unproven` `embedded-hal` trait `digital::v2::IoPin<IoPin, IoPin>` for `IoPin` (contributed by @rumatoest).
+
 ## 0.13.1 (October 28, 2021)
 
 * **DeviceInfo**: Add device identification support for Raspberry Pi Compute Module 4 models with 4GB and 8GB RAM.
