@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/golemparts/rppal.svg?branch=master)](https://travis-ci.com/golemparts/rppal)
 [![crates.io](https://img.shields.io/crates/v/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-v1.45.0-lightgray.svg)](https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-v1.56.0-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
 RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters.
 

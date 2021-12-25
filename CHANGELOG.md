@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.13.2 (TBD)
+## 0.14.0 (TBD)
 
+* (Breaking change) Transition to Rust 2021, requiring rustc v1.56.0 or newer to compile the library.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::v2::IoPin<IoPin, IoPin>` for `IoPin` (contributed by @rumatoest).
 
 ## 0.13.1 (October 28, 2021)
