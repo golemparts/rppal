@@ -19,20 +19,24 @@
 // DEALINGS IN THE SOFTWARE.
 
 use core::convert::Infallible;
-use std::time::Duration;
 
-use embedded_hal::digital::blocking::{
-    InputPin as InputPinHal, OutputPin as OutputPinHal, StatefulOutputPin as StatefulOutputPinHal,
-    ToggleableOutputPin as ToggleableOutputPinHal,
+use embedded_hal::digital::{
+  ErrorType,
+  blocking::{
+      InputPin as InputPinHal, OutputPin as OutputPinHal, StatefulOutputPin as StatefulOutputPinHal,
+      ToggleableOutputPin as ToggleableOutputPinHal,
+  },
 };
-use embedded_hal::pwm::blocking::{Pwm, PwmPin};
 
-use super::{Error, InputPin, IoPin, Level, OutputPin, Pin};
+use super::{InputPin, IoPin, Level, OutputPin, Pin};
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl InputPinHal for Pin {
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl ErrorType for Pin {
     type Error = Infallible;
+}
 
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl InputPinHal for Pin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::read(self) == Level::High)
     }
@@ -42,10 +46,13 @@ impl InputPinHal for Pin {
     }
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl ErrorType for InputPin {
+    type Error = Infallible;
+}
+
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl InputPinHal for InputPin {
-    type Error = Infallible;
-
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_high(self))
     }
@@ -55,10 +62,13 @@ impl InputPinHal for InputPin {
     }
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl ErrorType for IoPin {
+    type Error = Infallible;
+}
+
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl InputPinHal for IoPin {
-    type Error = Infallible;
-
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_high(self))
     }
@@ -68,10 +78,13 @@ impl InputPinHal for IoPin {
     }
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl InputPinHal for OutputPin {
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl ErrorType for OutputPin {
     type Error = Infallible;
+}
 
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl InputPinHal for OutputPin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_set_high(self))
     }
@@ -81,10 +94,8 @@ impl InputPinHal for OutputPin {
     }
 }
 
-/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl OutputPinHal for OutputPin {
-    type Error = Infallible;
-
     fn set_low(&mut self) -> Result<(), Self::Error> {
         OutputPin::set_low(self);
 
@@ -111,7 +122,7 @@ impl embedded_hal_0::digital::v2::OutputPin for OutputPin {
     }
 }
 
-/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl StatefulOutputPinHal for OutputPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(OutputPin::is_set_high(self))
@@ -122,10 +133,8 @@ impl StatefulOutputPinHal for OutputPin {
     }
 }
 
-/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl ToggleableOutputPinHal for OutputPin {
-    type Error = Infallible;
-
     fn toggle(&mut self) -> Result<(), Self::Error> {
         OutputPin::toggle(self);
 
@@ -133,10 +142,8 @@ impl ToggleableOutputPinHal for OutputPin {
     }
 }
 
-/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl OutputPinHal for IoPin {
-    type Error = Infallible;
-
     fn set_low(&mut self) -> Result<(), Self::Error> {
         IoPin::set_low(self);
 
@@ -163,7 +170,7 @@ impl embedded_hal_0::digital::v2::OutputPin for IoPin {
     }
 }
 
-/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl StatefulOutputPinHal for IoPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(IoPin::is_high(self))
@@ -174,110 +181,10 @@ impl StatefulOutputPinHal for IoPin {
     }
 }
 
-/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl ToggleableOutputPinHal for IoPin {
-    type Error = Infallible;
-
     fn toggle(&mut self) -> Result<(), Self::Error> {
         IoPin::toggle(self);
-
-        Ok(())
-    }
-}
-
-const NANOS_PER_SEC: f64 = 1_000_000_000.0;
-
-/// `Pwm` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl embedded_hal::pwm::blocking::Pwm for OutputPin {
-    type Duty = f64;
-    type Channel = ();
-    type Time = Duration;
-    type Error = Error;
-
-    /// Disables a PWM `channel`.
-    fn disable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
-        self.clear_pwm()
-    }
-
-    /// Enables a PWM `channel`.
-    fn enable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
-        self.set_pwm_frequency(self.frequency, self.duty_cycle)
-    }
-
-    /// Returns the current PWM period.
-    fn get_period(&self) -> Result<Self::Time, Self::Error> {
-        Ok(Duration::from_nanos(if self.frequency == 0.0 {
-            0
-        } else {
-            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
-        }))
-    }
-
-    /// Returns the current duty cycle.
-    fn get_duty(&self, _channel: &Self::Channel) -> Result<Self::Duty, Self::Error> {
-        Ok(self.duty_cycle)
-    }
-
-    /// Returns the maximum duty cycle value.
-    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(1.0)
-    }
-
-    /// Sets a new duty cycle.
-    fn set_duty(&mut self, _channel: &Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
-        self.duty_cycle = duty.max(0.0).min(1.0);
-
-        if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
-        }
-
-        Ok(())
-    }
-
-    /// Sets a new PWM period.
-    fn set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
-    where
-        P: Into<Self::Time>,
-    {
-        let period = period.into();
-        self.frequency =
-            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
-
-        if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
-        }
-
-        Ok(())
-    }
-}
-
-/// `PwmPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl PwmPin for OutputPin {
-    type Duty = f64;
-    type Error = Error;
-
-    fn disable(&mut self) -> Result<(), Self::Error> {
-        self.clear_pwm()
-    }
-
-    fn enable(&mut self) -> Result<(), Self::Error> {
-        self.set_pwm_frequency(self.frequency, self.duty_cycle)
-    }
-
-    fn get_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(self.duty_cycle)
-    }
-
-    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(1.0)
-    }
-
-    fn set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
-        self.duty_cycle = duty.max(0.0).min(1.0);
-
-        if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
-        }
 
         Ok(())
     }
@@ -288,119 +195,27 @@ impl embedded_hal_0::PwmPin for OutputPin {
     type Duty = f64;
 
     fn disable(&mut self) {
-        let _ = PwmPin::disable(self);
+        let _ = self.clear_pwm();
     }
 
     fn enable(&mut self) {
-        let _ = PwmPin::enable(self);
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
     }
 
     fn get_duty(&self) -> Self::Duty {
-        PwmPin::get_duty(self).unwrap_or_default()
+        self.duty_cycle
     }
 
     fn get_max_duty(&self) -> Self::Duty {
-        PwmPin::get_max_duty(self).unwrap_or(1.0)
+        1.0
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = PwmPin::set_duty(self, duty);
-    }
-}
-
-/// `Pwm` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl Pwm for IoPin {
-    type Duty = f64;
-    type Channel = ();
-    type Time = Duration;
-    type Error = Error;
-
-    /// Disables a PWM `channel`.
-    fn disable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
-        self.clear_pwm()
-    }
-
-    /// Enables a PWM `channel`.
-    fn enable(&mut self, _channel: &Self::Channel) -> Result<(), Self::Error> {
-        self.set_pwm_frequency(self.frequency, self.duty_cycle)
-    }
-
-    /// Returns the current PWM period.
-    fn get_period(&self) -> Result<Self::Time, Self::Error> {
-        Ok(Duration::from_nanos(if self.frequency == 0.0 {
-            0
-        } else {
-            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
-        }))
-    }
-
-    /// Returns the current duty cycle.
-    fn get_duty(&self, _channel: &Self::Channel) -> Result<Self::Duty, Self::Error> {
-        Ok(self.duty_cycle)
-    }
-
-    /// Returns the maximum duty cycle value.
-    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(1.0)
-    }
-
-    /// Sets a new duty cycle.
-    fn set_duty(&mut self, _channel: &Self::Channel, duty: Self::Duty) -> Result<(), Self::Error> {
         self.duty_cycle = duty.max(0.0).min(1.0);
 
         if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
         }
-
-        Ok(())
-    }
-
-    /// Sets a new PWM period.
-    fn set_period<P>(&mut self, period: P) -> Result<(), Self::Error>
-    where
-        P: Into<Self::Time>,
-    {
-        let period = period.into();
-        self.frequency =
-            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
-
-        if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
-        }
-
-        Ok(())
-    }
-}
-
-/// `PwmPin` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl PwmPin for IoPin {
-    type Duty = f64;
-    type Error = Error;
-
-    fn disable(&mut self) -> Result<(), Self::Error> {
-        self.clear_pwm()
-    }
-
-    fn enable(&mut self) -> Result<(), Self::Error> {
-        self.set_pwm_frequency(self.frequency, self.duty_cycle)
-    }
-
-    fn get_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(self.duty_cycle)
-    }
-
-    fn get_max_duty(&self) -> Result<Self::Duty, Self::Error> {
-        Ok(1.0)
-    }
-
-    fn set_duty(&mut self, duty: Self::Duty) -> Result<(), Self::Error> {
-        self.duty_cycle = duty.max(0.0).min(1.0);
-
-        if self.soft_pwm.is_some() {
-            self.set_pwm_frequency(self.frequency, self.duty_cycle)?;
-        }
-
-        Ok(())
     }
 }
 
@@ -409,22 +224,26 @@ impl embedded_hal_0::PwmPin for IoPin {
     type Duty = f64;
 
     fn disable(&mut self) {
-        let _ = PwmPin::disable(self);
+        let _ = self.clear_pwm();
     }
 
     fn enable(&mut self) {
-        let _ = PwmPin::enable(self);
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
     }
 
     fn get_duty(&self) -> Self::Duty {
-        PwmPin::get_duty(self).unwrap_or_default()
+        self.duty_cycle
     }
 
     fn get_max_duty(&self) -> Self::Duty {
-        PwmPin::get_max_duty(self).unwrap_or(1.0)
+        1.0
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        let _ = PwmPin::set_duty(self, duty);
+        self.duty_cycle = duty.max(0.0).min(1.0);
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 }

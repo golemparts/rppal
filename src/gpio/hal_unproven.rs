@@ -25,10 +25,11 @@ use embedded_hal::digital::blocking::{
     InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal,
     ToggleableOutputPin as ToggleableOutputPinHal,
 };
-use embedded_hal::pwm::blocking::Pwm as PwmHal;
 
 use super::{InputPin, IoPin, OutputPin, Pin};
 use crate::gpio::Mode;
+
+const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
 /// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
 impl embedded_hal_0::digital::v2::InputPin for Pin {
@@ -129,33 +130,41 @@ impl embedded_hal_0::Pwm for OutputPin {
     type Time = Duration;
 
     /// Disables a PWM `channel`.
-    fn disable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::disable(self, &channel);
+    fn disable(&mut self, _channel: Self::Channel) {
+        let _ = self.clear_pwm();
     }
 
     /// Enables a PWM `channel`.
-    fn enable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::enable(self, &channel);
+    fn enable(&mut self, _channel: Self::Channel) {
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
     }
 
     /// Returns the current PWM period.
     fn get_period(&self) -> Self::Time {
-        PwmHal::get_period(self).unwrap_or_default()
+        Duration::from_nanos(if self.frequency == 0.0 {
+            0
+        } else {
+            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
+        })
     }
 
     /// Returns the current duty cycle.
-    fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        PwmHal::get_duty(self, &channel).unwrap_or_default()
+    fn get_duty(&self, _channel: Self::Channel) -> Self::Duty {
+        self.duty_cycle
     }
 
     /// Returns the maximum duty cycle value.
     fn get_max_duty(&self) -> Self::Duty {
-        PwmHal::get_max_duty(self).unwrap_or(1.0)
+        1.0
     }
 
     /// Sets a new duty cycle.
-    fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = PwmHal::set_duty(self, &channel, duty);
+    fn set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) {
+        self.duty_cycle = duty.max(0.0).min(1.0);
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 
     /// Sets a new PWM period.
@@ -163,7 +172,13 @@ impl embedded_hal_0::Pwm for OutputPin {
     where
         P: Into<Self::Time>,
     {
-        let _ = PwmHal::set_period(self, period);
+        let period = period.into();
+        self.frequency =
+            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 }
 
@@ -174,33 +189,41 @@ impl embedded_hal_0::Pwm for IoPin {
     type Time = Duration;
 
     /// Disables a PWM `channel`.
-    fn disable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::disable(self, &channel);
+    fn disable(&mut self, _channel: Self::Channel) {
+        let _ = self.clear_pwm();
     }
 
     /// Enables a PWM `channel`.
-    fn enable(&mut self, channel: Self::Channel) {
-        let _ = PwmHal::enable(self, &channel);
+    fn enable(&mut self, _channel: Self::Channel) {
+        let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
     }
 
     /// Returns the current PWM period.
     fn get_period(&self) -> Self::Time {
-        PwmHal::get_period(self).unwrap_or_default()
+        Duration::from_nanos(if self.frequency == 0.0 {
+            0
+        } else {
+            ((1.0 / self.frequency) * NANOS_PER_SEC) as u64
+        })
     }
 
     /// Returns the current duty cycle.
-    fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        PwmHal::get_duty(self, &channel).unwrap_or_default()
+    fn get_duty(&self, _channel: Self::Channel) -> Self::Duty {
+        self.duty_cycle
     }
 
     /// Returns the maximum duty cycle value.
     fn get_max_duty(&self) -> Self::Duty {
-        PwmHal::get_max_duty(self).unwrap_or(1.0)
+        1.0
     }
 
     /// Sets a new duty cycle.
-    fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        let _ = PwmHal::set_duty(self, &channel, duty);
+    fn set_duty(&mut self, _channel: Self::Channel, duty: Self::Duty) {
+      self.duty_cycle = duty.max(0.0).min(1.0);
+
+      if self.soft_pwm.is_some() {
+          let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+      }
     }
 
     /// Sets a new PWM period.
@@ -208,7 +231,13 @@ impl embedded_hal_0::Pwm for IoPin {
     where
         P: Into<Self::Time>,
     {
-        let _ = PwmHal::set_period(self, period);
+        let period = period.into();
+        self.frequency =
+            1.0 / (period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC));
+
+        if self.soft_pwm.is_some() {
+            let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
+        }
     }
 }
 

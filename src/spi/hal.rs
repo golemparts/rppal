@@ -20,18 +20,25 @@
 
 #![allow(clippy::needless_lifetimes)]
 
-use embedded_hal::spi::blocking::{Transfer, Write};
+use embedded_hal::spi::{self, ErrorType, blocking::{Transfer, Write}};
 use embedded_hal::spi::nb::FullDuplex;
 
 use super::{Error, Spi};
 
-/// `Transfer<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
-impl Transfer<u8> for Spi {
+impl ErrorType for Spi {
     type Error = Error;
+}
 
-    fn transfer<'a>(&mut self, buffer: &'a mut [u8]) -> Result<(), Self::Error> {
-        let write_buffer = buffer.to_vec();
-        Spi::transfer(self, buffer, &write_buffer)?;
+impl spi::Error for Error {
+    fn kind(&self) -> spi::ErrorKind {
+        spi::ErrorKind::Other
+    }
+}
+
+/// `Transfer<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+impl Transfer<u8> for Spi {
+    fn transfer<'a>(&mut self, read: &'a mut [u8], write: &[u8]) -> Result<(), Self::Error> {
+        Spi::transfer(self, read, write)?;
 
         Ok(())
     }
@@ -42,15 +49,14 @@ impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     type Error = Error;
 
     fn transfer<'a>(&mut self, buffer: &'a mut [u8]) -> Result<&'a [u8], Self::Error> {
-        Transfer::transfer(self, buffer)?;
+        let write_buffer = buffer.to_vec();
+        Transfer::transfer(self, buffer, &write_buffer)?;
         Ok(buffer)
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl Write<u8> for Spi {
-    type Error = Error;
-
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
         Spi::write(self, buffer)?;
 
@@ -67,10 +73,8 @@ impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     }
 }
 
-/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.5.
+/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.7.
 impl FullDuplex<u8> for Spi {
-    type Error = Error;
-
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
         if let Some(last_read) = self.last_read.take() {
             Ok(last_read)
