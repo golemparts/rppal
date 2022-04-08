@@ -463,10 +463,7 @@ pub fn find_gpiochip() -> Result<File> {
 // slice and returns a NulError.
 fn cbuf_to_cstring(buf: &[u8]) -> CString {
     CString::new({
-        let pos = buf
-            .iter()
-            .position(|&c| c == b'\0')
-            .unwrap_or_else(|| buf.len());
+        let pos = buf.iter().position(|&c| c == b'\0').unwrap_or(buf.len());
         &buf[..pos]
     })
     .unwrap_or_default()
