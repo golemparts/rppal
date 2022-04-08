@@ -91,6 +91,7 @@ pub enum Model {
     RaspberryPiComputeModule3,
     RaspberryPiComputeModule3Plus,
     RaspberryPiComputeModule4,
+    RaspberryPiComputeModule4S,
     RaspberryPiZero,
     RaspberryPiZeroW,
     RaspberryPiZero2W,
@@ -114,6 +115,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
+            Model::RaspberryPiComputeModule4S => write!(f, "Raspberry Pi Compute Module 4S"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
             Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
@@ -241,6 +243,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,4-model-b" => Model::RaspberryPi4B,
             "raspberrypi,400" => Model::RaspberryPi400,
             "raspberrypi,4-compute-module" => Model::RaspberryPiComputeModule4,
+            "raspberrypi,4-compute-module-s" => Model::RaspberryPiComputeModule4S,
             _ => continue,
         };
 
@@ -300,6 +303,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi 4 Model B" => Model::RaspberryPi4B,
         "Raspberry Pi 400" => Model::RaspberryPi400,
         "Raspberry Pi Compute Module 4" => Model::RaspberryPiComputeModule4,
+        "Raspberry Pi Compute Module 4S" => Model::RaspberryPiComputeModule4S,
         _ => return Err(Error::UnknownModel),
     };
 
@@ -363,14 +367,15 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
             }),
-            Model::RaspberryPi4B | Model::RaspberryPi400 | Model::RaspberryPiComputeModule4 => {
-                Ok(DeviceInfo {
-                    model,
-                    soc: SoC::Bcm2711,
-                    peripheral_base: PERIPHERAL_BASE_RPI4,
-                    gpio_offset: GPIO_OFFSET,
-                })
-            }
+            Model::RaspberryPi4B
+            | Model::RaspberryPi400
+            | Model::RaspberryPiComputeModule4
+            | Model::RaspberryPiComputeModule4S => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2711,
+                peripheral_base: PERIPHERAL_BASE_RPI4,
+                gpio_offset: GPIO_OFFSET,
+            }),
         }
     }
 
