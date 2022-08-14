@@ -38,7 +38,7 @@ const FUNC_SMBUS_WRITE_I2C_BLOCK: c_ulong = 0x0800_0000;
 const FUNC_SMBUS_HOST_NOTIFY: c_ulong = 0x1000_0000;
 
 /// Lists the features supported by the underlying drivers.
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub struct Capabilities {
     funcs: c_ulong,
 }
