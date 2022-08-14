@@ -11,7 +11,7 @@ The library can be used in conjunction with a variety of platform-agnostic drive
 
 RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, CM, CM 3, CM 3+, CM 4, 400, Zero, Zero W and Zero 2 W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
 
-This library is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+This library is under development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
 ## Table of contents
 
@@ -41,7 +41,7 @@ Online documentation is available for the latest release, older releases, and th
 
 ## Usage
 
-Add a dependency for `rppal` to your `Cargo.toml`.
+Add a dependency for `rppal` to your `Cargo.toml` using `cargo add rppal`, or by adding the following line to your dependencies section.
 
 ```toml
 [dependencies]
@@ -209,4 +209,4 @@ Always be careful when working with the Raspberry Pi's peripherals, especially i
 
 ## Copyright and license
 
-Copyright (c) 2017-2021 Rene van der Meer. Released under the [MIT license](LICENSE).
+Copyright (c) 2017-2022 Rene van der Meer. Released under the [MIT license](LICENSE).
