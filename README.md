@@ -193,22 +193,10 @@ In the root directory of your project, create a `.cargo` subdirectory, and then 
 target = "armv7-unknown-linux-gnueabihf"
 ```
 
-### RLS / rust-analyzer
+### Visual Studio Code
 
-Either the Rust Language Server (RLS) or rust-analyzer needs to be made aware of the target platform, depending on which of these tools you have installed. RLS uses a `rust.target` configuration option to set the target, while rust-analyzer uses `rust-analyzer.cargo.target`. The location of these options is IDE-specific.
+The rust-analyzer extension for Visual Studio Code needs to be made aware of the target platform by setting the `rust-analyzer.cargo.target` configuration option. In the root directory of your project, create a `.vscode` subdirectory, and then save the following snippet to `.vscode/settings.json`.
 
-#### Visual Studio Code
-
-In the root directory of your project, create a `.vscode` subdirectory, and then save the following snippet to `.vscode/settings.json`.
-
-RLS:
-```json
-{
-    "rust.target": "armv7-unknown-linux-gnueabihf"
-}
-```
-
-rust-analyzer:
 ```json
 {
     "rust-analyzer.cargo.target": "armv7-unknown-linux-gnueabihf"
