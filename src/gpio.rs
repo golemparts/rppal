@@ -246,9 +246,9 @@ pub enum Level {
 impl From<bool> for Level {
     fn from(e: bool) -> Level {
         if e {
-            high
+            Level::high
         } else {
-            low 
+            Level::low 
         }
     }
 }
