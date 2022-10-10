@@ -147,6 +147,8 @@ mod hal;
 mod ioctl;
 mod segment;
 
+#[cfg(feature = "hal")]
+pub use hal::SimpleHalSpiDevice;
 pub use self::segment::Segment;
 
 /// Errors that can occur when accessing the SPI peripheral.
