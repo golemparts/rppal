@@ -243,6 +243,16 @@ pub enum Level {
     High = 1,
 }
 
+impl From<bool> for Level {
+    fn from(e: bool) -> Level {
+        if e {
+            Level::High
+        } else {
+            Level::Low 
+        }
+    }
+}
+
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
