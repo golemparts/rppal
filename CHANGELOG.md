@@ -4,6 +4,7 @@
 
 * (Breaking change) Transition to Rust 2021, requiring rustc v1.56.0 or newer to compile the library.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::v2::IoPin<IoPin, IoPin>` for `IoPin` (contributed by @rumatoest).
+* **Gpio**: Implement `From<bool>` trait for `Level` (contributed by @makerio90).
 * Update `embedded-hal` to v1.0.0-alpha.9 (contributed by @mbuesch).
 
 ## 0.13.1 (October 28, 2021)
