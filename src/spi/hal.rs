@@ -1,8 +1,12 @@
-use embedded_hal::spi::nb::FullDuplex;
+use embedded_hal_nb::spi::FullDuplex;
 use embedded_hal::spi::{
-    self,
-    blocking::{SpiDevice, SpiBus, SpiBusRead, SpiBusWrite, SpiBusFlush},
     ErrorType,
+    SpiBus,
+    SpiBusFlush,
+    SpiBusRead,
+    SpiBusWrite,
+    SpiDevice,
+    self,
 };
 use std::io;
 

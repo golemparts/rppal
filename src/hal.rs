@@ -9,7 +9,7 @@
 use core::convert::Infallible;
 use std::time::{Duration, Instant};
 
-use embedded_hal::delay::blocking::DelayUs;
+use embedded_hal::delay::DelayUs;
 use spin_sleep::sleep;
 use void::Void;
 
