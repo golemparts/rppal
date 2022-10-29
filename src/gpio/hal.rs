@@ -1,10 +1,8 @@
 use core::convert::Infallible;
 
 use embedded_hal::digital::{
-    blocking::{
-        InputPin as InputPinHal, OutputPin as OutputPinHal,
-        StatefulOutputPin as StatefulOutputPinHal, ToggleableOutputPin as ToggleableOutputPinHal,
-    },
+    InputPin as InputPinHal, OutputPin as OutputPinHal,
+    StatefulOutputPin as StatefulOutputPinHal, ToggleableOutputPin as ToggleableOutputPinHal,
     ErrorType,
 };
 

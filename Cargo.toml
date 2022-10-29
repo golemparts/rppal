@@ -17,6 +17,7 @@ libc = "0.2"
 nb = { version = "0.1.1", optional = true }
 embedded-hal-0 = { version = "0.2.7", optional = true, package = "embedded-hal" }
 embedded-hal = { version = "=1.0.0-alpha.9", optional = true }
+embedded-hal-nb = { version = "=1.0.0-alpha.1", optional = true }
 void = { version = "1.0.2", optional = true }
 spin_sleep = { version = "1.0.0", optional = true }
 
@@ -25,5 +26,5 @@ simple-signal = "1.1.1"
 
 [features]
 default = []
-hal = ["nb", "embedded-hal", "embedded-hal-0", "spin_sleep", "void"]
+hal = ["nb", "embedded-hal", "embedded-hal-nb", "embedded-hal-0", "spin_sleep", "void"]
 hal-unproven = ["nb", "embedded-hal-0/unproven", "hal"]

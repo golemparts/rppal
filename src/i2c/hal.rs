@@ -1,6 +1,7 @@
 use embedded_hal::i2c::{
     self,
-    blocking::{I2c as I2cHal, Operation as I2cOperation},
+    I2c as I2cHal,
+    Operation as I2cOperation,
     ErrorType,
 };
 

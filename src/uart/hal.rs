@@ -1,7 +1,10 @@
 use embedded_hal::serial::{
     self,
-    nb::{Read, Write},
     ErrorType,
+};
+use embedded_hal_nb::serial::{
+    Read,
+    Write,
 };
 
 use super::{Error, Queue, Uart};
