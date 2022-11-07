@@ -6,7 +6,7 @@
 //!
 //! ## Pins
 //!
-//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number by calling
+//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO number by calling
 //! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's
 //! mode and logic level. Converting the [`Pin`] to an [`InputPin`], [`OutputPin`] or
 //! [`IoPin`] through the various `into_` methods available on [`Pin`] configures the
@@ -153,17 +153,22 @@ pub enum Error {
     /// doesn't provide any of the common user-accessible system files
     /// that are used to identify the model and SoC.
     UnknownModel,
-    /// Pin is not available.
+    /// Pin is already in use.
     ///
-    /// The pin is already in use elsewhere in your application, or the GPIO peripheral
-    /// doesn't expose a pin with the specified number. If the pin is currently in use, you
-    /// can retrieve it again after the [`Pin`] (or a derived [`InputPin`], [`OutputPin`] or
-    /// [`IoPin`]) instance goes out of scope.
+    /// The pin is already in use elsewhere in your application. If the pin is currently in
+    /// use, you may retrieve it again after the [`Pin`] (or a derived [`InputPin`],
+    /// [`OutputPin`] or [`IoPin`]) instance goes out of scope.
     ///
     /// [`Pin`]: struct.Pin.html
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`IoPin`]: struct.IoPin.html
+    PinUsed(u8),
+    /// Pin is not available.
+    ///
+    /// The GPIO peripheral doesn't expose a GPIO pin with the specified number. Pins are
+    /// addressed by their BCM GPIO numbers, rather than their physical location on the GPIO
+    /// header.
     PinNotAvailable(u8),
     /// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
     /// read/write access.
@@ -182,6 +187,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+            Error::PinUsed(pin) => write!(f, "Pin {} is already in use", pin),
             Error::PinNotAvailable(pin) => write!(f, "Pin {} is not available", pin),
             Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
@@ -406,19 +412,18 @@ impl Gpio {
         }
     }
 
-    /// Returns a [`Pin`] for the specified BCM GPIO pin number.
+    /// Returns a [`Pin`] for the specified BCM GPIO number.
     ///
     /// Retrieving a GPIO pin grants access to the pin through an owned [`Pin`] instance.
-    /// If the pin is already in use, or the GPIO peripheral doesn't expose a pin with the
-    /// specified number, `get` returns `Err(`[`Error::PinNotAvailable`]`)`. After a [`Pin`]
-    /// (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it
-    /// can be retrieved again through another `get` call.
+    /// If the pin is already in use, `get` returns `Err(`[`Error::PinUsed`]`)`.
+    /// After a [`Pin`] (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out
+    /// of scope, it can be retrieved again through another `get` call.
     ///
     /// [`Pin`]: struct.Pin.html
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`IoPin`]: struct.IoPin.html
-    /// [`Error::PinNotAvailable`]: enum.Error.html#variant.PinNotAvailable
+    /// [`Error::PinUsed`]: enum.Error.html#variant.PinUsed
     pub fn get(&self, pin: u8) -> Result<Pin> {
         if pin >= self.inner.gpio_lines {
             return Err(Error::PinNotAvailable(pin));
@@ -430,7 +435,7 @@ impl Gpio {
             .is_err()
         {
             // Pin is taken
-            Err(Error::PinNotAvailable(pin))
+            Err(Error::PinUsed(pin))
         } else {
             // Return an owned Pin
             Ok(Pin::new(pin, self.inner.clone()))

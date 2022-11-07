@@ -271,7 +271,7 @@ impl Pin {
 
     /// Returns the GPIO pin number.
     ///
-    /// Pins are addressed by their BCM numbers, rather than their physical location.
+    /// Pins are addressed by their BCM GPIO numbers, rather than their physical location.
     #[inline]
     pub fn pin(&self) -> u8 {
         self.pin

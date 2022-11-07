@@ -7,6 +7,9 @@
 * **Gpio**: Implement `From<bool>` trait for `Level` (contributed by @makerio90).
 * **Gpio**: Fix error when configuring an InputPin for GPIOs > 31 on BCM2711 (contributed by @benkard).
 * **Gpio**: Fix access to GPIO54 - GPIO57 on BCM2711.
+* **Gpio**: (Breaking change) Add `Error::PinUsed`, returned by `Gpio::get()` to indicate a pin is already in use.
+* **Gpio**: (Breaking change) Change `Error::PinNotAvailable`, returned by `Gpio::get()` to indicate a pin isn't available on the current Raspberry Pi model.
+
 * Update `embedded-hal` to v1.0.0-alpha.9 (contributed by @mbuesch).
 
 ## 0.13.1 (October 28, 2021)
