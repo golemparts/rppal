@@ -16,8 +16,8 @@ use crate::system::{DeviceInfo, SoC};
 const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem";
 const PATH_DEV_MEM: &str = "/dev/mem";
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
-// The BCM2711 (RPi4) has 58 32-bit registers related to the GPIO.
-const GPIO_MEM_REGISTERS: usize = 58;
+// The BCM2711 (RPi4) has GPIO-related 32-bit registers #0 .. #60, an address space of 61 registers (datasheet @ 5.1).
+const GPIO_MEM_REGISTERS: usize = 61;
 const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
 const GPFSEL0: usize = 0x00;
 const GPSET0: usize = 0x1c / std::mem::size_of::<u32>();
