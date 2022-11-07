@@ -27,7 +27,7 @@ This library is under development on the [master branch](https://github.com/gole
   - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
-  - [RLS / rust-analyzer](#rls--rust-analyzer)
+  - [Visual Studio Code](#visual-studio-code)
 - [Caution](#caution)
 - [Copyright and license](#copyright-and-license)
 
