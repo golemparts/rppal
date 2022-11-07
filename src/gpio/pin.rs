@@ -8,10 +8,6 @@ use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown,
 
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
-// Maximum GPIO pins on the BCM2835. The actual number of pins
-// exposed through the Pi's GPIO header depends on the model.
-pub const MAX: usize = 54;
-
 macro_rules! impl_pin {
     () => {
         /// Returns the GPIO pin number.

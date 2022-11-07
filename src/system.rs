@@ -11,10 +11,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
+// Peripheral base address
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
 const PERIPHERAL_BASE_RPI4: u32 = 0xfe00_0000;
+
+// Offset from the peripheral base address
 const GPIO_OFFSET: u32 = 0x20_0000;
+
+// Number of GPIO lines
+const GPIO_LINES_BCM283X: u8 = 54;
+const GPIO_LINES_BCM2711: u8 = 58;
 
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
 #[derive(Debug)]
@@ -295,8 +302,12 @@ fn parse_base_model() -> Result<Model> {
 pub struct DeviceInfo {
     model: Model,
     soc: SoC,
+    // Peripheral base memory address
     peripheral_base: u32,
+    // Offset from the peripheral base memory address for the GPIO section
     gpio_offset: u32,
+    // Number of GPIO lines available for this SoC
+    gpio_lines: u8,
 }
 
 impl DeviceInfo {
@@ -324,12 +335,14 @@ impl DeviceInfo {
                 soc: SoC::Bcm2835,
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
             Model::RaspberryPi2B => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2836,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
             Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
                 Ok(DeviceInfo {
@@ -337,6 +350,7 @@ impl DeviceInfo {
                     soc: SoC::Bcm2837A1,
                     peripheral_base: PERIPHERAL_BASE_RPI2,
                     gpio_offset: GPIO_OFFSET,
+                    gpio_lines: GPIO_LINES_BCM283X,
                 })
             }
             Model::RaspberryPi3BPlus
@@ -346,6 +360,7 @@ impl DeviceInfo {
                 soc: SoC::Bcm2837B0,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
             Model::RaspberryPi4B
             | Model::RaspberryPi400
@@ -355,6 +370,7 @@ impl DeviceInfo {
                 soc: SoC::Bcm2711,
                 peripheral_base: PERIPHERAL_BASE_RPI4,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM2711,
             }),
         }
     }
@@ -369,13 +385,18 @@ impl DeviceInfo {
         self.soc
     }
 
-    /// Returns the base memory address for the BCM283x peripherals.
+    /// Returns the peripheral base memory address.
     pub(crate) fn peripheral_base(&self) -> u32 {
         self.peripheral_base
     }
 
-    /// Returns the offset from the base memory address for the GPIO section.
+    /// Returns the offset from the peripheral base memory address for the GPIO section.
     pub(crate) fn gpio_offset(&self) -> u32 {
         self.gpio_offset
+    }
+
+    /// Returns the number of GPIO lines available for this SoC.
+    pub(crate) fn gpio_lines(&self) -> u8 {
+        self.gpio_lines
     }
 }

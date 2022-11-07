@@ -5,7 +5,8 @@
 * (Breaking change) Transition to Rust 2021, requiring rustc v1.56.0 or newer to compile the library.
 * **Gpio**: Implement `unproven` `embedded-hal` trait `digital::v2::IoPin<IoPin, IoPin>` for `IoPin` (contributed by @rumatoest).
 * **Gpio**: Implement `From<bool>` trait for `Level` (contributed by @makerio90).
-* **Gpio**: Fix access to GPIOs > 31 on BCM2711 devices (contributed by @benkard).
+* **Gpio**: Fix error when configuring an InputPin for GPIOs > 31 on BCM2711 (contributed by @benkard).
+* **Gpio**: Fix access to GPIO54 - GPIO57 on BCM2711.
 * Update `embedded-hal` to v1.0.0-alpha.9 (contributed by @mbuesch).
 
 ## 0.13.1 (October 28, 2021)

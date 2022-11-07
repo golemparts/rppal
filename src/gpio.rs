@@ -135,6 +135,7 @@ mod pin;
 mod soft_pwm;
 
 use crate::system;
+use crate::system::DeviceInfo;
 
 pub use self::pin::{InputPin, IoPin, OutputPin, Pin};
 
@@ -248,7 +249,7 @@ impl From<bool> for Level {
         if e {
             Level::High
         } else {
-            Level::Low 
+            Level::Low
         }
     }
 }
@@ -327,7 +328,8 @@ pub(crate) struct GpioState {
     gpio_mem: mem::GpioMem,
     cdev: std::fs::File,
     sync_interrupts: Mutex<interrupt::EventLoop>,
-    pins_taken: [AtomicBool; pin::MAX],
+    pins_taken: [AtomicBool; u8::MAX as usize],
+    gpio_lines: u8,
 }
 
 impl fmt::Debug for GpioState {
@@ -337,6 +339,7 @@ impl fmt::Debug for GpioState {
             .field("cdev", &self.cdev)
             .field("sync_interrupts", &self.sync_interrupts)
             .field("pins_taken", &format_args!("{{ .. }}"))
+            .field("gpio_lines", &self.gpio_lines)
             .finish()
     }
 }
@@ -378,15 +381,21 @@ impl Gpio {
         } else {
             let gpio_mem = mem::GpioMem::open()?;
             let cdev = ioctl::find_gpiochip()?;
-            let sync_interrupts =
-                Mutex::new(interrupt::EventLoop::new(cdev.as_raw_fd(), pin::MAX)?);
-            let pins_taken = init_array!(AtomicBool::new(false), pin::MAX);
+            let sync_interrupts = Mutex::new(interrupt::EventLoop::new(
+                cdev.as_raw_fd(),
+                u8::MAX as usize,
+            )?);
+            let pins_taken = init_array!(AtomicBool::new(false), u8::MAX as usize);
+            let gpio_lines = DeviceInfo::new()
+                .map_err(|_| Error::UnknownModel)?
+                .gpio_lines();
 
             let gpio_state = Arc::new(GpioState {
                 gpio_mem,
                 cdev,
                 sync_interrupts,
                 pins_taken,
+                gpio_lines,
             });
 
             // Store a weak reference to our state. This gets dropped when
@@ -411,7 +420,7 @@ impl Gpio {
     /// [`IoPin`]: struct.IoPin.html
     /// [`Error::PinNotAvailable`]: enum.Error.html#variant.PinNotAvailable
     pub fn get(&self, pin: u8) -> Result<Pin> {
-        if pin as usize >= pin::MAX {
+        if pin >= self.inner.gpio_lines {
             return Err(Error::PinNotAvailable(pin));
         }
 
