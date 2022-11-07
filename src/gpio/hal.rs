@@ -1,9 +1,8 @@
 use core::convert::Infallible;
 
 use embedded_hal::digital::{
-    InputPin as InputPinHal, OutputPin as OutputPinHal,
+    ErrorType, InputPin as InputPinHal, OutputPin as OutputPinHal,
     StatefulOutputPin as StatefulOutputPinHal, ToggleableOutputPin as ToggleableOutputPinHal,
-    ErrorType,
 };
 
 use super::{InputPin, IoPin, Level, OutputPin, Pin};

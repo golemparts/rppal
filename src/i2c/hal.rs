@@ -1,9 +1,4 @@
-use embedded_hal::i2c::{
-    self,
-    I2c as I2cHal,
-    Operation as I2cOperation,
-    ErrorType,
-};
+use embedded_hal::i2c::{self, ErrorType, I2c as I2cHal, Operation as I2cOperation};
 
 use super::{Error, I2c};
 

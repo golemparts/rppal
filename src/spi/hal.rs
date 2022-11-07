@@ -1,13 +1,5 @@
+use embedded_hal::spi::{self, ErrorType, SpiBus, SpiBusFlush, SpiBusRead, SpiBusWrite, SpiDevice};
 use embedded_hal_nb::spi::FullDuplex;
-use embedded_hal::spi::{
-    ErrorType,
-    SpiBus,
-    SpiBusFlush,
-    SpiBusRead,
-    SpiBusWrite,
-    SpiDevice,
-    self,
-};
 use std::io;
 
 use super::{Error, Spi};
@@ -136,10 +128,14 @@ impl<B: ErrorType> SpiDevice for SimpleHalSpiDevice<B> {
 
     fn transaction<R>(
         &mut self,
-        f: impl FnOnce(&mut Self::Bus) -> Result<R, <Self::Bus as ErrorType>::Error>
+        f: impl FnOnce(&mut Self::Bus) -> Result<R, <Self::Bus as ErrorType>::Error>,
     ) -> Result<R, Self::Error> {
-        f(&mut self.bus)
-            .map_err(|_| Error::Io(io::Error::new(io::ErrorKind::Other, "SimpleHalSpiDevice transaction error")))
+        f(&mut self.bus).map_err(|_| {
+            Error::Io(io::Error::new(
+                io::ErrorKind::Other,
+                "SimpleHalSpiDevice transaction error",
+            ))
+        })
     }
 }
 
