@@ -178,7 +178,7 @@ If you're not working directly on a Raspberry Pi, you'll have to cross-compile y
 
 ### Cargo
 
-While additional steps may be necessary to cross-compile binaries on your platform, checking your code with `cargo check` only requires the installation of an appropriate target. Most Raspberry Pi models need the `armv7-unknown-linux-gnueabihf` target. For some models, like the Raspberry Pi Zero, a different target triple is required.
+For manual cross-compilation without the use of `cross`, you will need to install the appropriate target. Most Raspberry Pi models either need the `armv7-unknown-linux-gnueabihf` target for 32-bit Linux distributions, or `aarch64-unknown-linux-gnu` for 64-bit. For some models, like the Raspberry Pi Zero, a different target triple is required.
 
 Install the relevant target using `rustup`.
 
@@ -186,7 +186,7 @@ Install the relevant target using `rustup`.
 rustup target install armv7-unknown-linux-gnueabihf
 ```
 
-In the root directory of your project, create a `.cargo` subdirectory, and then save the following snippet to `.cargo/config`.
+In the root directory of your project, create a `.cargo` subdirectory, and save the following snippet to `.cargo/config`.
 
 ```toml
 [build]
