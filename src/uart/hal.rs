@@ -13,7 +13,7 @@ impl serial::Error for Error {
     }
 }
 
-/// `Read<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+/// `Read<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl Read<u8> for Uart {
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
         let mut buffer = [0u8; 1];
@@ -25,7 +25,7 @@ impl Read<u8> for Uart {
     }
 }
 
-/// `Read<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `Read<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::serial::Read<u8> for Uart {
     type Error = Error;
 
@@ -34,7 +34,7 @@ impl embedded_hal_0::serial::Read<u8> for Uart {
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl Write<u8> for Uart {
     fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
         if Uart::write(self, &[word])? == 0 {
@@ -51,7 +51,7 @@ impl Write<u8> for Uart {
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `Write<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::serial::Write<u8> for Uart {
     type Error = Error;
 

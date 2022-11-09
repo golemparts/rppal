@@ -28,7 +28,7 @@ impl SpiBus<u8> for Spi {
     }
 }
 
-/// `Transfer<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `Transfer<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     type Error = Error;
 
@@ -48,7 +48,7 @@ impl SpiBusWrite<u8> for Spi {
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `Write<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     type Error = Error;
 
@@ -93,7 +93,7 @@ impl FullDuplex<u8> for Spi {
     }
 }
 
-/// `FullDuplex<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `FullDuplex<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
     type Error = Error;
 

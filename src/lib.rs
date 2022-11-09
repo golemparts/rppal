@@ -4,7 +4,7 @@
 //!
 //! The library can be used in conjunction with a variety of platform-agnostic
 //! drivers through its `embedded-hal` trait implementations. Both `embedded-hal`
-//! v0.2.6 and v1.0.0-alpha.7 are supported.
+//! v0.2.7 and v1.0.0-alpha.9 are supported.
 //!
 //! RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution.
 //! Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the

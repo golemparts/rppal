@@ -1,6 +1,6 @@
 use super::Pwm;
 
-/// `PwmPin` trait implementation for `embedded-hal` v0.2.6.
+/// `PwmPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::PwmPin for Pwm {
     type Duty = f64;
 

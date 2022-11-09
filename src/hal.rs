@@ -17,7 +17,7 @@ use void::Void;
 #[derive(Debug, Default)]
 pub struct Delay;
 
-/// `Delay` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+/// `Delay` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl Delay {
     /// Constructs a new `Delay`.
     pub fn new() -> Delay {
@@ -25,28 +25,28 @@ impl Delay {
     }
 }
 
-/// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
         DelayUs::delay_ms(self, ms as u32).unwrap()
     }
 }
 
-/// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
         DelayUs::delay_ms(self, ms as u32).unwrap()
     }
 }
 
-/// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
     fn delay_ms(&mut self, ms: u32) {
         DelayUs::delay_ms(self, ms).unwrap()
     }
 }
 
-/// `DelayMs<u64>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayMs<u64>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
     fn delay_ms(&mut self, mut ms: u64) {
         while ms > (u32::MAX as u64) {
@@ -58,21 +58,21 @@ impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
     }
 }
 
-/// `DelayUs<u8>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayUs<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
         DelayUs::delay_us(self, us as u32).unwrap()
     }
 }
 
-/// `DelayUs<u16>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayUs<u16>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
         DelayUs::delay_us(self, us as u32).unwrap()
     }
 }
 
-/// `DelayUs` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+/// `DelayUs` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl DelayUs for Delay {
     type Error = Infallible;
 
@@ -87,14 +87,14 @@ impl DelayUs for Delay {
     }
 }
 
-/// `DelayUs<u32>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayUs<u32>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
         DelayUs::delay_us(self, us).unwrap()
     }
 }
 
-/// `DelayUs<u64>` trait implementation for `embedded-hal` v0.2.6.
+/// `DelayUs<u64>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
     fn delay_us(&mut self, mut us: u64) {
         while us > (u32::MAX as u64) {
@@ -144,7 +144,7 @@ impl Default for Timer {
     }
 }
 
-/// `CountDown` trait implementation for `embedded-hal` v0.2.6.
+/// `CountDown` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::timer::CountDown for Timer {
     type Time = Duration;
 

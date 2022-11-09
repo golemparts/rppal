@@ -11,7 +11,7 @@ use libc::{self, sched_param, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHE
 
 use super::{Error, GpioState, Result};
 
-// Only call sleep_ns() if we have enough time remaining
+// Only call sleep() if we have enough time remaining
 const SLEEP_THRESHOLD: u64 = 250_000;
 // Reserve some time for busy waiting
 const BUSYWAIT_MAX: u64 = 200_000;

@@ -2,7 +2,7 @@ use embedded_hal::i2c::{self, ErrorType, I2c as I2cHal, Operation as I2cOperatio
 
 use super::{Error, I2c};
 
-/// `Write` trait implementation for `embedded-hal` v0.2.6.
+/// `Write` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::i2c::Write for I2c {
     type Error = Error;
 
@@ -11,7 +11,7 @@ impl embedded_hal_0::blocking::i2c::Write for I2c {
     }
 }
 
-/// `Read` trait implementation for `embedded-hal` v0.2.6.
+/// `Read` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::i2c::Read for I2c {
     type Error = Error;
 
@@ -20,7 +20,7 @@ impl embedded_hal_0::blocking::i2c::Read for I2c {
     }
 }
 
-/// `WriteRead` trait implementation for `embedded-hal` v0.2.6.
+/// `WriteRead` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::i2c::WriteRead for I2c {
     type Error = Error;
 
@@ -54,7 +54,7 @@ impl i2c::Error for Error {
     }
 }
 
-/// `I2c` trait implementation for `embedded-hal` v1.0.0-alpha.7.
+/// `I2c` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl I2cHal for I2c {
     fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
         self.set_slave_address(u16::from(address))?;

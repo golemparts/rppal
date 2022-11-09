@@ -11,7 +11,7 @@ use crate::gpio::Mode;
 
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
-/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::InputPin for Pin {
     type Error = Infallible;
 
@@ -24,7 +24,7 @@ impl embedded_hal_0::digital::v2::InputPin for Pin {
     }
 }
 
-/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::InputPin for InputPin {
     type Error = Infallible;
 
@@ -37,7 +37,7 @@ impl embedded_hal_0::digital::v2::InputPin for InputPin {
     }
 }
 
-/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::InputPin for IoPin {
     type Error = Infallible;
 
@@ -50,7 +50,7 @@ impl embedded_hal_0::digital::v2::InputPin for IoPin {
     }
 }
 
-/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `InputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::InputPin for OutputPin {
     type Error = Infallible;
 
@@ -63,7 +63,7 @@ impl embedded_hal_0::digital::v2::InputPin for OutputPin {
     }
 }
 
-/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         StatefulOutputPinHal::is_set_high(self)
@@ -74,7 +74,7 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for IoPin {
     }
 }
 
-/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `StatefulOutputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::StatefulOutputPin for OutputPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         StatefulOutputPinHal::is_set_high(self)
@@ -85,7 +85,7 @@ impl embedded_hal_0::digital::v2::StatefulOutputPin for OutputPin {
     }
 }
 
-/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     type Error = Infallible;
 
@@ -94,7 +94,7 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for IoPin {
     }
 }
 
-/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `ToggleableOutputPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::ToggleableOutputPin for OutputPin {
     type Error = Infallible;
 
@@ -103,7 +103,7 @@ impl embedded_hal_0::digital::v2::ToggleableOutputPin for OutputPin {
     }
 }
 
-/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::Pwm for OutputPin {
     type Duty = f64;
     type Channel = ();
@@ -162,7 +162,7 @@ impl embedded_hal_0::Pwm for OutputPin {
     }
 }
 
-/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::Pwm for IoPin {
     type Duty = f64;
     type Channel = ();
@@ -221,7 +221,7 @@ impl embedded_hal_0::Pwm for IoPin {
     }
 }
 
-/// Unproven `IoPin` trait implementation for `embedded-hal` v0.2.6.
+/// Unproven `IoPin` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::digital::v2::IoPin<IoPin, IoPin> for IoPin {
     type Error = Infallible;
 
