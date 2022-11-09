@@ -179,16 +179,17 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         match &revision[..] {
             "900021" => Model::RaspberryPiAPlus,
             "900032" => Model::RaspberryPiBPlus,
-            "a01040" | "a01041" | "a21041" | "a22042" => Model::RaspberryPi2B,
-            "a02082" | "a22082" | "a32082" | "a52082" => Model::RaspberryPi3B,
+            "a01040" | "a01041" | "a21041" | "a02042" | "a22042" => Model::RaspberryPi2B,
+            "a02082" | "a22082" | "a22083" | "a32082" | "a52082" => Model::RaspberryPi3B,
             "900092" | "900093" | "920092" | "920093" => Model::RaspberryPiZero,
+            "900061" => Model::RaspberryPiComputeModule,
             "a020a0" | "a220a0" => Model::RaspberryPiComputeModule3,
             "9000c1" => Model::RaspberryPiZeroW,
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
             "a02100" => Model::RaspberryPiComputeModule3Plus,
-            "a03111" | "a03112" | "b03111" | "b03112" | "b03114" | "c03111" | "c03112"
-            | "c03114" | "d03114" => Model::RaspberryPi4B,
+            "a03111" | "a03112" | "b03111" | "b03112" | "b03114" | "b03115" | "c03111"
+            | "c03112" | "c03114" | "c03115" | "d03114" | "d03115" => Model::RaspberryPi4B,
             "c03130" => Model::RaspberryPi400,
             "a03140" | "b03140" | "c03140" | "d03140" => Model::RaspberryPiComputeModule4,
             "902120" => Model::RaspberryPiZero2W,
