@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 use std::time::Duration;
 
-use embedded_hal::digital::blocking::{
+use embedded_hal::digital::{
     InputPin as InputPinHal, StatefulOutputPin as StatefulOutputPinHal,
     ToggleableOutputPin as ToggleableOutputPinHal,
 };
