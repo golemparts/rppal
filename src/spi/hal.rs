@@ -106,7 +106,7 @@ impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
     }
 }
 
-/// Simple implementation of [embedded_hal::spi::blocking::SpiDevice]
+/// Simple implementation of [embedded_hal::spi::SpiDevice]
 ///
 /// You only need this when using the `embedded_hal` Spi trait interface.
 ///
