@@ -1,6 +1,6 @@
 [package]
 name = "rppal"
-version = "0.14.0" # Also update html_root_url in lib.rs
+version = "0.14.1" # Also update html_root_url in lib.rs
 edition = "2021"
 rust-version = "1.56"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
