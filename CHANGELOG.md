@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1 (November 25, 2022)
+
+* **Gpio**: Fix subtract underflow panic in software-based PWM.
+
 ## 0.14.0 (November 9, 2022)
 
 * (Breaking change) Transition to Rust 2021, requiring rustc v1.56.0 or newer to compile the library.
