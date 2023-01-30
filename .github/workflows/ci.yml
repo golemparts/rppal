@@ -29,5 +29,7 @@ jobs:
       run: rustup target add ${{ matrix.target }}
     - name: Install dependencies
       run: sudo apt-get -qq install ${{ matrix.dependencies }}
-    - name: Build
-      run: cargo build --verbose --target ${{ matrix.target }} --config target.${{ matrix.target }}.linker=\"${{ matrix.linker }}\"
+    - name: Build (debug)
+      run: cargo build --all-features --target ${{ matrix.target }} --config target.${{ matrix.target }}.linker=\"${{ matrix.linker }}\"
+    - name: Build (release)
+      run: cargo build --all-features --target ${{ matrix.target }} --config target.${{ matrix.target }}.linker=\"${{ matrix.linker }}\" --release
