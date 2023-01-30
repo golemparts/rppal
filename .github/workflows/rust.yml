@@ -2,19 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
+    strategy:
+      matrix:
+        include:
+        - target: "armv7-unknown-linux-gnueabihf"
+          linker: "arm-linux-gnueabihf-gcc"
+          dependencies: "crossbuild-essential-armhf"
+        - target: "aarch64-unknown-linux-gnu"
+          linker: "aarch64-linux-gnu-gcc"
+          dependencies: "crossbuild-essential-arm64"
+        - target: "armv7-unknown-linux-musleabihf"
+          linker: "arm-linux-gnueabihf-gcc"
+          dependencies: "crossbuild-essential-armhf"
+        - target: "aarch64-unknown-linux-musl"
+          linker: "aarch64-linux-gnu-gcc"
+          dependencies: "crossbuild-essential-arm64"
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
+    - name: Install target
+      run: rustup target add ${{ matrix.target }}
+    - name: Install dependencies
+      run: sudo apt-get -qq install ${{ matrix.dependencies }}
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --target ${{ matrix.target }} --config target.${{ matrix.target }}.linker=\"${{ matrix.linker }}\"
