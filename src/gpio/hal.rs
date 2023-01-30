@@ -188,7 +188,7 @@ impl embedded_hal_0::PwmPin for OutputPin {
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        self.duty_cycle = duty.max(0.0).min(1.0);
+        self.duty_cycle = duty.clamp(0.0, 1.0);
 
         if self.soft_pwm.is_some() {
             let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);
@@ -217,7 +217,7 @@ impl embedded_hal_0::PwmPin for IoPin {
     }
 
     fn set_duty(&mut self, duty: Self::Duty) {
-        self.duty_cycle = duty.max(0.0).min(1.0);
+        self.duty_cycle = duty.clamp(0.0, 1.0);
 
         if self.soft_pwm.is_some() {
             let _ = self.set_pwm_frequency(self.frequency, self.duty_cycle);

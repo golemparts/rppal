@@ -1,3 +1,4 @@
+#![allow(clippy::unnecessary_cast)]
 #![allow(dead_code)]
 
 use std::io;

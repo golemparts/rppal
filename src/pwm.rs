@@ -278,7 +278,7 @@ impl Pwm {
         } else {
             (1.0 / frequency) * NANOS_PER_SEC
         };
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_period(channel as u8, period as u64)?;
         sysfs::set_pulse_width(channel as u8, pulse_width as u64)?;
@@ -365,7 +365,7 @@ impl Pwm {
         } else {
             (1.0 / frequency) * NANOS_PER_SEC
         };
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_period(self.channel as u8, period as u64)?;
         sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
@@ -385,7 +385,7 @@ impl Pwm {
         Ok(if period == 0.0 {
             0.0
         } else {
-            (pulse_width / period).max(0.0).min(1.0)
+            (pulse_width / period).clamp(0.0, 1.0)
         })
     }
 
@@ -397,7 +397,7 @@ impl Pwm {
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
         let period = sysfs::period(self.channel as u8)? as f64;
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
 
