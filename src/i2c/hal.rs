@@ -108,10 +108,22 @@ impl I2cHal for I2c {
 
     fn transaction(
         &mut self,
-        _address: u8,
-        _operations: &mut [I2cOperation],
+        address: u8,
+        operations: &mut [I2cOperation],
     ) -> Result<(), Self::Error> {
-        unimplemented!()
+        self.set_slave_address(u16::from(address))?;
+        for op in operations {
+            match op {
+                I2cOperation::Read(buff) => {
+                    I2c::read(self, buff)?;
+                }
+                I2cOperation::Write(buff) => {
+                    I2c::write(self, buff)?;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn transaction_iter<'a, O>(&mut self, address: u8, operations: O) -> Result<(), Self::Error>
