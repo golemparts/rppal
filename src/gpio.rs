@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 //! Interface for the GPIO peripheral.
 //!
 //! To ensure fast performance, RPPAL controls the GPIO peripheral by directly
@@ -26,7 +6,7 @@
 //!
 //! ## Pins
 //!
-//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO pin number by calling
+//! GPIO pins are retrieved from a [`Gpio`] instance by their BCM GPIO number by calling
 //! [`Gpio::get`]. The returned unconfigured [`Pin`] can be used to read the pin's
 //! mode and logic level. Converting the [`Pin`] to an [`InputPin`], [`OutputPin`] or
 //! [`IoPin`] through the various `into_` methods available on [`Pin`] configures the
@@ -98,17 +78,17 @@
 //!
 //! ### Permission denied
 //!
-//! In recent releases of Raspbian (December 2017 or later), users that are part of the
+//! In recent releases of Raspberry Pi OS (December 2017 or later), users that are part of the
 //! `gpio` group (like the default `pi` user) can access `/dev/gpiomem` and
 //! `/dev/gpiochipN` (N = 0-2) without needing additional permissions. If you encounter any
 //! [`PermissionDenied`] errors when constructing a new [`Gpio`] instance, either the current
-//! user isn't a member of the `gpio` group, or your Raspbian distribution isn't
+//! user isn't a member of the `gpio` group, or your Raspberry Pi OS distribution isn't
 //! up-to-date and doesn't automatically configure permissions for the above-mentioned
-//! files. Updating Raspbian to the latest release should fix any permission issues.
+//! files. Updating Raspberry Pi OS to the latest release should fix any permission issues.
 //! Alternatively, although not recommended, you can run your application with superuser
 //! privileges by using `sudo`.
 //!
-//! If you're unable to update Raspbian and its packages (namely `raspberrypi-sys-mods`) to
+//! If you're unable to update Raspberry Pi OS and its packages (namely `raspberrypi-sys-mods`) to
 //! the latest available release, or updating hasn't fixed the issue, you might be able to
 //! manually update your `udev` rules to set the appropriate permissions. More information
 //! can be found at [raspberrypi/linux#1225] and [raspberrypi/linux#2289].
@@ -135,14 +115,13 @@
 use std::error;
 use std::fmt;
 use std::io;
+use std::mem::MaybeUninit;
 use std::ops::Not;
 use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex, Once, Weak};
 use std::time::Duration;
-
-use lazy_static::lazy_static;
 
 mod epoll;
 #[cfg(feature = "hal")]
@@ -156,6 +135,7 @@ mod pin;
 mod soft_pwm;
 
 use crate::system;
+use crate::system::DeviceInfo;
 
 pub use self::pin::{InputPin, IoPin, OutputPin, Pin};
 
@@ -173,17 +153,22 @@ pub enum Error {
     /// doesn't provide any of the common user-accessible system files
     /// that are used to identify the model and SoC.
     UnknownModel,
-    /// Pin is not available.
+    /// Pin is already in use.
     ///
-    /// The pin is already in use elsewhere in your application, or the GPIO peripheral
-    /// doesn't expose a pin with the specified number. If the pin is currently in use, you
-    /// can retrieve it again after the [`Pin`] (or a derived [`InputPin`], [`OutputPin`] or
-    /// [`IoPin`]) instance goes out of scope.
+    /// The pin is already in use elsewhere in your application. If the pin is currently in
+    /// use, you may retrieve it again after the [`Pin`] (or a derived [`InputPin`],
+    /// [`OutputPin`] or [`IoPin`]) instance goes out of scope.
     ///
     /// [`Pin`]: struct.Pin.html
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`IoPin`]: struct.IoPin.html
+    PinUsed(u8),
+    /// Pin is not available.
+    ///
+    /// The GPIO peripheral doesn't expose a GPIO pin with the specified number. Pins are
+    /// addressed by their BCM GPIO numbers, rather than their physical location on the GPIO
+    /// header.
     PinNotAvailable(u8),
     /// Permission denied when opening `/dev/gpiomem`, `/dev/mem` or `/dev/gpiochipN` for
     /// read/write access.
@@ -202,6 +187,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+            Error::PinUsed(pin) => write!(f, "Pin {} is already in use", pin),
             Error::PinNotAvailable(pin) => write!(f, "Pin {} is not available", pin),
             Error::PermissionDenied(ref path) => write!(f, "Permission denied: {}", path),
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
@@ -264,11 +250,31 @@ pub enum Level {
     High = 1,
 }
 
+impl From<bool> for Level {
+    fn from(e: bool) -> Level {
+        if e {
+            Level::High
+        } else {
+            Level::Low
+        }
+    }
+}
+
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Level::Low => write!(f, "Low"),
             Level::High => write!(f, "High"),
+        }
+    }
+}
+
+impl From<u8> for Level {
+    fn from(value: u8) -> Self {
+        if value == 0 {
+            Level::Low
+        } else {
+            Level::High
         }
     }
 }
@@ -328,7 +334,8 @@ pub(crate) struct GpioState {
     gpio_mem: mem::GpioMem,
     cdev: std::fs::File,
     sync_interrupts: Mutex<interrupt::EventLoop>,
-    pins_taken: [AtomicBool; pin::MAX],
+    pins_taken: [AtomicBool; u8::MAX as usize],
+    gpio_lines: u8,
 }
 
 impl fmt::Debug for GpioState {
@@ -338,15 +345,9 @@ impl fmt::Debug for GpioState {
             .field("cdev", &self.cdev)
             .field("sync_interrupts", &self.sync_interrupts)
             .field("pins_taken", &format_args!("{{ .. }}"))
+            .field("gpio_lines", &self.gpio_lines)
             .finish()
     }
-}
-
-// Share state between Gpio and Pin instances. GpioState is dropped after
-// all Gpio and Pin instances go out of scope, guaranteeing we won't have
-// any pins simultaneously using different EventLoop or GpioMem instances.
-lazy_static! {
-    static ref GPIO_STATE: Mutex<Weak<GpioState>> = Mutex::new(Weak::new());
 }
 
 /// Provides access to the Raspberry Pi's GPIO peripheral.
@@ -358,58 +359,83 @@ pub struct Gpio {
 impl Gpio {
     /// Constructs a new `Gpio`.
     pub fn new() -> Result<Gpio> {
-        let mut static_state = GPIO_STATE.lock().unwrap();
+        // Replace this when std::sync::SyncLazy is stabilized. https://github.com/rust-lang/rust/issues/74465
+
+        // Shared state between Gpio and Pin instances. GpioState is dropped after
+        // all Gpio and Pin instances go out of scope, guaranteeing we won't have
+        // any pins simultaneously using different EventLoop or GpioMem instances.
+        static mut GPIO_STATE: MaybeUninit<Mutex<Weak<GpioState>>> = MaybeUninit::uninit();
+        static ONCE: Once = Once::new();
+
+        // call_once is thread-safe, guaranteed to be called only once, and memory writes performed
+        // by the closure can be observed by other threads after execution completes.
+        let mut weak_state = unsafe {
+            ONCE.call_once(|| {
+                GPIO_STATE.write(Mutex::new(Weak::new()));
+            });
+
+            // GPIO_STATE will always be initialized at this point.
+            GPIO_STATE.assume_init_ref().lock().unwrap()
+        };
 
         // Clone a strong reference if a GpioState instance already exists, otherwise
         // initialize it here so we can return any relevant errors.
-        if let Some(ref state) = static_state.upgrade() {
+        if let Some(ref state) = weak_state.upgrade() {
             Ok(Gpio {
                 inner: state.clone(),
             })
         } else {
             let gpio_mem = mem::GpioMem::open()?;
             let cdev = ioctl::find_gpiochip()?;
-            let sync_interrupts =
-                Mutex::new(interrupt::EventLoop::new(cdev.as_raw_fd(), pin::MAX)?);
-            let pins_taken = init_array!(AtomicBool::new(false), pin::MAX);
+            let sync_interrupts = Mutex::new(interrupt::EventLoop::new(
+                cdev.as_raw_fd(),
+                u8::MAX as usize,
+            )?);
+            let pins_taken = init_array!(AtomicBool::new(false), u8::MAX as usize);
+            let gpio_lines = DeviceInfo::new()
+                .map_err(|_| Error::UnknownModel)?
+                .gpio_lines();
 
             let gpio_state = Arc::new(GpioState {
                 gpio_mem,
                 cdev,
                 sync_interrupts,
                 pins_taken,
+                gpio_lines,
             });
 
             // Store a weak reference to our state. This gets dropped when
             // all Gpio and Pin instances go out of scope.
-            *static_state = Arc::downgrade(&gpio_state);
+            *weak_state = Arc::downgrade(&gpio_state);
 
             Ok(Gpio { inner: gpio_state })
         }
     }
 
-    /// Returns a [`Pin`] for the specified BCM GPIO pin number.
+    /// Returns a [`Pin`] for the specified BCM GPIO number.
     ///
     /// Retrieving a GPIO pin grants access to the pin through an owned [`Pin`] instance.
-    /// If the pin is already in use, or the GPIO peripheral doesn't expose a pin with the
-    /// specified number, `get` returns `Err(`[`Error::PinNotAvailable`]`)`. After a [`Pin`]
-    /// (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out of scope, it
-    /// can be retrieved again through another `get` call.
+    /// If the pin is already in use, `get` returns `Err(`[`Error::PinUsed`]`)`.
+    /// After a [`Pin`] (or a derived [`InputPin`], [`OutputPin`] or [`IoPin`]) goes out
+    /// of scope, it can be retrieved again through another `get` call.
     ///
     /// [`Pin`]: struct.Pin.html
     /// [`InputPin`]: struct.InputPin.html
     /// [`OutputPin`]: struct.OutputPin.html
     /// [`IoPin`]: struct.IoPin.html
-    /// [`Error::PinNotAvailable`]: enum.Error.html#variant.PinNotAvailable
+    /// [`Error::PinUsed`]: enum.Error.html#variant.PinUsed
     pub fn get(&self, pin: u8) -> Result<Pin> {
-        if pin as usize >= pin::MAX {
+        if pin >= self.inner.gpio_lines {
             return Err(Error::PinNotAvailable(pin));
         }
 
-        // Returns true if the pin is already taken, otherwise atomically sets it to true here
-        if self.inner.pins_taken[pin as usize].compare_and_swap(false, true, Ordering::SeqCst) {
+        // Returns an error if the pin is already taken, otherwise atomically sets it to true here
+        if self.inner.pins_taken[pin as usize]
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
             // Pin is taken
-            Err(Error::PinNotAvailable(pin))
+            Err(Error::PinUsed(pin))
         } else {
             // Return an owned Pin
             Ok(Pin::new(pin, self.inner.clone()))

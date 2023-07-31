@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2020 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 use std::iter::once;
 use std::os::unix::io::AsRawFd;
 use std::sync::atomic::Ordering;
@@ -28,10 +8,6 @@ use super::soft_pwm::SoftPwm;
 use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown, Result, Trigger};
 
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
-
-// Maximum GPIO pins on the BCM2835. The actual number of pins
-// exposed through the Pi's GPIO header depends on the model.
-pub const MAX: usize = 54;
 
 macro_rules! impl_pin {
     () => {
@@ -296,7 +272,7 @@ impl Pin {
 
     /// Returns the GPIO pin number.
     ///
-    /// Pins are addressed by their BCM numbers, rather than their physical location.
+    /// Pins are addressed by their BCM GPIO numbers, rather than their physical location.
     #[inline]
     pub fn pin(&self) -> u8 {
         self.pin
@@ -314,7 +290,7 @@ impl Pin {
         self.gpio_state.gpio_mem.level(self.pin)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
+    /// Consumes the `Pin` and returns an [`InputPin`]. Sets the mode to [`Input`]
     /// and disables the pin's built-in pull-up/pull-down resistors.
     ///
     /// [`InputPin`]: struct.InputPin.html
@@ -324,7 +300,7 @@ impl Pin {
         InputPin::new(self, PullUpDown::Off)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
+    /// Consumes the `Pin` and returns an [`InputPin`]. Sets the mode to [`Input`]
     /// and enables the pin's built-in pull-down resistor.
     ///
     /// The pull-down resistor is disabled when `InputPin` goes out of scope if [`reset_on_drop`]
@@ -338,7 +314,7 @@ impl Pin {
         InputPin::new(self, PullUpDown::PullDown)
     }
 
-    /// Consumes the `Pin`, returns an [`InputPin`], sets its mode to [`Input`],
+    /// Consumes the `Pin` and returns an [`InputPin`]. Sets the mode to [`Input`]
     /// and enables the pin's built-in pull-up resistor.
     ///
     /// The pull-up resistor is disabled when `InputPin` goes out of scope if [`reset_on_drop`]
@@ -352,16 +328,32 @@ impl Pin {
         InputPin::new(self, PullUpDown::PullUp)
     }
 
-    /// Consumes the `Pin`, returns an [`OutputPin`] and sets its mode to [`Output`].
-    ///
-    /// [`OutputPin`]: struct.OutputPin.html
-    /// [`Output`]: enum.Mode.html#variant.Output
+    /// Consumes the `Pin` and returns an [`OutputPin`]. Sets the mode to [`Mode::Output`]
+    /// and leaves the logic level unchanged.
     #[inline]
     pub fn into_output(self) -> OutputPin {
         OutputPin::new(self)
     }
 
-    /// Consumes the `Pin`, returns an [`IoPin`] and sets its mode to the specified mode.
+    /// Consumes the `Pin` and returns an [`OutputPin`]. Changes the logic level to
+    /// [`Level::Low`] and then sets the mode to [`Mode::Output`].
+    #[inline]
+    pub fn into_output_low(mut self) -> OutputPin {
+        self.set_low();
+
+        OutputPin::new(self)
+    }
+
+    /// Consumes the `Pin` and returns an [`OutputPin`]. Changes the logic level to
+    /// [`Level::High`] and then sets the mode to [`Mode::Output`].
+    #[inline]
+    pub fn into_output_high(mut self) -> OutputPin {
+        self.set_high();
+
+        OutputPin::new(self)
+    }
+
+    /// Consumes the `Pin` and returns an [`IoPin`]. Sets the mode to the specified mode.
     ///
     /// [`IoPin`]: struct.IoPin.html
     /// [`Mode`]: enum.Mode.html
@@ -564,8 +556,9 @@ impl_eq!(InputPin);
 
 /// GPIO pin configured as output.
 ///
-/// `OutputPin`s are constructed by converting a [`Pin`] using [`Pin::into_output`].
-/// The pin's mode is automatically set to [`Output`].
+/// `OutputPin`s are constructed by converting a [`Pin`] using [`Pin::into_output`],
+/// [`Pin::into_output_low`] or [`Pin::into_output_high`]. The pin's mode is automatically set to
+/// [`Mode::Output`].
 ///
 /// An `OutputPin` can be used to change a pin's output state.
 ///
@@ -582,9 +575,6 @@ impl_eq!(InputPin);
 /// [`digital::StatefulOutputPin`]: ../../embedded_hal/digital/trait.StatefulOutputPin.html
 /// [`digital::ToggleableOutputPin`]: ../../embedded_hal/digital/trait.ToggleableOutputPin.html
 /// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
-/// [`Pin`]: struct.Pin.html
-/// [`Output`]: enum.Mode.html#variant.Output
-/// [`Pin::into_output`]: struct.Pin.html#method.into_output
 /// [`digital::OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
 /// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]

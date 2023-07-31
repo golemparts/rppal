@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 //! Raspberry Pi system-related tools.
 //!
 //! Use [`DeviceInfo`] to identify the Raspberry Pi's model and SoC.
@@ -31,9 +11,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
+// Peripheral base address
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
+const PERIPHERAL_BASE_RPI4: u32 = 0xfe00_0000;
+
+// Offset from the peripheral base address
 const GPIO_OFFSET: u32 = 0x20_0000;
+
+// Number of GPIO lines
+const GPIO_LINES_BCM283X: u8 = 54;
+const GPIO_LINES_BCM2711: u8 = 58;
 
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
 #[derive(Debug)]
@@ -73,6 +61,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[non_exhaustive]
 pub enum Model {
     RaspberryPiA,
     RaspberryPiAPlus,
@@ -84,16 +73,15 @@ pub enum Model {
     RaspberryPi3B,
     RaspberryPi3BPlus,
     RaspberryPi4B,
+    RaspberryPi400,
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
     RaspberryPiComputeModule3Plus,
+    RaspberryPiComputeModule4,
+    RaspberryPiComputeModule4S,
     RaspberryPiZero,
     RaspberryPiZeroW,
-    /// `Model` might be extended with additional variants in a minor or
-    /// patch revision, and must not be exhaustively matched against.
-    /// Instead, add a `_` catch-all arm to match future variants.
-    #[doc(hidden)]
-    __Nonexhaustive,
+    RaspberryPiZero2W,
 }
 
 impl fmt::Display for Model {
@@ -109,12 +97,15 @@ impl fmt::Display for Model {
             Model::RaspberryPi3BPlus => write!(f, "Raspberry Pi 3 B+"),
             Model::RaspberryPi3APlus => write!(f, "Raspberry Pi 3 A+"),
             Model::RaspberryPi4B => write!(f, "Raspberry Pi 4 B"),
+            Model::RaspberryPi400 => write!(f, "Raspberry Pi 400"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
+            Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
+            Model::RaspberryPiComputeModule4S => write!(f, "Raspberry Pi Compute Module 4S"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
-            Model::__Nonexhaustive => write!(f, "__Nonexhaustive"),
+            Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
         }
     }
 }
@@ -125,17 +116,13 @@ impl fmt::Display for Model {
 /// patch revision, and must not be exhaustively matched against.
 /// Instead, add a `_` catch-all arm to match future variants.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[non_exhaustive]
 pub enum SoC {
     Bcm2835,
     Bcm2836,
     Bcm2837A1,
     Bcm2837B0,
     Bcm2711,
-    /// `SoC` might be extended with additional variants in a minor or
-    /// patch revision, and must not be exhaustively matched against.
-    /// Instead, add a `_` catch-all arm to match future variants.
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl fmt::Display for SoC {
@@ -146,7 +133,6 @@ impl fmt::Display for SoC {
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
             SoC::Bcm2711 => write!(f, "BCM2711"),
-            SoC::__Nonexhaustive => write!(f, "__Nonexhaustive"),
         }
     }
 }
@@ -160,13 +146,11 @@ fn parse_proc_cpuinfo() -> Result<Model> {
 
     let mut hardware: String = String::new();
     let mut revision: String = String::new();
-    for line_result in proc_cpuinfo.lines() {
-        if let Ok(line) = line_result {
-            if line.starts_with("Hardware\t: ") {
-                hardware = String::from(&line[11..]);
-            } else if line.starts_with("Revision\t: ") {
-                revision = String::from(&line[11..]).to_lowercase();
-            }
+    for line in proc_cpuinfo.lines().flatten() {
+        if let Some(line_value) = line.strip_prefix("Hardware\t: ") {
+            hardware = String::from(line_value);
+        } else if let Some(line_value) = line.strip_prefix("Revision\t: ") {
+            revision = String::from(line_value).to_lowercase();
         }
     }
 
@@ -175,7 +159,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
     // solely based on the revision field.
     match &hardware[..] {
         "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-        | "BCM2837B0" | "BCM2711" => {}
+        | "BCM2837B0" | "RP3A0-AU" | "BCM2710A1" | "BCM2711" => {}
         _ => return Err(Error::UnknownModel),
     }
 
@@ -195,15 +179,23 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         match &revision[..] {
             "900021" => Model::RaspberryPiAPlus,
             "900032" => Model::RaspberryPiBPlus,
-            "a01040" | "a01041" | "a21041" | "a22042" => Model::RaspberryPi2B,
-            "a02082" | "a22082" | "a32082" | "a52082" => Model::RaspberryPi3B,
+            "a01040" | "a01041" | "a21041" | "a02042" | "a22042" => Model::RaspberryPi2B,
+            "a02082" | "a22082" | "a22083" | "a32082" | "a52082" => Model::RaspberryPi3B,
             "900092" | "900093" | "920092" | "920093" => Model::RaspberryPiZero,
+            "900061" => Model::RaspberryPiComputeModule,
             "a020a0" | "a220a0" => Model::RaspberryPiComputeModule3,
             "9000c1" => Model::RaspberryPiZeroW,
             "a020d3" => Model::RaspberryPi3BPlus,
             "9020e0" => Model::RaspberryPi3APlus,
             "a02100" => Model::RaspberryPiComputeModule3Plus,
-            "a03111" | "b03111" | "c03111" | "a03112" | "b03112" | "c03112" => Model::RaspberryPi4B,
+            "a03111" | "a03112" | "b03111" | "b03112" | "b03114" | "b03115" | "c03111"
+            | "c03112" | "c03114" | "c03115" | "d03114" | "d03115" => Model::RaspberryPi4B,
+            "c03130" => Model::RaspberryPi400,
+            "a03140" | "b03140" | "c03140" | "c03141" | "d03140" => {
+                Model::RaspberryPiComputeModule4
+            }
+            "a03150" => Model::RaspberryPiComputeModule4S,
+            "902120" => Model::RaspberryPiZero2W,
             _ => return Err(Error::UnknownModel),
         }
     } else {
@@ -236,9 +228,13 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-compute-module" => Model::RaspberryPiComputeModule3,
             "raspberrypi,3-compute-module-plus" => Model::RaspberryPiComputeModule3Plus,
             "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
+            "raspberrypi,model-zero-2" => Model::RaspberryPiZero2W,
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
             "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
             "raspberrypi,4-model-b" => Model::RaspberryPi4B,
+            "raspberrypi,400" => Model::RaspberryPi400,
+            "raspberrypi,4-compute-module" => Model::RaspberryPiComputeModule4,
+            "raspberrypi,4-compute-module-s" => Model::RaspberryPiComputeModule4S,
             _ => continue,
         };
 
@@ -254,10 +250,9 @@ fn parse_base_model() -> Result<Model> {
         Ok(mut buffer) => {
             if let Some(idx) = buffer.find('\0') {
                 buffer.truncate(idx);
-                buffer
-            } else {
-                buffer
             }
+
+            buffer
         }
         Err(_) => return Err(Error::UnknownModel),
     };
@@ -292,10 +287,14 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Compute Module 3" => Model::RaspberryPiComputeModule3,
         "Raspberry Pi Compute Module 3 Plus" => Model::RaspberryPiComputeModule3Plus,
         "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
+        "Raspberry Pi Zero 2" => Model::RaspberryPiZero2W,
         "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model A Plus" => Model::RaspberryPi3APlus,
         "Raspberry Pi 4 Model B" => Model::RaspberryPi4B,
+        "Raspberry Pi 400" => Model::RaspberryPi400,
+        "Raspberry Pi Compute Module 4" => Model::RaspberryPiComputeModule4,
+        "Raspberry Pi Compute Module 4S" => Model::RaspberryPiComputeModule4S,
         _ => return Err(Error::UnknownModel),
     };
 
@@ -307,8 +306,12 @@ fn parse_base_model() -> Result<Model> {
 pub struct DeviceInfo {
     model: Model,
     soc: SoC,
+    // Peripheral base memory address
     peripheral_base: u32,
+    // Offset from the peripheral base memory address for the GPIO section
     gpio_offset: u32,
+    // Number of GPIO lines available for this SoC
+    gpio_lines: u8,
 }
 
 impl DeviceInfo {
@@ -336,19 +339,24 @@ impl DeviceInfo {
                 soc: SoC::Bcm2835,
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
             Model::RaspberryPi2B => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2836,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
-            Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 => Ok(DeviceInfo {
-                model,
-                soc: SoC::Bcm2837A1,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
-                gpio_offset: GPIO_OFFSET,
-            }),
+            Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
+                Ok(DeviceInfo {
+                    model,
+                    soc: SoC::Bcm2837A1,
+                    peripheral_base: PERIPHERAL_BASE_RPI2,
+                    gpio_offset: GPIO_OFFSET,
+                    gpio_lines: GPIO_LINES_BCM283X,
+                })
+            }
             Model::RaspberryPi3BPlus
             | Model::RaspberryPi3APlus
             | Model::RaspberryPiComputeModule3Plus => Ok(DeviceInfo {
@@ -356,14 +364,18 @@ impl DeviceInfo {
                 soc: SoC::Bcm2837B0,
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM283X,
             }),
-            Model::RaspberryPi4B => Ok(DeviceInfo {
+            Model::RaspberryPi4B
+            | Model::RaspberryPi400
+            | Model::RaspberryPiComputeModule4
+            | Model::RaspberryPiComputeModule4S => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2711,
-                peripheral_base: PERIPHERAL_BASE_RPI2,
+                peripheral_base: PERIPHERAL_BASE_RPI4,
                 gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM2711,
             }),
-            Model::__Nonexhaustive => unreachable!(),
         }
     }
 
@@ -377,13 +389,18 @@ impl DeviceInfo {
         self.soc
     }
 
-    /// Returns the base memory address for the BCM283x peripherals.
+    /// Returns the peripheral base memory address.
     pub(crate) fn peripheral_base(&self) -> u32 {
         self.peripheral_base
     }
 
-    /// Returns the offset from the base memory address for the GPIO section.
+    /// Returns the offset from the peripheral base memory address for the GPIO section.
     pub(crate) fn gpio_offset(&self) -> u32 {
         self.gpio_offset
+    }
+
+    /// Returns the number of GPIO lines available for this SoC.
+    pub(crate) fn gpio_lines(&self) -> u8 {
+        self.gpio_lines
     }
 }

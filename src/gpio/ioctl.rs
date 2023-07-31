@@ -1,25 +1,7 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
+#![allow(clippy::unnecessary_cast)]
 #![allow(dead_code)]
 
+use crate::gpio::{Error, Level, Result, Trigger};
 use libc::{self, c_int, c_ulong, c_void, ENOENT};
 use std::ffi::CString;
 use std::fmt;
@@ -29,8 +11,6 @@ use std::mem;
 use std::os::unix::io::AsRawFd;
 use std::time::Duration;
 
-use crate::gpio::{Error, Level, Result, Trigger};
-
 #[cfg(target_env = "gnu")]
 type IoctlLong = libc::c_ulong;
 #[cfg(target_env = "musl")]
@@ -39,24 +19,21 @@ type IoctlLong = c_int;
 const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
 const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
-
+const DRIVER_NAME_CM4: &[u8] = b"pinctrl-bcm2711\0";
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
 const SIZEBITS: u8 = 14;
 const DIRBITS: u8 = 2;
-
 const NRSHIFT: u8 = 0;
 const TYPESHIFT: u8 = NRSHIFT + NRBITS;
 const SIZESHIFT: u8 = TYPESHIFT + TYPEBITS;
 const DIRSHIFT: u8 = SIZESHIFT + SIZEBITS;
-
 const NR_GET_CHIP_INFO: IoctlLong = 0x01 << NRSHIFT;
 const NR_GET_LINE_INFO: IoctlLong = 0x02 << NRSHIFT;
 const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << NRSHIFT;
 const NR_GET_LINE_EVENT: IoctlLong = 0x04 << NRSHIFT;
 const NR_GET_LINE_VALUES: IoctlLong = 0x08 << NRSHIFT;
 const NR_SET_LINE_VALUES: IoctlLong = 0x09 << NRSHIFT;
-
 const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << TYPESHIFT;
 
 const SIZE_CHIP_INFO: IoctlLong = (mem::size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
@@ -395,8 +372,8 @@ impl EventData {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Event {
-    pub trigger: Trigger,
-    pub timestamp: Duration,
+    trigger: Trigger,
+    timestamp: Duration,
 }
 
 impl Event {
@@ -408,6 +385,21 @@ impl Event {
                 _ => unreachable!(),
             },
             timestamp: Duration::from_nanos(event_data.timestamp),
+        }
+    }
+
+    pub fn trigger(&self) -> Trigger {
+        self.trigger
+    }
+
+    pub fn level(&self) -> Level {
+        match self.trigger {
+            Trigger::RisingEdge => Level::High,
+            Trigger::FallingEdge => Level::Low,
+            _ => {
+                // SAFETY: `Event` can only be constructed with either `RisingEdge` or `FallingEdge`.
+                unsafe { std::hint::unreachable_unchecked() }
+            }
         }
     }
 }
@@ -434,7 +426,9 @@ pub fn find_gpiochip() -> Result<File> {
         };
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
-        if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..] {
+        if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..]
+            || chip_info.label[0..DRIVER_NAME_CM4.len()] == DRIVER_NAME_CM4[..]
+        {
             return Ok(gpiochip);
         }
     }
@@ -449,10 +443,7 @@ pub fn find_gpiochip() -> Result<File> {
 // slice and returns a NulError.
 fn cbuf_to_cstring(buf: &[u8]) -> CString {
     CString::new({
-        let pos = buf
-            .iter()
-            .position(|&c| c == b'\0')
-            .unwrap_or_else(|| buf.len());
+        let pos = buf.iter().position(|&c| c == b'\0').unwrap_or(buf.len());
         &buf[..pos]
     })
     .unwrap_or_default()

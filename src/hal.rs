@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2020 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 //! Miscellaneous `embedded-hal` trait implementations.
 //!
 //! The `hal` module consists of a collection of `embedded-hal` trait
@@ -26,17 +6,18 @@
 //! This module is only included when either the `hal` or `hal-unproven` feature
 //! flag is enabled.
 
-use std::thread;
+use core::convert::Infallible;
 use std::time::{Duration, Instant};
 
-use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::timer::CountDown;
+use embedded_hal::delay::DelayUs;
+use spin_sleep::sleep;
 use void::Void;
 
 /// Implements the `embedded-hal` `DelayMs` and `DelayUs` traits.
 #[derive(Debug, Default)]
-pub struct Delay {}
+pub struct Delay;
 
+/// `Delay` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl Delay {
     /// Constructs a new `Delay`.
     pub fn new() -> Delay {
@@ -44,51 +25,84 @@ impl Delay {
     }
 }
 
-impl DelayMs<u8> for Delay {
+/// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
+        DelayUs::delay_ms(self, ms as u32).unwrap()
     }
 }
 
-impl DelayMs<u16> for Delay {
+/// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
+        DelayUs::delay_ms(self, ms as u32).unwrap()
     }
 }
 
-impl DelayMs<u32> for Delay {
+/// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
     fn delay_ms(&mut self, ms: u32) {
-        thread::sleep(Duration::from_millis(u64::from(ms)));
+        DelayUs::delay_ms(self, ms).unwrap()
     }
 }
 
-impl DelayMs<u64> for Delay {
-    fn delay_ms(&mut self, ms: u64) {
-        thread::sleep(Duration::from_millis(ms));
+/// `DelayMs<u64>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
+    fn delay_ms(&mut self, mut ms: u64) {
+        while ms > (u32::MAX as u64) {
+            ms -= u32::MAX as u64;
+            DelayUs::delay_ms(self, u32::MAX).unwrap();
+        }
+
+        DelayUs::delay_ms(self, ms as u32).unwrap()
     }
 }
 
-impl DelayUs<u8> for Delay {
+/// `DelayUs<u8>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
+        DelayUs::delay_us(self, us as u32).unwrap()
     }
 }
 
-impl DelayUs<u16> for Delay {
+/// `DelayUs<u16>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
+        DelayUs::delay_us(self, us as u32).unwrap()
     }
 }
 
-impl DelayUs<u32> for Delay {
+/// `DelayUs` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+impl DelayUs for Delay {
+    type Error = Infallible;
+
+    fn delay_us(&mut self, us: u32) -> Result<(), Self::Error> {
+        sleep(Duration::from_micros(us.into()));
+        Ok(())
+    }
+
+    fn delay_ms(&mut self, ms: u32) -> Result<(), Self::Error> {
+        sleep(Duration::from_millis(u64::from(ms)));
+        Ok(())
+    }
+}
+
+/// `DelayUs<u32>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
-        thread::sleep(Duration::from_micros(u64::from(us)));
+        DelayUs::delay_us(self, us).unwrap()
     }
 }
 
-impl DelayUs<u64> for Delay {
-    fn delay_us(&mut self, us: u64) {
-        thread::sleep(Duration::from_micros(us));
+/// `DelayUs<u64>` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
+    fn delay_us(&mut self, mut us: u64) {
+        while us > (u32::MAX as u64) {
+            us -= u32::MAX as u64;
+            DelayUs::delay_us(self, u32::MAX).unwrap();
+        }
+
+        DelayUs::delay_us(self, us as u32).unwrap()
     }
 }
 
@@ -110,7 +124,7 @@ impl From<Hertz> for Duration {
 /// Implements the `embedded-hal` `CountDown` trait.
 #[derive(Debug, Copy, Clone)]
 pub struct Timer {
-    now: Instant,
+    start: Instant,
     duration: Duration,
 }
 
@@ -118,7 +132,7 @@ impl Timer {
     /// Constructs a new `Timer`.
     pub fn new() -> Self {
         Self {
-            now: Instant::now(),
+            start: Instant::now(),
             duration: Duration::from_micros(0),
         }
     }
@@ -130,7 +144,8 @@ impl Default for Timer {
     }
 }
 
-impl CountDown for Timer {
+/// `CountDown` trait implementation for `embedded-hal` v0.2.7.
+impl embedded_hal_0::timer::CountDown for Timer {
     type Time = Duration;
 
     /// Starts the timer with a `timeout`.
@@ -138,13 +153,13 @@ impl CountDown for Timer {
     where
         T: Into<Self::Time>,
     {
+        self.start = Instant::now();
         self.duration = timeout.into();
-        self.now = Instant::now();
     }
 
     /// Returns `Ok` if the timer has wrapped.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if self.now.elapsed() >= self.duration {
+        if self.start.elapsed() >= self.duration {
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)

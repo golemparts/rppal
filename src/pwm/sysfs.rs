@@ -1,22 +1,4 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+#![allow(clippy::unnecessary_cast)]
 
 use std::ffi::CString;
 use std::fs;
@@ -248,7 +230,17 @@ pub fn enabled(channel: u8) -> Result<bool> {
 
 pub fn set_enabled(channel: u8, enabled: bool) -> Result<()> {
     File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel))?
-        .write_fmt(format_args!("{}", enabled as u8))?;
+        .write_fmt(format_args!("{}", enabled as u8))
+        .map_err(|e| {
+            if e.kind() == io::ErrorKind::InvalidInput {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Make sure you have set either a period or frequency before enabling PWM",
+                )
+            } else {
+                e
+            }
+        })?;
 
     Ok(())
 }

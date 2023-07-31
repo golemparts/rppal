@@ -1,15 +1,17 @@
 # RPPAL - Raspberry Pi Peripheral Access Library
 
-[![Build Status](https://travis-ci.com/golemparts/rppal.svg?branch=master)](https://travis-ci.com/golemparts/rppal)
-[![crates.io](https://meritbadge.herokuapp.com/rppal)](https://crates.io/crates/rppal)
+[![Build status](https://github.com/golemparts/rppal/actions/workflows/ci.yml/badge.svg)](https://github.com/golemparts/rppal/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/rppal)](https://crates.io/crates/rppal)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-v1.33.0-lightgray.svg)](https://blog.rust-lang.org/2019/02/28/Rust-1.33.0.html)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-v1.56.0-lightgray.svg)](https://blog.rust-lang.org/2021/10/21/Rust-1.56.0.html)
 
-RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters. The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations.
+RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters.
 
-RPPAL requires Raspbian or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, CM, CM 3, CM 3+, Zero and Zero W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
+The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations. Both `embedded-hal` v0.2.7 and v1.0.0-alpha.9 are supported.
 
-This library is under active development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
+RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution. Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, CM, CM 3, CM 3+, CM 4, 400, Zero, Zero W and Zero 2 W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
+
+This library is under development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
 ## Table of contents
 
@@ -25,7 +27,7 @@ This library is under active development on the [master branch](https://github.c
   - [UART](#uart)
 - [Cross compilation](#cross-compilation)
   - [Cargo](#cargo)
-  - [RLS](#rls)
+  - [Visual Studio Code](#visual-studio-code)
 - [Caution](#caution)
 - [Copyright and license](#copyright-and-license)
 
@@ -39,18 +41,18 @@ Online documentation is available for the latest release, older releases, and th
 
 ## Usage
 
-Add a dependency for `rppal` to your `Cargo.toml`.
+Add a dependency for `rppal` to your `Cargo.toml` using `cargo add rppal`, or by adding the following line to your dependencies section.
 
 ```toml
 [dependencies]
-rppal = "0.11.3"
+rppal = "0.14.1"
 ```
 
 If your project requires `embedded-hal` trait implementations, specify either the `hal` or `hal-unproven` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
-rppal = { version = "0.11.3", features = ["hal"] }
+rppal = { version = "0.14.1", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
@@ -121,7 +123,7 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Configure built-in pull-up/pull-down resistors
 * Synchronous and asynchronous interrupt handlers
 * Software-based PWM implementation
-* Optional `embedded-hal` trait implementations (`digital::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}`, `Pwm`, `PwmPin`)
+* Optional `embedded-hal` trait implementations
 
 ### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
 
@@ -132,7 +134,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * Single master, 7-bit slave addresses, transfer rates up to 400 kbit/s (Fast-mode)
 * I2C basic read/write, block read/write, combined write+read
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
-* Optional `embedded-hal` trait implementations (`blocking::i2c::{Read, Write, WriteRead}`)
+* Optional `embedded-hal` trait implementations
 
 ### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
 
@@ -142,7 +144,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interfa
 
 * Up to two hardware PWM channels
 * Configurable frequency, duty cycle and polarity
-* Optional `embedded-hal` trait implementations (`Pwm`, `PwmPin`)
+* Optional `embedded-hal` trait implementations
 
 ### [SPI](https://docs.golemparts.com/rppal/latest/spi)
 
@@ -155,7 +157,7 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Full-duplex transfers and multi-segment transfers
 * Customizable options for each segment in a multi-segment transfer (clock speed, delay, SS change)
 * Reverse bit order helper function
-* Optional `embedded-hal` trait implementations (`blocking::spi::{Transfer, Write}`, `spi::FullDuplex`)
+* Optional `embedded-hal` trait implementations
 
 ### [UART](https://docs.golemparts.com/rppal/latest/uart)
 
@@ -168,7 +170,7 @@ RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011)
 * Transfer rates up to 4 Mbit/s (device-dependent)
 * XON/XOFF software flow control
 * RTS/CTS hardware flow control with automatic pin configuration
-* Optional `embedded-hal` trait implementations (`blocking::serial::Write`, `serial::{Read, Write}`)
+* Optional `embedded-hal` trait implementations
 
 ## Cross compilation
 
@@ -176,7 +178,7 @@ If you're not working directly on a Raspberry Pi, you'll have to cross-compile y
 
 ### Cargo
 
-While additional steps may be necessary to cross-compile binaries on your platform, checking your code with `cargo check` only requires the installation of an appropriate target. Most Raspberry Pi models need the `armv7-unknown-linux-gnueabihf` target. For some models, like the Raspberry Pi Zero, a different target triple is required.
+For manual cross-compilation without the use of `cross`, you will need to install the appropriate target. Most Raspberry Pi models either need the `armv7-unknown-linux-gnueabihf` target for 32-bit Linux distributions, or `aarch64-unknown-linux-gnu` for 64-bit. For some models, like the Raspberry Pi Zero, a different target triple is required.
 
 Install the relevant target using `rustup`.
 
@@ -184,24 +186,20 @@ Install the relevant target using `rustup`.
 rustup target install armv7-unknown-linux-gnueabihf
 ```
 
-In the root directory of your project, create a `.cargo` subdirectory, and then save the following snippet to `.cargo/config`.
+In the root directory of your project, create a `.cargo` subdirectory, and save the following snippet to `.cargo/config`.
 
 ```toml
 [build]
 target = "armv7-unknown-linux-gnueabihf"
 ```
 
-### RLS
+### Visual Studio Code
 
-RLS needs to be made aware of the target platform by setting the `rust.target` configuration option. The location of this option is IDE-specific.
-
-#### Visual Studio Code
-
-In the root directory of your project, create a `.vscode` subdirectory, and then save the following snippet to `.vscode/settings.json`.
+The rust-analyzer extension for Visual Studio Code needs to be made aware of the target platform by setting the `rust-analyzer.cargo.target` configuration option. In the root directory of your project, create a `.vscode` subdirectory, and then save the following snippet to `.vscode/settings.json`.
 
 ```json
 {
-    "rust.target": "armv7-unknown-linux-gnueabihf"
+    "rust-analyzer.cargo.target": "armv7-unknown-linux-gnueabihf"
 }
 ```
 
@@ -211,4 +209,4 @@ Always be careful when working with the Raspberry Pi's peripherals, especially i
 
 ## Copyright and license
 
-Copyright (c) 2017-2020 Rene van der Meer. Released under the [MIT license](LICENSE).
+Copyright (c) 2017-2022 Rene van der Meer. Released under the [MIT license](LICENSE).

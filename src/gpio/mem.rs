@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 use std::fmt;
 use std::fs::OpenOptions;
 use std::io;
@@ -31,25 +11,27 @@ use std::time::Duration;
 use libc::{self, c_void, off_t, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 
 use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
-use crate::system::DeviceInfo;
+use crate::system::{DeviceInfo, SoC};
 
 const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem";
 const PATH_DEV_MEM: &str = "/dev/mem";
-
 // The BCM2835 has 41 32-bit registers related to the GPIO (datasheet @ 6.1).
-const GPIO_MEM_REGISTERS: usize = 41;
+// The BCM2711 (RPi4) has GPIO-related 32-bit registers #0 .. #60, an address space of 61 registers (datasheet @ 5.1).
+const GPIO_MEM_REGISTERS: usize = 61;
 const GPIO_MEM_SIZE: usize = GPIO_MEM_REGISTERS * std::mem::size_of::<u32>();
-
 const GPFSEL0: usize = 0x00;
 const GPSET0: usize = 0x1c / std::mem::size_of::<u32>();
 const GPCLR0: usize = 0x28 / std::mem::size_of::<u32>();
 const GPLEV0: usize = 0x34 / std::mem::size_of::<u32>();
 const GPPUD: usize = 0x94 / std::mem::size_of::<u32>();
 const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
+// Only available in BCM2711 (RPi4).
+const GPPUD_CNTRL_REG0: usize = 0xe4 / std::mem::size_of::<u32>();
 
 pub struct GpioMem {
     mem_ptr: *mut u32,
     locks: [AtomicBool; GPIO_MEM_REGISTERS],
+    soc: SoC,
 }
 
 impl fmt::Debug for GpioMem {
@@ -57,6 +39,7 @@ impl fmt::Debug for GpioMem {
         f.debug_struct("GpioMem")
             .field("mem_ptr", &self.mem_ptr)
             .field("locks", &format_args!("{{ .. }}"))
+            .field("soc", &self.soc)
             .finish()
     }
 }
@@ -87,7 +70,14 @@ impl GpioMem {
 
         let locks = init_array!(AtomicBool::new(false), GPIO_MEM_REGISTERS);
 
-        Ok(GpioMem { mem_ptr, locks })
+        // Identify which SoC we're using.
+        let soc = DeviceInfo::new().map_err(|_| Error::UnknownModel)?.soc();
+
+        Ok(GpioMem {
+            mem_ptr,
+            locks,
+            soc,
+        })
     }
 
     fn map_devgpiomem() -> Result<*mut u32> {
@@ -165,6 +155,7 @@ impl GpioMem {
     pub(crate) fn set_high(&self, pin: u8) {
         let offset = GPSET0 + pin as usize / 32;
         let shift = pin % 32;
+
         self.write(offset, 1 << shift);
     }
 
@@ -172,6 +163,7 @@ impl GpioMem {
     pub(crate) fn set_low(&self, pin: u8) {
         let offset = GPCLR0 + pin as usize / 32;
         let shift = pin % 32;
+
         self.write(offset, 1 << shift);
     }
 
@@ -179,7 +171,6 @@ impl GpioMem {
     pub(crate) fn level(&self, pin: u8) -> Level {
         let offset = GPLEV0 + pin as usize / 32;
         let shift = pin % 32;
-
         let reg_value = self.read(offset);
 
         unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b1) }
@@ -188,7 +179,6 @@ impl GpioMem {
     pub(crate) fn mode(&self, pin: u8) -> Mode {
         let offset = GPFSEL0 + pin as usize / 10;
         let shift = (pin % 10) * 3;
-
         let reg_value = self.read(offset);
 
         unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b111) }
@@ -199,7 +189,10 @@ impl GpioMem {
         let shift = (pin % 10) * 3;
 
         loop {
-            if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+            if self.locks[offset]
+                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
                 break;
             }
         }
@@ -214,43 +207,82 @@ impl GpioMem {
     }
 
     pub(crate) fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
-        let offset = GPPUDCLK0 + pin as usize / 32;
-        let shift = pin % 32;
+        // Offset for register.
+        let offset: usize;
+        // Bit shift for pin position within register value.
+        let shift: u8;
 
-        loop {
-            if !self.locks[GPPUD].compare_and_swap(false, true, Ordering::SeqCst) {
-                if !self.locks[offset].compare_and_swap(false, true, Ordering::SeqCst) {
+        // Only BCM2711 (RPi4) needs special handling for now.
+        if self.soc == SoC::Bcm2711 {
+            offset = GPPUD_CNTRL_REG0 + pin as usize / 16;
+            shift = pin % 16 * 2;
+
+            // Index for lock is different than register.
+            let lock = GPPUD_CNTRL_REG0 + pin as usize / 32;
+
+            // Pull up vs pull down has a reverse bit pattern on BCM2711 vs others.
+            let pud = match pud {
+                PullUpDown::Off => 0b00u32,
+                PullUpDown::PullDown => 0b10,
+                PullUpDown::PullUp => 0b01,
+            };
+
+            loop {
+                if self.locks[lock]
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
                     break;
-                } else {
-                    self.locks[GPPUD].store(false, Ordering::SeqCst);
                 }
             }
+
+            let reg_value = self.read(offset);
+            self.write(offset, (reg_value & !(0b11 << shift)) | (pud << shift));
+
+            self.locks[lock].store(false, Ordering::SeqCst);
+        } else {
+            offset = GPPUDCLK0 + pin as usize / 32;
+            shift = pin % 32;
+
+            loop {
+                if self.locks[GPPUD]
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
+                    if self.locks[offset]
+                        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                        .is_ok()
+                    {
+                        break;
+                    } else {
+                        self.locks[GPPUD].store(false, Ordering::SeqCst);
+                    }
+                }
+            }
+
+            // Set the control signal in GPPUD.
+            let reg_value = self.read(GPPUD);
+            self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
+
+            // The datasheet mentions waiting at least 150 cycles for set-up and hold, but
+            // doesn't state which clock is used. This is likely the VPU clock (see
+            // https://www.raspberrypi.org/forums/viewtopic.php?f=72&t=163352). At either
+            // 250MHz or 400MHz, a 5µs delay + overhead is more than adequate.
+
+            // Set-up time for the control signal. >= 5µs
+            thread::sleep(Duration::new(0, 5000));
+            // Clock the control signal into the selected pin.
+            self.write(offset, 1 << shift);
+
+            // Hold time for the control signal. >= 5µs
+            thread::sleep(Duration::new(0, 5000));
+            // Remove the control signal and clock.
+            self.write(GPPUD, reg_value & !0b11);
+            self.write(offset, 0);
+
+            self.locks[offset].store(false, Ordering::SeqCst);
+            self.locks[GPPUD].store(false, Ordering::SeqCst);
         }
-
-        // Set the control signal in GPPUD.
-        let reg_value = self.read(GPPUD);
-        self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
-
-        // The datasheet mentions waiting at least 150 cycles for set-up and hold, but
-        // doesn't state which clock is used. This is likely the VPU clock (see
-        // https://www.raspberrypi.org/forums/viewtopic.php?f=72&t=163352). At either
-        // 250MHz or 400MHz, a 5µs delay + overhead is more than adequate.
-
-        // Set-up time for the control signal.
-        thread::sleep(Duration::new(0, 5000)); // >= 5µs
-
-        // Clock the control signal into the selected pin.
-        self.write(offset, 1 << shift);
-
-        // Hold time for the control signal.
-        thread::sleep(Duration::new(0, 5000)); // >= 5µs
-
-        // Remove the control signal and clock.
-        self.write(GPPUD, reg_value & !0b11);
-        self.write(offset, 0);
-
-        self.locks[offset].store(false, Ordering::SeqCst);
-        self.locks[GPPUD].store(false, Ordering::SeqCst);
     }
 }
 
@@ -264,4 +296,5 @@ impl Drop for GpioMem {
 
 // Required because of the raw pointer to our memory-mapped file
 unsafe impl Send for GpioMem {}
+
 unsafe impl Sync for GpioMem {}

@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2020 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 //! Interface for the PWM peripheral.
 //!
 //! RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs
@@ -27,10 +7,11 @@
 //!
 //! The BCM283x SoC supports two hardware PWM channels. By default, both channels
 //! are disabled. To enable only PWM0 on its default pin (BCM GPIO 18, physical pin 12),
-//! add `dtoverlay=pwm` to `/boot/config.txt`. If you need both PWM channels, replace
-//! `pwm` with `pwm-2chan`, which enables PWM0 on BCM GPIO 18 (physical pin 12), and PWM1
-//! on BCM GPIO 19 (physical pin 35). More details on enabling and configuring PWM on
-//! other GPIO pins than the default ones can be found in `/boot/overlays/README`.
+//! add `dtoverlay=pwm` to `/boot/config.txt` on Raspberry Pi OS or `boot/firmware/usercfg.txt` on
+//! Ubuntu. If you need both PWM channels, replace `pwm` with `pwm-2chan`, which enables PWM0 on BCM
+//! GPIO 18 (physical pin 12), and PWM1 on BCM GPIO 19 (physical pin 35). More details on enabling
+//! and configuring PWM on other GPIO pins than the default ones can be found in
+//! `/boot/overlays/README`.
 //!
 //! The Raspberry Pi's analog audio output uses both PWM channels. Playing audio and
 //! simultaneously accessing a PWM channel may cause issues.
@@ -297,7 +278,7 @@ impl Pwm {
         } else {
             (1.0 / frequency) * NANOS_PER_SEC
         };
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_period(channel as u8, period as u64)?;
         sysfs::set_pulse_width(channel as u8, pulse_width as u64)?;
@@ -384,7 +365,7 @@ impl Pwm {
         } else {
             (1.0 / frequency) * NANOS_PER_SEC
         };
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_period(self.channel as u8, period as u64)?;
         sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
@@ -404,7 +385,7 @@ impl Pwm {
         Ok(if period == 0.0 {
             0.0
         } else {
-            (pulse_width / period).max(0.0).min(1.0)
+            (pulse_width / period).clamp(0.0, 1.0)
         })
     }
 
@@ -416,7 +397,7 @@ impl Pwm {
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
         let period = sysfs::period(self.channel as u8)? as f64;
-        let pulse_width = period * duty_cycle.max(0.0).min(1.0);
+        let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
         sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
 

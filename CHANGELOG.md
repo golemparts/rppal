@@ -1,12 +1,43 @@
 # Changelog
 
-## 0.12.0 (TBD)
+## 0.14.1 (November 25, 2022)
 
-* (Breaking change) Require rustc v1.33.0 or newer to compile the library due to std API stabilizations.
-* **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2.
+* **Gpio**: Fix subtract underflow panic in software-based PWM.
+
+## 0.14.0 (November 9, 2022)
+
+* (Breaking change) Transition to Rust 2021, requiring rustc v1.56.0 or newer to compile the library.
+* **Gpio**: Implement `unproven` `embedded-hal` trait `digital::v2::IoPin<IoPin, IoPin>` for `IoPin` (contributed by @rumatoest).
+* **Gpio**: Implement `From<bool>` trait for `Level` (contributed by @makerio90).
+* **Gpio**: Fix error when configuring an InputPin for GPIOs > 31 on BCM2711 (contributed by @benkard).
+* **Gpio**: Fix access to GPIO54 - GPIO57 on BCM2711.
+* **Gpio**: (Breaking change) Add `Error::PinUsed`, returned by `Gpio::get()` to indicate a pin is already in use.
+* **Gpio**: (Breaking change) Change `Error::PinNotAvailable`, returned by `Gpio::get()` to indicate a pin isn't available on the current Raspberry Pi model.
+* Update `embedded-hal` to v1.0.0-alpha.9 (contributed by @mbuesch).
+
+## 0.13.1 (October 28, 2021)
+
+* **DeviceInfo**: Add device identification support for Raspberry Pi Compute Module 4 models with 4GB and 8GB RAM.
+* **DeviceInfo**: Add device identification support for Raspberry Pi Zero 2 W.
+
+## 0.13.0 (September 27, 2021)
+
+* Add support for `embedded-hal` v1.0.0-alpha.5 (contributed by @reitermarkus).
+* **Gpio**: Add `into_output_low()` and `into_output_high()` to `Pin` to set the logic level before changing the pin mode.
+* **Gpio**: Implement `From<u8>` trait for `Level`, where `0` is converted into `Level::Low`, and any other value into `Level::High`.
+
+## 0.12.0 (April 17, 2021)
+
+* (Breaking change) Require rustc v1.45.0 or newer to compile the library due to std API stabilizations.
+* **DeviceInfo**: (Breaking change) Replace manual non-exhaustive pattern implementations for `Model` and `SoC` with `#[non_exhaustive]`.
+* **DeviceInfo**: Add device identification support for Raspberry Pi 4 B v1.2, Raspberry Pi 400 and Raspberry Pi Compute Module 4.
+* **Gpio**: Fix built-in pull-up/pull-down resistor support for Raspberry Pi 4 B (contributed by @Dragonrun1).
+* **Gpio**: Add BCM2711 ioctl support (contributed by @foxzool).
 * **Hal**: (Breaking change) Upgrade `embedded-hal` trait implementations for `digital::v1::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin}` to `digital::v2`. These can be explicitly converted back to `digital::v1` through `digital::v1_compat::{OldInputPin, OldOutputPin}` for backwards compatibility with older drivers.
 * **I2c**: Accept slave addresses below 0x08 (contributed by @Majkl578).
 * **I2c**: Add documentation for I2C3, I2C4, I2C5 and I2C6.
+* **Pwm**: Improve error messages (contributed by @binarybana).
+* **Pwm**: Improve documentation for Ubuntu (contributed by @binarybana).
 * **Spi**: (Breaking change) Add support for SPI3, SPI4, SPI5 and SPI6.
 
 ## 0.11.3 (June 24, 2019)

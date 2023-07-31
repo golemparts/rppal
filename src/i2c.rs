@@ -1,23 +1,3 @@
-// Copyright (c) 2017-2019 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 //! Interface for the I2C peripheral.
 //!
 //! The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus
@@ -31,8 +11,8 @@
 //! with slave devices. The other two buses are used internally as an HDMI
 //! interface, and for HAT identification.
 //!
-//! On the Raspberry Pi 4 B, three additional I2C buses are available, depending
-//! on your configuration, as explained below.
+//! On the Raspberry Pi 4 B and 400, three additional I2C buses are available,
+//! depending on your configuration, as explained below.
 //!
 //! ### I2C0 / I2C1
 //!
@@ -219,7 +199,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// [specification].
 ///
 /// The `embedded-hal` [`blocking::i2c::Read`], [`blocking::i2c::Write`] and
-/// [`blocking::i2c::WriteRead`] trait implementations for `Spi` can be enabled
+/// [`blocking::i2c::WriteRead`] trait implementations for `I2c` can be enabled
 /// by specifying the optional `hal`
 /// feature in the dependency declaration for the `rppal` crate.
 ///
@@ -245,15 +225,20 @@ impl I2c {
     /// Constructs a new `I2c`.
     ///
     /// `new` attempts to identify which I2C bus is bound to physical pins 3 (SDA)
-    /// and 5 (SCL) based on the Raspberry Pi model. For the early model B Rev 1,
-    /// bus 0 is selected. For every other model, bus 1 is used.
+    /// and 5 (SCL) based on the Raspberry Pi model.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
     /// [here]: index.html#i2c-buses
     pub fn new() -> Result<I2c> {
         match DeviceInfo::new()?.model() {
+            // Pi B Rev 1 uses I2C0
             Model::RaspberryPiBRev1 => I2c::with_bus(0),
+            Model::RaspberryPi4B | Model::RaspberryPi400 => {
+                // Pi 4B/400 could have I2C3 enabled on pins 3 and 5
+                I2c::with_bus(1).or_else(|_| I2c::with_bus(3))
+            }
+            // Everything else should be using I2C1
             _ => I2c::with_bus(1),
         }
     }
@@ -264,7 +249,7 @@ impl I2c {
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
     /// Pi B Rev 1, those pins are tied to bus 0. On every other Raspberry
     /// Pi model, they're connected to bus 1. Additional I2C buses are available
-    /// on the Raspberry Pi 4 B.
+    /// on the Raspberry Pi 4 B and 400.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///

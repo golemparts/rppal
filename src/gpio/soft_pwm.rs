@@ -1,40 +1,17 @@
-// Copyright (c) 2017-2020 Rene van der Meer
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the
-// Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
 // Prevent warning when casting u32 as i64
 #![allow(clippy::cast_lossless)]
 #![allow(dead_code)]
 
-use std::ptr;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
-use std::thread;
+use std::thread::{self, sleep};
 use std::time::Duration;
 
-use libc::{
-    self, c_long, sched_param, time_t, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHED_RR,
-};
+use libc::{self, sched_param, timespec, CLOCK_MONOTONIC, PR_SET_TIMERSLACK, SCHED_RR};
 
 use super::{Error, GpioState, Result};
 
-// Only call sleep_ns() if we have enough time remaining
+// Only call sleep() if we have enough time remaining
 const SLEEP_THRESHOLD: i64 = 250_000;
 // Reserve some time for busy waiting
 const BUSYWAIT_MAX: i64 = 200_000;
@@ -111,7 +88,7 @@ impl SoftPwm {
                 // Sleep if we have enough time remaining, while reserving some time
                 // for busy waiting to compensate for sleep taking longer than needed.
                 if pulse_width_ns >= SLEEP_THRESHOLD {
-                    sleep_ns(pulse_width_ns - BUSYWAIT_MAX);
+                    sleep(Duration::from_nanos((pulse_width_ns - BUSYWAIT_MAX) as u64));
                 }
 
                 // Busy-wait for the remaining active time, minus BUSYWAIT_REMAINDER
@@ -148,7 +125,7 @@ impl SoftPwm {
                 // Sleep if we have enough time remaining, while reserving some time
                 // for busy waiting to compensate for sleep taking longer than needed.
                 if remaining_ns >= SLEEP_THRESHOLD {
-                    sleep_ns(remaining_ns - BUSYWAIT_MAX);
+                    sleep(Duration::from_nanos((remaining_ns - BUSYWAIT_MAX) as u64));
                 }
 
                 // Busy-wait for the remaining inactive time, minus BUSYWAIT_REMAINDER
@@ -213,16 +190,4 @@ fn get_time_ns() -> i64 {
     }
 
     (ts.tv_sec as i64 * NANOS_PER_SEC) + ts.tv_nsec as i64
-}
-
-#[inline(always)]
-fn sleep_ns(ns: i64) {
-    let ts = timespec {
-        tv_sec: (ns / NANOS_PER_SEC) as time_t,
-        tv_nsec: (ns % NANOS_PER_SEC) as c_long,
-    };
-
-    unsafe {
-        libc::clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, ptr::null_mut());
-    }
 }
