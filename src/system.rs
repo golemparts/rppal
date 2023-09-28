@@ -181,27 +181,33 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         }
     } else if revision.len() >= 6 {
         // Newer revisions consist of at least 6 characters
-        match &revision[..] {
-            "900021" => Model::RaspberryPiAPlus,
-            "900032" => Model::RaspberryPiBPlus,
-            "a01040" | "a01041" | "a21041" | "a02042" | "a22042" => Model::RaspberryPi2B,
-            "a02082" | "a22082" | "a22083" | "a32082" | "a52082" => Model::RaspberryPi3B,
-            "900092" | "900093" | "920092" | "920093" => Model::RaspberryPiZero,
-            "900061" => Model::RaspberryPiComputeModule,
-            "a020a0" | "a220a0" => Model::RaspberryPiComputeModule3,
-            "9000c1" => Model::RaspberryPiZeroW,
-            "a020d3" => Model::RaspberryPi3BPlus,
-            "9020e0" => Model::RaspberryPi3APlus,
-            "a02100" => Model::RaspberryPiComputeModule3Plus,
-            "a03111" | "a03112" | "b03111" | "b03112" | "b03114" | "b03115" | "c03111"
-            | "c03112" | "c03114" | "c03115" | "d03114" | "d03115" => Model::RaspberryPi4B,
-            "c03130" => Model::RaspberryPi400,
-            "a03140" | "b03140" | "c03140" | "c03141" | "d03140" => {
-                Model::RaspberryPiComputeModule4
-            }
-            "a03150" => Model::RaspberryPiComputeModule4S,
-            "902120" => Model::RaspberryPiZero2W,
-            "d04170" => Model::RaspberryPi5,
+
+        // Compare just the type value for compatibility with future revisions
+        let revision_type = match u64::from_str_radix(&revision, 16) {
+            Ok(revision_type) => (revision_type >> 4) & 0xff,
+            Err(_) => return Err(Error::UnknownModel),
+        };
+
+        match revision_type {
+            0x00 => Model::RaspberryPiA,
+            0x01 => Model::RaspberryPiBRev2,
+            0x02 => Model::RaspberryPiAPlus,
+            0x03 => Model::RaspberryPiBPlus,
+            0x04 => Model::RaspberryPi2B,
+            0x06 => Model::RaspberryPiComputeModule,
+            0x08 => Model::RaspberryPi3B,
+            0x09 => Model::RaspberryPiZero,
+            0x0a => Model::RaspberryPiComputeModule3,
+            0x0c => Model::RaspberryPiZeroW,
+            0x0d => Model::RaspberryPi3BPlus,
+            0x0e => Model::RaspberryPi3APlus,
+            0x10 => Model::RaspberryPiComputeModule3Plus,
+            0x11 => Model::RaspberryPi4B,
+            0x12 => Model::RaspberryPiZero2W,
+            0x13 => Model::RaspberryPi400,
+            0x14 => Model::RaspberryPiComputeModule4,
+            0x15 => Model::RaspberryPiComputeModule4S,
+            0x17 => Model::RaspberryPi5,
             _ => return Err(Error::UnknownModel),
         }
     } else {
