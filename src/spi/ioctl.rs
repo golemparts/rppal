@@ -107,9 +107,7 @@ pub fn transfer(fd: c_int, segments: &[Segment<'_, '_>]) -> Result<i32> {
     parse_retval!(unsafe {
         ioctl(
             fd,
-            REQ_WR_MESSAGE
-                | (((segments.len() * mem::size_of::<Segment<'_, '_>>()) as IoctlLong)
-                    << SIZESHIFT),
+            REQ_WR_MESSAGE | ((std::mem::size_of_val(segments) as IoctlLong) << SIZESHIFT),
             segments,
         )
     })
