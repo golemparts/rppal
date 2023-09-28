@@ -82,6 +82,7 @@ pub enum Model {
     RaspberryPiZero,
     RaspberryPiZeroW,
     RaspberryPiZero2W,
+    RaspberryPi5,
 }
 
 impl fmt::Display for Model {
@@ -106,6 +107,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
             Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
+            Model::RaspberryPi5 => write!(f, "Raspberry Pi 5"),
         }
     }
 }
@@ -123,6 +125,7 @@ pub enum SoC {
     Bcm2837A1,
     Bcm2837B0,
     Bcm2711,
+    Bcm2712,
 }
 
 impl fmt::Display for SoC {
@@ -133,6 +136,7 @@ impl fmt::Display for SoC {
             SoC::Bcm2837A1 => write!(f, "BCM2837A1"),
             SoC::Bcm2837B0 => write!(f, "BCM2837B0"),
             SoC::Bcm2711 => write!(f, "BCM2711"),
+            SoC::Bcm2712 => write!(f, "BCM2712"),
         }
     }
 }
@@ -159,7 +163,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
     // solely based on the revision field.
     match &hardware[..] {
         "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-        | "BCM2837B0" | "RP3A0-AU" | "BCM2710A1" | "BCM2711" => {}
+        | "BCM2837B0" | "RP3A0-AU" | "BCM2710A1" | "BCM2711" | "BCM2712" => {}
         _ => return Err(Error::UnknownModel),
     }
 
@@ -196,6 +200,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             }
             "a03150" => Model::RaspberryPiComputeModule4S,
             "902120" => Model::RaspberryPiZero2W,
+            "d04170" => Model::RaspberryPi5,
             _ => return Err(Error::UnknownModel),
         }
     } else {
@@ -235,6 +240,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,400" => Model::RaspberryPi400,
             "raspberrypi,4-compute-module" => Model::RaspberryPiComputeModule4,
             "raspberrypi,4-compute-module-s" => Model::RaspberryPiComputeModule4S,
+            "raspberrypi,5" => Model::RaspberryPi5,
             _ => continue,
         };
 
@@ -295,6 +301,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi 400" => Model::RaspberryPi400,
         "Raspberry Pi Compute Module 4" => Model::RaspberryPiComputeModule4,
         "Raspberry Pi Compute Module 4S" => Model::RaspberryPiComputeModule4S,
+        "Raspberry Pi 5" => Model::RaspberryPi5,
         _ => return Err(Error::UnknownModel),
     };
 
@@ -369,7 +376,8 @@ impl DeviceInfo {
             Model::RaspberryPi4B
             | Model::RaspberryPi400
             | Model::RaspberryPiComputeModule4
-            | Model::RaspberryPiComputeModule4S => Ok(DeviceInfo {
+            | Model::RaspberryPiComputeModule4S
+            | Model::RaspberryPi5 => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2711,
                 peripheral_base: PERIPHERAL_BASE_RPI4,
