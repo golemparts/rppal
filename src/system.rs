@@ -22,6 +22,7 @@ const GPIO_OFFSET: u32 = 0x20_0000;
 // Number of GPIO lines
 const GPIO_LINES_BCM283X: u8 = 54;
 const GPIO_LINES_BCM2711: u8 = 58;
+const GPIO_LINES_BCM2712: u8 = 58;
 
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
 #[derive(Debug)]
@@ -376,13 +377,19 @@ impl DeviceInfo {
             Model::RaspberryPi4B
             | Model::RaspberryPi400
             | Model::RaspberryPiComputeModule4
-            | Model::RaspberryPiComputeModule4S
-            | Model::RaspberryPi5 => Ok(DeviceInfo {
+            | Model::RaspberryPiComputeModule4S => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2711,
                 peripheral_base: PERIPHERAL_BASE_RPI4,
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM2711,
+            }),
+            Model::RaspberryPi5 => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2712,
+                peripheral_base: PERIPHERAL_BASE_RPI4,
+                gpio_offset: GPIO_OFFSET,
+                gpio_lines: GPIO_LINES_BCM2712,
             }),
         }
     }
