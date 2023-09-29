@@ -25,7 +25,7 @@ const GPCLR0: usize = 0x28 / std::mem::size_of::<u32>();
 const GPLEV0: usize = 0x34 / std::mem::size_of::<u32>();
 const GPPUD: usize = 0x94 / std::mem::size_of::<u32>();
 const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
-// Only available in BCM2711 (RPi4).
+// Only available on BCM2711 (RPi4) and BCM2712 (RPi5).
 const GPPUD_CNTRL_REG0: usize = 0xe4 / std::mem::size_of::<u32>();
 
 pub struct GpioMem {
@@ -212,8 +212,8 @@ impl GpioMem {
         // Bit shift for pin position within register value.
         let shift: u8;
 
-        // Only BCM2711 (RPi4) needs special handling for now.
-        if self.soc == SoC::Bcm2711 {
+        // BCM2711 (RPi4) and BCM2712 (RPi5) need special handling.
+        if self.soc == SoC::Bcm2711 || self.soc == SoC::Bcm2712 {
             offset = GPPUD_CNTRL_REG0 + pin as usize / 16;
             shift = pin % 16 * 2;
 
