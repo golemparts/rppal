@@ -19,8 +19,8 @@ type IoctlLong = c_int;
 const PATH_GPIOCHIP: &str = "/dev/gpiochip";
 const CONSUMER_LABEL: &str = "RPPAL";
 const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
-const DRIVER_NAME_CM4: &[u8] = b"pinctrl-bcm2711\0";
-const DRIVER_NAME_BCM2712: &[u8] = b"pinctrl-bcm2712\0";
+const DRIVER_NAME_BCM2711: &[u8] = b"pinctrl-bcm2711\0";
+const DRIVER_NAME_BCM2712: &[u8] = b"pinctrl-rp1\0";
 const NRBITS: u8 = 8;
 const TYPEBITS: u8 = 8;
 const SIZEBITS: u8 = 14;
@@ -428,7 +428,7 @@ pub fn find_gpiochip() -> Result<File> {
 
         let chip_info = ChipInfo::new(gpiochip.as_raw_fd())?;
         if chip_info.label[0..DRIVER_NAME.len()] == DRIVER_NAME[..]
-            || chip_info.label[0..DRIVER_NAME_CM4.len()] == DRIVER_NAME_CM4[..]
+            || chip_info.label[0..DRIVER_NAME_BCM2711.len()] == DRIVER_NAME_BCM2711[..]
             || chip_info.label[0..DRIVER_NAME_BCM2712.len()] == DRIVER_NAME_BCM2712[..]
         {
             return Ok(gpiochip);
