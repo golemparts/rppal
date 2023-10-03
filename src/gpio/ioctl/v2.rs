@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 use crate::gpio::{Error, Level, Result, Trigger};
-use libc::{self, c_int, c_ulong, c_void, ENOENT};
+use libc::{self, c_int, c_void, ENOENT};
 use std::ffi::CString;
 use std::fmt;
 use std::fs::{File, OpenOptions};
@@ -22,37 +22,58 @@ const DRIVER_NAME: &[u8] = b"pinctrl-bcm2835\0";
 const DRIVER_NAME_BCM2711: &[u8] = b"pinctrl-bcm2711\0";
 const DRIVER_NAME_BCM2712: &[u8] = b"pinctrl-rp1\0";
 
-const NRBITS: u8 = 8;
-const TYPEBITS: u8 = 8;
-const SIZEBITS: u8 = 14;
-const DIRBITS: u8 = 2;
-const NRSHIFT: u8 = 0;
-const TYPESHIFT: u8 = NRSHIFT + NRBITS;
-const SIZESHIFT: u8 = TYPESHIFT + TYPEBITS;
-const DIRSHIFT: u8 = SIZESHIFT + SIZEBITS;
+const BITS_NR: u8 = 8;
+const BITS_TYPE: u8 = 8;
+const BITS_SIZE: u8 = 14;
+const BITS_DIR: u8 = 2;
 
-const NR_GET_CHIP_INFO: IoctlLong = 0x01 << NRSHIFT;
-const NR_GET_LINE_INFO: IoctlLong = 0x05 << NRSHIFT;
-const NR_GET_LINE_INFO_WATCH: IoctlLong = 0x06 << NRSHIFT;
-const NR_GET_LINE_INFO_UNWATCH: IoctlLong = 0x0C << NRSHIFT;
-const NR_GET_LINE: IoctlLong = 0x07 << NRSHIFT;
-const NR_LINE_SET_CONFIG: IoctlLong = 0x0D << NRSHIFT;
-const NR_LINE_GET_VALUES: IoctlLong = 0x0E << NRSHIFT;
-const NR_LINE_SET_VALUES: IoctlLong = 0x0F << NRSHIFT;
+const SHIFT_NR: u8 = 0;
+const SHIFT_TYPE: u8 = SHIFT_NR + BITS_NR;
+const SHIFT_SIZE: u8 = SHIFT_TYPE + BITS_TYPE;
+const SHIFT_DIR: u8 = SHIFT_SIZE + BITS_SIZE;
 
-const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << TYPESHIFT;
-
-const SIZE_CHIP_INFO: IoctlLong = (mem::size_of::<ChipInfo>() as IoctlLong) << SIZESHIFT;
-
-const DIR_NONE: c_ulong = 0;
-const DIR_WRITE: IoctlLong = 1 << DIRSHIFT;
-const DIR_READ: IoctlLong = 2 << DIRSHIFT;
+const DIR_NONE: IoctlLong = 0;
+const DIR_WRITE: IoctlLong = 1 << SHIFT_DIR;
+const DIR_READ: IoctlLong = 2 << SHIFT_DIR;
 const DIR_READ_WRITE: IoctlLong = DIR_READ | DIR_WRITE;
 
-const REQ_GET_CHIP_INFO: IoctlLong = DIR_READ | TYPE_GPIO | NR_GET_CHIP_INFO | SIZE_CHIP_INFO;
+const TYPE_GPIO: IoctlLong = (0xB4 as IoctlLong) << SHIFT_TYPE;
 
+const NR_GET_CHIP_INFO: IoctlLong = 0x01 << SHIFT_NR;
+const NR_GET_LINE_INFO: IoctlLong = 0x05 << SHIFT_NR;
+const NR_GET_LINE_INFO_WATCH: IoctlLong = 0x06 << SHIFT_NR;
+const NR_GET_LINE_INFO_UNWATCH: IoctlLong = 0x0C << SHIFT_NR;
+const NR_GET_LINE: IoctlLong = 0x07 << SHIFT_NR;
+const NR_LINE_SET_CONFIG: IoctlLong = 0x0D << SHIFT_NR;
+const NR_LINE_GET_VALUES: IoctlLong = 0x0E << SHIFT_NR;
+const NR_LINE_SET_VALUES: IoctlLong = 0x0F << SHIFT_NR;
+
+const SIZE_CHIP_INFO: IoctlLong = (mem::size_of::<ChipInfo>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_LINE_INFO: IoctlLong = (mem::size_of::<LineInfo>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_U32: IoctlLong = (mem::size_of::<u32>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_LINE_REQUEST: IoctlLong = (mem::size_of::<LineRequest>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_LINE_CONFIG: IoctlLong = (mem::size_of::<LineConfig>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_LINE_VALUES: IoctlLong = (mem::size_of::<LineValues>() as IoctlLong) << SHIFT_SIZE;
+
+const REQ_GET_CHIP_INFO: IoctlLong = DIR_READ | TYPE_GPIO | NR_GET_CHIP_INFO | SIZE_CHIP_INFO;
+const REQ_GET_LINE_INFO: IoctlLong = DIR_READ | TYPE_GPIO | NR_GET_LINE_INFO | SIZE_LINE_INFO;
+const REQ_GET_LINE_INFO_WATCH: IoctlLong =
+    DIR_READ | TYPE_GPIO | NR_GET_LINE_INFO_WATCH | SIZE_LINE_INFO;
+const REQ_GET_LINE_INFO_UNWATCH: IoctlLong =
+    DIR_READ | TYPE_GPIO | NR_GET_LINE_INFO_UNWATCH | SIZE_U32;
+const REQ_GET_LINE: IoctlLong = DIR_READ | TYPE_GPIO | NR_GET_LINE | SIZE_LINE_REQUEST;
+const REQ_LINE_SET_CONFIG: IoctlLong = DIR_READ | TYPE_GPIO | NR_LINE_SET_CONFIG | SIZE_LINE_CONFIG;
+const REQ_LINE_GET_VALUES: IoctlLong = DIR_READ | TYPE_GPIO | NR_LINE_GET_VALUES | SIZE_LINE_VALUES;
+const REQ_LINE_SET_VALUES: IoctlLong = DIR_READ | TYPE_GPIO | NR_LINE_SET_VALUES | SIZE_LINE_VALUES;
+
+// Maximum name and label length.
 const NAME_BUFSIZE: usize = 32;
 const LABEL_BUFSIZE: usize = 32;
+
+// Maximum number of requested lines.
+const LINES_MAX: usize = 64;
+// Maximum number of configuration attributes.
+const LINE_NUM_ATTRS_MAX: usize = 10;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -84,6 +105,109 @@ impl fmt::Debug for ChipInfo {
             .field("lines", &self.lines)
             .finish()
     }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineAttribute {
+    pub id: u32,
+    pub padding: u32,
+    pub values: u64,
+}
+
+impl LineAttribute {
+    pub fn new() -> LineAttribute {
+        LineAttribute {
+            id: 0,
+            padding: 0,
+            values: 0,
+        }
+    }
+}
+
+impl fmt::Debug for LineAttribute {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LineAttribute")
+            .field("id", &self.id)
+            .field("padding", &self.padding)
+            .field("values", &self.values)
+            .finish()
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineInfo {
+    pub name: [u8; NAME_BUFSIZE],
+    pub consumer: [u8; LABEL_BUFSIZE],
+    pub offset: u32,
+    pub num_attrs: u32,
+    pub flags: u64,
+    pub attrs: [LineAttribute; LINE_NUM_ATTRS_MAX],
+    pub padding: [u32; 4],
+}
+
+impl LineInfo {
+    pub fn new() -> LineInfo {
+        LineInfo {
+            name: [0u8; NAME_BUFSIZE],
+            consumer: [0u8; LABEL_BUFSIZE],
+            offset: 0,
+            num_attrs: 0,
+            flags: 0,
+            attrs: [LineAttribute::new(); 10],
+            padding: [0u32; 4],
+        }
+    }
+}
+
+impl fmt::Debug for LineInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LineInfo")
+            .field("name", &cbuf_to_cstring(&self.name))
+            .field("consumer", &cbuf_to_cstring(&self.consumer))
+            .field("offset", &self.offset)
+            .field("num_attrs", &self.num_attrs)
+            .field("flags", &self.flags)
+            .field("attrs", &self.attrs)
+            .field("padding", &self.padding)
+            .finish()
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineConfigAttribute {
+    pub attr: LineAttribute,
+    pub mask: u64,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineConfig {
+    pub flags: u64,
+    pub num_attrs: u32,
+    pub padding: [u32; 5],
+    pub attrs: [LineConfigAttribute; LINE_NUM_ATTRS_MAX],
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineRequest {
+    pub offsets: [u32; LINES_MAX],
+    pub consumer: [u8; LABEL_BUFSIZE],
+    pub config: LineConfig,
+    pub num_lines: u32,
+    pub event_buffer_size: u32,
+    pub padding: [u32; 5],
+    pub fd: c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineValues {
+    pub bits: u64,
+    pub mask: u64,
 }
 
 // Find the correct gpiochip device based on its label
@@ -127,17 +251,15 @@ fn cbuf_to_cstring(buf: &[u8]) -> CString {
 }
 
 // Deprecated v1 API requests
-const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << NRSHIFT;
-const NR_GET_LINE_EVENT: IoctlLong = 0x04 << NRSHIFT;
-const NR_GET_LINE_VALUES: IoctlLong = 0x08 << NRSHIFT;
-const NR_SET_LINE_VALUES: IoctlLong = 0x09 << NRSHIFT;
+const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << SHIFT_NR;
+const NR_GET_LINE_EVENT: IoctlLong = 0x04 << SHIFT_NR;
+const NR_GET_LINE_VALUES: IoctlLong = 0x08 << SHIFT_NR;
+const NR_SET_LINE_VALUES: IoctlLong = 0x09 << SHIFT_NR;
 
-const SIZE_LINE_INFO: IoctlLong = (mem::size_of::<LineInfo>() as IoctlLong) << SIZESHIFT;
-const SIZE_HANDLE_REQUEST: IoctlLong = (mem::size_of::<HandleRequest>() as IoctlLong) << SIZESHIFT;
-const SIZE_EVENT_REQUEST: IoctlLong = (mem::size_of::<EventRequest>() as IoctlLong) << SIZESHIFT;
-const SIZE_HANDLE_DATA: IoctlLong = (mem::size_of::<HandleData>() as IoctlLong) << SIZESHIFT;
+const SIZE_HANDLE_REQUEST: IoctlLong = (mem::size_of::<HandleRequest>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_EVENT_REQUEST: IoctlLong = (mem::size_of::<EventRequest>() as IoctlLong) << SHIFT_SIZE;
+const SIZE_HANDLE_DATA: IoctlLong = (mem::size_of::<HandleData>() as IoctlLong) << SHIFT_SIZE;
 
-const REQ_GET_LINE_INFO: IoctlLong = DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_INFO | SIZE_LINE_INFO;
 const REQ_GET_LINE_HANDLE: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_HANDLE | SIZE_HANDLE_REQUEST;
 const REQ_GET_LINE_EVENT: IoctlLong =
@@ -146,43 +268,6 @@ const REQ_GET_LINE_VALUES: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLE_DATA;
 const REQ_SET_LINE_VALUES: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLE_DATA;
-
-const LINE_FLAG_KERNEL: u32 = 0x01;
-const LINE_FLAG_IS_OUT: u32 = 0x02;
-const LINE_FLAG_ACTIVE_LOW: u32 = 0x04;
-const LINE_FLAG_OPEN_DRAIN: u32 = 0x08;
-const LINE_FLAG_OPEN_SOURCE: u32 = 0x10;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct LineInfo {
-    pub line_offset: u32,
-    pub flags: u32,
-    pub name: [u8; NAME_BUFSIZE],
-    pub consumer: [u8; LABEL_BUFSIZE],
-}
-
-impl LineInfo {
-    pub fn new() -> LineInfo {
-        LineInfo {
-            line_offset: 0,
-            flags: 0,
-            name: [0u8; NAME_BUFSIZE],
-            consumer: [0u8; LABEL_BUFSIZE],
-        }
-    }
-}
-
-impl fmt::Debug for LineInfo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LineInfo")
-            .field("line_offset", &self.line_offset)
-            .field("flags", &self.flags)
-            .field("name", &cbuf_to_cstring(&self.name))
-            .field("consumer", &cbuf_to_cstring(&self.consumer))
-            .finish()
-    }
-}
 
 const HANDLES_MAX: usize = 64;
 const HANDLE_FLAG_INPUT: u32 = 0x01;
