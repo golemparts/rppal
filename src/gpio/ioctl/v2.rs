@@ -78,6 +78,31 @@ const LINES_MAX: usize = 64;
 // Maximum number of configuration attributes.
 const LINE_NUM_ATTRS_MAX: usize = 10;
 
+const LINE_FLAG_USED: usize = 0x01;
+const LINE_FLAG_ACTIVE_LOW: usize = 0x02;
+const LINE_FLAG_INPUT: usize = 0x04;
+const LINE_FLAG_OUTPUT: usize = 0x08;
+const LINE_FLAG_EDGE_RISING: usize = 0x10;
+const LINE_FLAG_EDGE_FALLING: usize = 0x20;
+const LINE_FLAG_OPEN_DRAIN: usize = 0x40;
+const LINE_FLAG_OPEN_SOURCE: usize = 0x80;
+const LINE_FLAG_BIAS_PULL_UP: usize = 0x1000;
+const LINE_FLAG_BIAS_PULL_DOWN: usize = 0x2000;
+const LINE_FLAG_BIAS_DISABLED: usize = 0x4000;
+const LINE_FLAG_EVENT_CLOCK_REALTIME: usize = 0x8000;
+const LINE_FLAG_EVENT_CLOCK_HTE: usize = 0x100000;
+
+const LINE_ATTR_ID_FLAGS: u32 = 1;
+const LINE_ATTR_ID_OUTPUT_VALUES: u32 = 2;
+const LINE_ATTR_ID_DEBOUNCE: u32 = 3;
+
+const LINE_CHANGED_REQUESTED: u32 = 1;
+const LINE_CHANGED_RELEASED: u32 = 2;
+const LINE_CHANGED_CONFIG: u32 = 3;
+
+const LINE_EVENT_RISING_EDGE: u32 = 1;
+const LINE_EVENT_FALLING_EDGE: u32 = 2;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ChipInfo {
@@ -151,16 +176,20 @@ pub struct LineInfo {
 }
 
 impl LineInfo {
-    pub fn new() -> LineInfo {
-        LineInfo {
+    pub fn new(cdev_fd: c_int, offset: u32) -> Result<LineInfo> {
+        let mut line_info = LineInfo {
             name: [0u8; NAME_BUFSIZE],
             consumer: [0u8; LABEL_BUFSIZE],
-            offset: 0,
+            offset: offset,
             num_attrs: 0,
             flags: 0,
             attrs: [LineAttribute::new(); 10],
             padding: [0u32; 4],
-        }
+        };
+
+        parse_retval!(unsafe { libc::ioctl(cdev_fd, REQ_GET_LINE_INFO, &mut line_info) })?;
+
+        Ok(line_info)
     }
 }
 
@@ -176,6 +205,15 @@ impl fmt::Debug for LineInfo {
             .field("padding", &self.padding)
             .finish()
     }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineInfoChanged {
+    pub info: LineInfo,
+    pub timestamp_ns: u64,
+    pub event_type: u32,
+    pub padding: [u32; 5],
 }
 
 #[derive(Copy, Clone)]
@@ -211,6 +249,17 @@ pub struct LineRequest {
 pub struct LineValues {
     pub bits: u64,
     pub mask: u64,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LineEvent {
+    pub timestamp_ns: u64,
+    pub id: u32,
+    pub offset: u32,
+    pub seqno: u32,
+    pub line_seqno: u32,
+    pub padding: [u32; 6],
 }
 
 // Find the correct gpiochip device based on its label
@@ -254,151 +303,20 @@ fn cbuf_to_cstring(buf: &[u8]) -> CString {
 }
 
 // Deprecated v1 API requests
-const NR_GET_LINE_HANDLE: IoctlLong = 0x03 << SHIFT_NR;
 const NR_GET_LINE_EVENT: IoctlLong = 0x04 << SHIFT_NR;
-const NR_GET_LINE_VALUES: IoctlLong = 0x08 << SHIFT_NR;
-const NR_SET_LINE_VALUES: IoctlLong = 0x09 << SHIFT_NR;
 
-const SIZE_HANDLE_REQUEST: IoctlLong = (mem::size_of::<HandleRequest>() as IoctlLong) << SHIFT_SIZE;
 const SIZE_EVENT_REQUEST: IoctlLong = (mem::size_of::<EventRequest>() as IoctlLong) << SHIFT_SIZE;
-const SIZE_HANDLE_DATA: IoctlLong = (mem::size_of::<HandleData>() as IoctlLong) << SHIFT_SIZE;
 
-const REQ_GET_LINE_HANDLE: IoctlLong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_HANDLE | SIZE_HANDLE_REQUEST;
 const REQ_GET_LINE_EVENT: IoctlLong =
     DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_EVENT | SIZE_EVENT_REQUEST;
-const REQ_GET_LINE_VALUES: IoctlLong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_GET_LINE_VALUES | SIZE_HANDLE_DATA;
-const REQ_SET_LINE_VALUES: IoctlLong =
-    DIR_READ_WRITE | TYPE_GPIO | NR_SET_LINE_VALUES | SIZE_HANDLE_DATA;
 
 const HANDLES_MAX: usize = 64;
 const HANDLE_FLAG_INPUT: u32 = 0x01;
-const HANDLE_FLAG_OUTPUT: u32 = 0x02;
-const HANDLE_FLAG_ACTIVE_LOW: u32 = 0x04;
-const HANDLE_FLAG_OPEN_DRAIN: u32 = 0x08;
-const HANDLE_FLAG_OPEN_SOURCE: u32 = 0x10;
-
-#[repr(C)]
-pub struct HandleRequest {
-    pub line_offsets: [u32; HANDLES_MAX],
-    pub flags: u32,
-    pub default_values: [u8; HANDLES_MAX],
-    pub consumer_label: [u8; LABEL_BUFSIZE],
-    pub lines: u32,
-    pub fd: c_int,
-}
-
-impl HandleRequest {
-    pub fn new(cdev_fd: c_int, pins: &[u8]) -> Result<HandleRequest> {
-        let mut handle_request = HandleRequest {
-            line_offsets: [0u32; HANDLES_MAX],
-            flags: 0,
-            default_values: [0u8; HANDLES_MAX],
-            consumer_label: [0u8; LABEL_BUFSIZE],
-            lines: 0,
-            fd: 0,
-        };
-
-        let pins: &[u8] = if pins.len() > HANDLES_MAX {
-            handle_request.lines = HANDLES_MAX as u32;
-            &pins[0..HANDLES_MAX]
-        } else {
-            handle_request.lines = pins.len() as u32;
-            pins
-        };
-
-        for (idx, pin) in pins.iter().enumerate() {
-            handle_request.line_offsets[idx] = u32::from(*pin);
-        }
-
-        // Set consumer label, so other processes know we're using these pins
-        handle_request.consumer_label[0..CONSUMER_LABEL.len()]
-            .copy_from_slice(CONSUMER_LABEL.as_bytes());
-
-        parse_retval!(unsafe { libc::ioctl(cdev_fd, REQ_GET_LINE_HANDLE, &mut handle_request) })?;
-
-        // If the handle fd is zero or negative, an error occurred
-        if handle_request.fd <= 0 {
-            Err(Error::Io(std::io::Error::last_os_error()))
-        } else {
-            Ok(handle_request)
-        }
-    }
-
-    pub fn levels(&self) -> Result<HandleData> {
-        let mut handle_data = HandleData::new();
-
-        parse_retval!(unsafe { libc::ioctl(self.fd, REQ_GET_LINE_VALUES, &mut handle_data) })?;
-
-        Ok(handle_data)
-    }
-
-    pub fn set_levels(&mut self, levels: &[Level]) -> Result<()> {
-        let mut handle_data = HandleData::new();
-        let levels: &[Level] = if levels.len() > HANDLES_MAX {
-            &levels[0..HANDLES_MAX]
-        } else {
-            levels
-        };
-
-        for (idx, level) in levels.iter().enumerate() {
-            handle_data.values[idx] = *level as u8;
-        }
-
-        parse_retval!(unsafe { libc::ioctl(self.fd, REQ_SET_LINE_VALUES, &mut handle_data) })?;
-
-        Ok(())
-    }
-
-    pub fn close(&mut self) {
-        if self.fd > 0 {
-            unsafe {
-                libc::close(self.fd);
-            }
-
-            self.fd = 0;
-        }
-    }
-}
-
-impl Drop for HandleRequest {
-    fn drop(&mut self) {
-        self.close();
-    }
-}
-
-impl fmt::Debug for HandleRequest {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("HandleRequest")
-            .field(
-                "line_offsets",
-                &format_args!("{:?}", &self.line_offsets[..self.lines as usize]),
-            )
-            .field("flags", &self.flags)
-            .field(
-                "default_values",
-                &format_args!("{:?}", &self.default_values[..self.lines as usize]),
-            )
-            .field("consumer_label", &cbuf_to_cstring(&self.consumer_label))
-            .field("lines", &self.lines)
-            .field("fd", &self.fd)
-            .finish()
-    }
-}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HandleData {
     pub values: [u8; HANDLES_MAX],
-}
-
-impl HandleData {
-    pub fn new() -> HandleData {
-        HandleData {
-            values: [0u8; HANDLES_MAX],
-        }
-    }
 }
 
 impl fmt::Debug for HandleData {
@@ -408,10 +326,6 @@ impl fmt::Debug for HandleData {
             .finish()
     }
 }
-
-const EVENT_FLAG_RISING_EDGE: u32 = 0x01;
-const EVENT_FLAG_FALLING_EDGE: u32 = 0x02;
-const EVENT_FLAG_BOTH_EDGES: u32 = EVENT_FLAG_RISING_EDGE | EVENT_FLAG_FALLING_EDGE;
 
 #[repr(C)]
 pub struct EventRequest {
