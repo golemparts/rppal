@@ -249,16 +249,16 @@ impl GpioRegisters for GpioMem {
             Mode::Alt8 => FSEL_ALT8,
         };
 
+        // Set the actual direction here, since this isn't set in the FSEL register.
+        if mode == Mode::Input || mode == Mode::Output {
+            self.set_direction(pin, mode);
+        }
+
         reg_value = (reg_value & !CTRL_OUTOVER_MASK) | (OUTOVER_PERI << CTRL_OUTOVER_LSB);
         reg_value = (reg_value & !CTRL_OEOVER_MASK) | (OEOVER_PERI << CTRL_OEOVER_LSB);
         reg_value = (reg_value & !CTRL_FUNCSEL_MASK) | ((fsel_mode as u32) << CTRL_FUNCSEL_LSB);
 
         self.write(offset, reg_value);
-
-        // Set the actual direction here, since this isn't set in the FSEL register.
-        if mode == Mode::Input || mode == Mode::Output {
-            self.set_direction(pin, mode);
-        }
     }
 
     fn set_bias(&self, pin: u8, bias: Bias) {
