@@ -11,18 +11,24 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
+use crate::gpio::Gpio;
+
 // Peripheral base address
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;
 const PERIPHERAL_BASE_RPI4: u32 = 0xfe00_0000;
+const PERIPHERAL_BASE_RP1: u32 = 0x4000_0000;
 
 // Offset from the peripheral base address
 const GPIO_OFFSET: u32 = 0x20_0000;
+const GPIO_OFFSET_RP1: u32 = 0x0d_0000;
 
 // Number of GPIO lines
 const GPIO_LINES_BCM283X: u8 = 54;
 const GPIO_LINES_BCM2711: u8 = 58;
-const GPIO_LINES_BCM2712: u8 = 58;
+// The RP1 actually has 54 GPIOs across 3 banks, but the last two banks are currently
+// specified as internal-use only, so we'll ignore those.
+const GPIO_LINES_RP1: u8 = 28;
 
 /// Errors that can occur when trying to identify the Raspberry Pi hardware.
 #[derive(Debug)]
@@ -111,6 +117,14 @@ impl fmt::Display for Model {
             Model::RaspberryPi5 => write!(f, "Raspberry Pi 5"),
         }
     }
+}
+
+// GPIO registers on the RP1 have a different interface than the ones on earlier
+// Broadcom SoCs
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub(crate) enum GpioInterface {
+    Bcm,
+    Rp1,
 }
 
 /// Identifiable Raspberry Pi SoCs.
@@ -326,6 +340,8 @@ pub struct DeviceInfo {
     gpio_offset: u32,
     // Number of GPIO lines available for this SoC
     gpio_lines: u8,
+    // GPIO interface through the Broadcom SoC or a separate RP1
+    gpio_interface: GpioInterface,
 }
 
 impl DeviceInfo {
@@ -354,6 +370,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI,
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
+                gpio_interface: GpioInterface::Bcm,
             }),
             Model::RaspberryPi2B => Ok(DeviceInfo {
                 model,
@@ -361,6 +378,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
+                gpio_interface: GpioInterface::Bcm,
             }),
             Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
                 Ok(DeviceInfo {
@@ -369,6 +387,7 @@ impl DeviceInfo {
                     peripheral_base: PERIPHERAL_BASE_RPI2,
                     gpio_offset: GPIO_OFFSET,
                     gpio_lines: GPIO_LINES_BCM283X,
+                    gpio_interface: GpioInterface::Bcm,
                 })
             }
             Model::RaspberryPi3BPlus
@@ -379,6 +398,7 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI2,
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
+                gpio_interface: GpioInterface::Bcm,
             }),
             Model::RaspberryPi4B
             | Model::RaspberryPi400
@@ -389,13 +409,15 @@ impl DeviceInfo {
                 peripheral_base: PERIPHERAL_BASE_RPI4,
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM2711,
+                gpio_interface: GpioInterface::Bcm,
             }),
             Model::RaspberryPi5 => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2712,
-                peripheral_base: PERIPHERAL_BASE_RPI4,
-                gpio_offset: GPIO_OFFSET,
-                gpio_lines: GPIO_LINES_BCM2712,
+                peripheral_base: PERIPHERAL_BASE_RP1,
+                gpio_offset: GPIO_OFFSET_RP1,
+                gpio_lines: GPIO_LINES_RP1,
+                gpio_interface: GpioInterface::Rp1,
             }),
         }
     }
@@ -423,5 +445,10 @@ impl DeviceInfo {
     /// Returns the number of GPIO lines available for this SoC.
     pub(crate) fn gpio_lines(&self) -> u8 {
         self.gpio_lines
+    }
+
+    /// Returns the GPIO interface type for this model.
+    pub(crate) fn gpio_interface(&self) -> GpioInterface {
+        self.gpio_interface
     }
 }

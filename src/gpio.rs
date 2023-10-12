@@ -124,13 +124,13 @@ use std::sync::{Arc, Mutex, Once, Weak};
 use std::time::Duration;
 
 mod epoll;
+mod gpiomem;
 #[cfg(feature = "hal")]
 mod hal;
 #[cfg(feature = "hal-unproven")]
 mod hal_unproven;
 mod interrupt;
 mod ioctl;
-mod mem;
 mod pin;
 mod soft_pwm;
 
@@ -331,7 +331,7 @@ impl fmt::Display for Trigger {
 // Store Gpio's state separately, so we can conveniently share it through
 // a cloned Arc.
 pub(crate) struct GpioState {
-    gpio_mem: mem::GpioMem,
+    gpio_mem: Box<dyn gpiomem::GpioRegisters>,
     cdev: std::fs::File,
     sync_interrupts: Mutex<interrupt::EventLoop>,
     pins_taken: [AtomicBool; u8::MAX as usize],
@@ -385,7 +385,7 @@ impl Gpio {
                 inner: state.clone(),
             })
         } else {
-            let gpio_mem = mem::GpioMem::open()?;
+            let gpio_mem = gpiomem::bcm::GpioMem::open()?;
             let cdev = ioctl::find_gpiochip()?;
             let sync_interrupts = Mutex::new(interrupt::EventLoop::new(
                 cdev.as_raw_fd(),
@@ -397,7 +397,7 @@ impl Gpio {
                 .gpio_lines();
 
             let gpio_state = Arc::new(GpioState {
-                gpio_mem,
+                gpio_mem: Box::new(gpio_mem),
                 cdev,
                 sync_interrupts,
                 pins_taken,

@@ -28,5 +28,3 @@ simple-signal = "1.1.1"
 default = []
 hal = ["nb", "embedded-hal", "embedded-hal-nb", "embedded-hal-0", "spin_sleep", "void"]
 hal-unproven = ["nb", "embedded-hal-0/unproven", "hal"]
-# gpiochip v2 API support is a work in progress, and should only be used for testing purposes.
-gpiochip_v2 = []
