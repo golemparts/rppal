@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::soft_pwm::SoftPwm;
-use crate::gpio::{interrupt::AsyncInterrupt, GpioState, Level, Mode, PullUpDown, Result, Trigger};
+use crate::gpio::{interrupt::AsyncInterrupt, Bias, GpioState, Level, Mode, Result, Trigger};
 
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
@@ -207,8 +207,8 @@ macro_rules! impl_drop {
                     self.pin.set_mode(prev_mode);
                 }
 
-                if self.pud_mode != PullUpDown::Off {
-                    self.pin.set_pullupdown(PullUpDown::Off);
+                if self.bias != Bias::Off {
+                    self.pin.set_bias(Bias::Off);
                 }
             }
         }
@@ -296,7 +296,7 @@ impl Pin {
     /// [`Input`]: enum.Mode.html#variant.Input
     #[inline]
     pub fn into_input(self) -> InputPin {
-        InputPin::new(self, PullUpDown::Off)
+        InputPin::new(self, Bias::Off)
     }
 
     /// Consumes the `Pin` and returns an [`InputPin`]. Sets the mode to [`Input`]
@@ -310,7 +310,7 @@ impl Pin {
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pulldown(self) -> InputPin {
-        InputPin::new(self, PullUpDown::PullDown)
+        InputPin::new(self, Bias::PullDown)
     }
 
     /// Consumes the `Pin` and returns an [`InputPin`]. Sets the mode to [`Input`]
@@ -324,7 +324,7 @@ impl Pin {
     /// [`reset_on_drop`]: struct.InputPin.html#method.set_reset_on_drop
     #[inline]
     pub fn into_input_pullup(self) -> InputPin {
-        InputPin::new(self, PullUpDown::PullUp)
+        InputPin::new(self, Bias::PullUp)
     }
 
     /// Consumes the `Pin` and returns an [`OutputPin`]. Sets the mode to [`Mode::Output`]
@@ -367,8 +367,8 @@ impl Pin {
     }
 
     #[inline]
-    pub(crate) fn set_pullupdown(&mut self, pud: PullUpDown) {
-        self.gpio_state.gpio_mem.set_pullupdown(self.pin, pud);
+    pub(crate) fn set_bias(&mut self, bias: Bias) {
+        self.gpio_state.gpio_mem.set_bias(self.pin, bias);
     }
 
     #[inline]
@@ -424,11 +424,11 @@ pub struct InputPin {
     prev_mode: Option<Mode>,
     async_interrupt: Option<AsyncInterrupt>,
     reset_on_drop: bool,
-    pud_mode: PullUpDown,
+    bias: Bias,
 }
 
 impl InputPin {
-    pub(crate) fn new(mut pin: Pin, pud_mode: PullUpDown) -> InputPin {
+    pub(crate) fn new(mut pin: Pin, bias: Bias) -> InputPin {
         let prev_mode = pin.mode();
 
         let prev_mode = if prev_mode == Mode::Input {
@@ -438,14 +438,14 @@ impl InputPin {
             Some(prev_mode)
         };
 
-        pin.set_pullupdown(pud_mode);
+        pin.set_bias(bias);
 
         InputPin {
             pin,
             prev_mode,
             async_interrupt: None,
             reset_on_drop: true,
-            pud_mode,
+            bias,
         }
     }
 
@@ -578,7 +578,7 @@ pub struct OutputPin {
     pin: Pin,
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
-    pud_mode: PullUpDown,
+    bias: Bias,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
     #[cfg(feature = "hal")]
@@ -603,7 +603,7 @@ impl OutputPin {
             pin,
             prev_mode,
             reset_on_drop: true,
-            pud_mode: PullUpDown::Off,
+            bias: Bias::Off,
             soft_pwm: None,
             #[cfg(feature = "hal")]
             frequency: 0.0,
@@ -671,7 +671,7 @@ pub struct IoPin {
     mode: Mode,
     prev_mode: Option<Mode>,
     reset_on_drop: bool,
-    pud_mode: PullUpDown,
+    bias: Bias,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
     #[cfg(feature = "hal")]
@@ -697,7 +697,7 @@ impl IoPin {
             mode,
             prev_mode,
             reset_on_drop: true,
-            pud_mode: PullUpDown::Off,
+            bias: Bias::Off,
             soft_pwm: None,
             #[cfg(feature = "hal")]
             frequency: 0.0,
@@ -730,9 +730,9 @@ impl IoPin {
 
     /// Configures the built-in pull-up/pull-down resistors.
     #[inline]
-    pub fn set_pullupdown(&mut self, pud: PullUpDown) {
-        self.pin.set_pullupdown(pud);
-        self.pud_mode = pud;
+    pub fn set_bias(&mut self, bias: Bias) {
+        self.pin.set_bias(bias);
+        self.bias = bias;
     }
 
     impl_input!();

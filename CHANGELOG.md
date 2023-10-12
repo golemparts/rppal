@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0 (TBD)
+
+* **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown` to `set_bias`.
+* **Gpio**: (Breaking change) Add support for new modes `Alt6`, `Alt7` and `Alt8`.
+
 ## 0.14.1 (November 25, 2022)
 
 * **Gpio**: Fix subtract underflow panic in software-based PWM.

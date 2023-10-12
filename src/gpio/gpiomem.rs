@@ -1,4 +1,4 @@
-use crate::gpio::{Level, Mode, PullUpDown};
+use crate::gpio::{Bias, Level, Mode};
 
 pub mod bcm;
 pub mod rp1;
@@ -9,5 +9,5 @@ pub(crate) trait GpioRegisters: std::fmt::Debug + Sync + Send {
     fn level(&self, pin: u8) -> Level;
     fn mode(&self, pin: u8) -> Mode;
     fn set_mode(&self, pin: u8, mode: Mode);
-    fn set_pullupdown(&self, pin: u8, pud: PullUpDown);
+    fn set_bias(&self, pin: u8, bias: Bias);
 }

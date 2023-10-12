@@ -11,7 +11,7 @@ use std::time::Duration;
 use libc::{self, c_void, off_t, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 
 use crate::gpio::gpiomem::GpioRegisters;
-use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
+use crate::gpio::{Bias, Error, Level, Mode, Result};
 use crate::system::{DeviceInfo, SoC};
 
 const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem";
@@ -248,7 +248,7 @@ impl GpioRegisters for GpioMem {
         self.locks[offset].store(false, Ordering::SeqCst);
     }
 
-    fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+    fn set_bias(&self, pin: u8, bias: Bias) {
         // Offset for register.
         let offset: usize;
         // Bit shift for pin position within register value.
@@ -263,10 +263,10 @@ impl GpioRegisters for GpioMem {
             let lock = GPPUD_CNTRL_REG0 + pin as usize / 32;
 
             // Pull up vs pull down has a reverse bit pattern on BCM2711 vs others.
-            let pud = match pud {
-                PullUpDown::Off => 0b00u32,
-                PullUpDown::PullDown => 0b10,
-                PullUpDown::PullUp => 0b01,
+            let pud = match bias {
+                Bias::Off => 0b00u32,
+                Bias::PullDown => 0b10,
+                Bias::PullUp => 0b01,
             };
 
             loop {
@@ -304,7 +304,7 @@ impl GpioRegisters for GpioMem {
 
             // Set the control signal in GPPUD.
             let reg_value = self.read(GPPUD);
-            self.write(GPPUD, (reg_value & !0b11) | ((pud as u32) & 0b11));
+            self.write(GPPUD, (reg_value & !0b11) | ((bias as u32) & 0b11));
 
             // The datasheet mentions waiting at least 150 cycles for set-up and hold, but
             // doesn't state which clock is used. This is likely the VPU clock (see

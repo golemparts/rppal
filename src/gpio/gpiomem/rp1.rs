@@ -7,7 +7,7 @@ use std::ptr;
 
 use libc::{self, c_void, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 
-use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
+use crate::gpio::{Bias, Error, Level, Mode, Result};
 use crate::system::{DeviceInfo, SoC};
 
 use super::GpioRegisters;
@@ -151,7 +151,7 @@ impl GpioRegisters for GpioMem {
         unimplemented!()
     }
 
-    fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+    fn set_bias(&self, pin: u8, bias: Bias) {
         unimplemented!()
     }
 }

@@ -298,18 +298,18 @@ impl Not for Level {
 
 /// Built-in pull-up/pull-down resistor states.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum PullUpDown {
+pub enum Bias {
     Off = 0b00,
     PullDown = 0b01,
     PullUp = 0b10,
 }
 
-impl fmt::Display for PullUpDown {
+impl fmt::Display for Bias {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            PullUpDown::Off => write!(f, "Off"),
-            PullUpDown::PullDown => write!(f, "PullDown"),
-            PullUpDown::PullUp => write!(f, "PullUp"),
+            Bias::Off => write!(f, "Off"),
+            Bias::PullDown => write!(f, "PullDown"),
+            Bias::PullUp => write!(f, "PullUp"),
         }
     }
 }
