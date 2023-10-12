@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
 
 use std::fmt;
 use std::fs::OpenOptions;
@@ -67,6 +66,9 @@ const FSEL_ALT8: u8 = 8;
 const PADS_GPIO: usize = 0x04;
 // Offset to the next GPIO for the PADS_BANK registers (datasheet @ 3.1.4)
 const PADS_OFFSET: usize = 4;
+
+const PADS_IN_ENABLE_MASK: u32 = 0x40;
+const PADS_OUT_DISABLE_MASK: u32 = 0x80;
 
 const PADS_BIAS_MASK: u32 = 0x0c;
 const PADS_BIAS_LSB: u32 = 2;
@@ -167,16 +169,18 @@ impl GpioMem {
         self.write(offset, 1 << pin);
     }
 
-    fn pad_update(&self, pin: u8, clr: u32, set: u32) {
-        unimplemented!()
-    }
-
     fn input_enable(&self, pin: u8) {
-        unimplemented!()
+        let offset =
+            (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + SET_OFFSET) / REG_SIZE;
+
+        self.write(offset, PADS_IN_ENABLE_MASK);
     }
 
     fn output_enable(&self, pin: u8) {
-        unimplemented!()
+        let offset =
+            (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + CLR_OFFSET) / REG_SIZE;
+
+        self.write(offset, PADS_OUT_DISABLE_MASK);
     }
 }
 
