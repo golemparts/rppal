@@ -39,7 +39,7 @@ const GPIO_CTRL: usize = 0x0004;
 // Offset to the next GPIO for the IO_BANK registers (datasheet @ 3.1.4)
 const GPIO_OFFSET: usize = 8;
 
-const CTRL_FUNCSEL_MASK: u32 = 0x1f;
+const CTRL_FUNCSEL_MASK: u32 = 0x001f;
 const CTRL_FUNCSEL_LSB: u32 = 0;
 const CTRL_OUTOVER_MASK: u32 = 0x3000;
 const CTRL_OUTOVER_LSB: u32 = 12;
@@ -166,6 +166,7 @@ impl GpioMem {
             Mode::Output => (SYS_RIO0_OFFSET + RIO_OE + SET_OFFSET) / REG_SIZE,
             _ => (SYS_RIO0_OFFSET + RIO_OE + CLR_OFFSET) / REG_SIZE,
         };
+
         self.write(offset, 1 << pin);
     }
 
@@ -188,12 +189,14 @@ impl GpioRegisters for GpioMem {
     #[inline(always)]
     fn set_high(&self, pin: u8) {
         let offset = (SYS_RIO0_OFFSET + RIO_OUT + SET_OFFSET) / REG_SIZE;
+
         self.write(offset, 1 << pin);
     }
 
     #[inline(always)]
     fn set_low(&self, pin: u8) {
         let offset = (SYS_RIO0_OFFSET + RIO_OUT + CLR_OFFSET) / REG_SIZE;
+
         self.write(offset, 1 << pin);
     }
 
