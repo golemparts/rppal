@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::fmt;
 use std::fs::OpenOptions;
 use std::io;
@@ -25,16 +28,31 @@ const GPIO_CTRL: usize = 0x0004;
 const GPIO_OFFSET: usize = 8;
 
 const STATUS_BIT_EVENT_LEVEL_HIGH: u32 = 23;
-const CTRL_MASK_FUNCSEL: u32 = 0x1f;
+
+const CTRL_FUNCSEL_MASK: u32 = 0x1f;
+const CTRL_FUNCSEL_LSB: u32 = 0;
+const CTRL_OUTOVER_MASK: u32 = 0x3000;
+const CTRL_OUTOVER_LSB: u32 = 12;
+const CTRL_OEOVER_MASK: u32 = 0xc000;
+const CTRL_OEOVER_LSB: u32 = 14;
+const CTRL_INOVER_MASK: u32 = 0x30000;
+const CTRL_INOVER_LSB: u32 = 16;
+
+const OUTOVER_PERI: u32 = 0;
+const OEOVER_PERI: u32 = 0;
 
 // Each register contains 32 bits
 const REG_SIZE: usize = std::mem::size_of::<u32>();
 // rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
-const MEM_SIZE: usize = 0x30000 * REG_SIZE;
+const MEM_SIZE: usize = 0x30000;
 
-// We'll only be working with IO_BANK0 and PADS_BANK0
-const IO_BANK0_OFFSET: usize = 0x00;
+const IO_BANK0_OFFSET: usize = 0x00000;
+const SYS_RIO0_OFFSET: usize = 0x10000;
 const PADS_BANK0_OFFSET: usize = 0x20000;
+
+const RIO_OUT: usize = 0x00;
+const RIO_OE: usize = 0x04;
+const RIO_IN: usize = 0x08;
 
 const FSEL_ALT0: u8 = 0;
 const FSEL_ALT1: u8 = 1;
@@ -111,26 +129,58 @@ impl GpioMem {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
     }
+
+    fn direction(&self, pin: u8) -> Mode {
+        let offset = (SYS_RIO0_OFFSET + RIO_OE) / REG_SIZE;
+        let reg_value = (self.read(offset) >> pin) as u8 & 0b1;
+
+        if reg_value > 0 {
+            Mode::Output
+        } else {
+            Mode::Input
+        }
+    }
+
+    fn set_direction(&self, pin: u8, mode: Mode) {
+        let offset = match mode {
+            Mode::Output => (SYS_RIO0_OFFSET + RIO_OE + SET_OFFSET) / REG_SIZE,
+            _ => (SYS_RIO0_OFFSET + RIO_OE + CLR_OFFSET) / REG_SIZE,
+        };
+        self.write(offset, 1 << pin);
+    }
+
+    fn pad_update(&self, pin: u8, clr: u32, set: u32) {
+        unimplemented!()
+    }
+
+    fn input_enable(&self, pin: u8) {
+        unimplemented!()
+    }
+
+    fn output_enable(&self, pin: u8) {
+        unimplemented!()
+    }
 }
 
 impl GpioRegisters for GpioMem {
     #[inline(always)]
     fn set_high(&self, pin: u8) {
-        unimplemented!()
+        let offset = (SYS_RIO0_OFFSET + RIO_OUT + SET_OFFSET) / REG_SIZE;
+        self.write(offset, 1 << pin);
     }
 
     #[inline(always)]
     fn set_low(&self, pin: u8) {
-        unimplemented!()
+        let offset = (SYS_RIO0_OFFSET + RIO_OUT + CLR_OFFSET) / REG_SIZE;
+        self.write(offset, 1 << pin);
     }
 
     #[inline(always)]
     fn level(&self, pin: u8) -> Level {
-        let offset =
-            (IO_BANK0_OFFSET + GPIO_STATUS + (pin as usize * GPIO_OFFSET) + RW_OFFSET) / REG_SIZE;
+        let offset = (SYS_RIO0_OFFSET + RIO_IN) / REG_SIZE;
         let reg_value = self.read(offset);
 
-        unsafe { std::mem::transmute((reg_value >> STATUS_BIT_EVENT_LEVEL_HIGH) as u8 & 0b1) }
+        unsafe { std::mem::transmute((reg_value >> pin) as u8 & 0b1) }
     }
 
     fn mode(&self, pin: u8) -> Mode {
@@ -138,13 +188,13 @@ impl GpioRegisters for GpioMem {
             (IO_BANK0_OFFSET + GPIO_CTRL + (pin as usize * GPIO_OFFSET) + RW_OFFSET) / REG_SIZE;
         let reg_value = self.read(offset);
 
-        match (reg_value & CTRL_MASK_FUNCSEL) as u8 {
+        match (reg_value & CTRL_FUNCSEL_MASK) as u8 {
             FSEL_ALT0 => Mode::Alt0,
             FSEL_ALT1 => Mode::Alt1,
             FSEL_ALT2 => Mode::Alt2,
             FSEL_ALT3 => Mode::Alt3,
             FSEL_ALT4 => Mode::Alt4,
-            FSEL_ALT5 => unimplemented!(), // GPIO
+            FSEL_ALT5 => return self.direction(pin), // GPIO
             FSEL_ALT6 => Mode::Alt6,
             FSEL_ALT7 => Mode::Alt7,
             FSEL_ALT8 => Mode::Alt8,
@@ -153,13 +203,16 @@ impl GpioRegisters for GpioMem {
     }
 
     fn set_mode(&self, pin: u8, mode: Mode) {
+        self.input_enable(pin);
+        self.output_enable(pin);
+
         let offset =
             (IO_BANK0_OFFSET + GPIO_CTRL + (pin as usize * GPIO_OFFSET) + RW_OFFSET) / REG_SIZE;
-        let reg_value = self.read(offset);
+        let mut reg_value = self.read(offset);
 
         let fsel_mode = match mode {
-            Mode::Input => unimplemented!(),
-            Mode::Output => unimplemented!(),
+            Mode::Input => FSEL_ALT5,  // GPIO
+            Mode::Output => FSEL_ALT5, // GPIO
             Mode::Alt0 => FSEL_ALT0,
             Mode::Alt1 => FSEL_ALT1,
             Mode::Alt2 => FSEL_ALT2,
@@ -171,7 +224,16 @@ impl GpioRegisters for GpioMem {
             Mode::Alt8 => FSEL_ALT8,
         };
 
-        self.write(offset, (reg_value & !0b11111) | (fsel_mode as u32));
+        reg_value = (reg_value & !CTRL_OUTOVER_MASK) | ((OUTOVER_PERI as u32) << CTRL_OUTOVER_LSB);
+        reg_value = (reg_value & !CTRL_OEOVER_MASK) | ((OEOVER_PERI as u32) << CTRL_OEOVER_LSB);
+        reg_value = (reg_value & !CTRL_FUNCSEL_MASK) | ((fsel_mode as u32) << CTRL_FUNCSEL_LSB);
+
+        self.write(offset, reg_value);
+
+        // Set the actual direction here, since this isn't set in the FSEL register.
+        if mode == Mode::Input || mode == Mode::Output {
+            self.set_direction(pin, mode);
+        }
     }
 
     fn set_bias(&self, pin: u8, bias: Bias) {
