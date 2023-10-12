@@ -17,17 +17,28 @@ use super::GpioRegisters;
 
 const PATH_DEV_GPIOMEM: &str = "/dev/rp1-gpiomem";
 
-// (datasheet @ 2.4)
+// Each register contains 32 bits
+const REG_SIZE: usize = std::mem::size_of::<u32>();
+// rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
+const MEM_SIZE: usize = 0x30000;
+
+// We're only accessing the first 28 GPIOs. The rest is currently marked
+// as internal-use only, so we only need IO_BANK0/SYS_RIO0/PADS_BANK0.
+const IO_BANK0_OFFSET: usize = 0x00000;
+const SYS_RIO0_OFFSET: usize = 0x10000;
+const PADS_BANK0_OFFSET: usize = 0x20000;
+
+// Atomic register access (datasheet @ 2.4)
 const RW_OFFSET: usize = 0x0000;
 const XOR_OFFSET: usize = 0x1000;
 const SET_OFFSET: usize = 0x2000;
 const CLR_OFFSET: usize = 0x3000;
 
+// STATUS and CTRL offsets for the IO_BANK registers (datasheet @ 3.1.4)
 const GPIO_STATUS: usize = 0x0000;
 const GPIO_CTRL: usize = 0x0004;
+// Offset to the next GPIO for the IO_BANK registers (datasheet @ 3.1.4)
 const GPIO_OFFSET: usize = 8;
-
-const STATUS_BIT_EVENT_LEVEL_HIGH: u32 = 23;
 
 const CTRL_FUNCSEL_MASK: u32 = 0x1f;
 const CTRL_FUNCSEL_LSB: u32 = 0;
@@ -35,23 +46,17 @@ const CTRL_OUTOVER_MASK: u32 = 0x3000;
 const CTRL_OUTOVER_LSB: u32 = 12;
 const CTRL_OEOVER_MASK: u32 = 0xc000;
 const CTRL_OEOVER_LSB: u32 = 14;
-const CTRL_INOVER_MASK: u32 = 0x30000;
-const CTRL_INOVER_LSB: u32 = 16;
 
+// Drive output from peripheral signal selected by FUNCSEL
 const OUTOVER_PERI: u32 = 0;
+// Drive output enable from peripheral signal selected by FUNCSEL
 const OEOVER_PERI: u32 = 0;
 
-// Each register contains 32 bits
-const REG_SIZE: usize = std::mem::size_of::<u32>();
-// rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
-const MEM_SIZE: usize = 0x30000;
-
-const IO_BANK0_OFFSET: usize = 0x00000;
-const SYS_RIO0_OFFSET: usize = 0x10000;
-const PADS_BANK0_OFFSET: usize = 0x20000;
-
+// GPIO output drive
 const RIO_OUT: usize = 0x00;
+// GPIO output drive enable
 const RIO_OE: usize = 0x04;
+// GPIO input value
 const RIO_IN: usize = 0x08;
 
 const FSEL_ALT0: u8 = 0;
