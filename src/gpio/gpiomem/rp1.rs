@@ -24,7 +24,7 @@ const GPIO_STATUS: usize = 0x0000;
 const GPIO_CTRL: usize = 0x0004;
 
 // rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
-const MEM_SIZE: usize = 0x30000 * std::mem::size_of::<u32>();
+const MEM_SIZE: usize = 0x30000;
 
 // We'll only be working with IO_BANK0 and PADS_BANK0
 const IO_BANK0_OFFSET: usize = 0x00;
