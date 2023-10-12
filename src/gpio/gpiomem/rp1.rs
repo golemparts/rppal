@@ -52,13 +52,7 @@ const OUTOVER_PERI: u32 = 0;
 // Drive output enable from peripheral signal selected by FUNCSEL
 const OEOVER_PERI: u32 = 0;
 
-// GPIO output drive
-const RIO_OUT: usize = 0x00;
-// GPIO output drive enable
-const RIO_OE: usize = 0x04;
-// GPIO input value
-const RIO_IN: usize = 0x08;
-
+// Function select modes
 const FSEL_ALT0: u8 = 0;
 const FSEL_ALT1: u8 = 1;
 const FSEL_ALT2: u8 = 2;
@@ -68,6 +62,25 @@ const FSEL_ALT5: u8 = 5; // GPIO
 const FSEL_ALT6: u8 = 6;
 const FSEL_ALT7: u8 = 7;
 const FSEL_ALT8: u8 = 8;
+
+// GPIO offset for the PADS_BANK registers (datasheet @ 3.1.4)
+const PADS_GPIO: usize = 0x04;
+// Offset to the next GPIO for the PADS_BANK registers (datasheet @ 3.1.4)
+const PADS_OFFSET: usize = 4;
+
+const PADS_BIAS_MASK: u32 = 0x0c;
+const PADS_BIAS_LSB: u32 = 2;
+
+const PADS_BIAS_OFF: u32 = 0;
+const PADS_BIAS_DOWN: u32 = 1;
+const PADS_BIAS_UP: u32 = 2;
+
+// GPIO output drive
+const RIO_OUT: usize = 0x00;
+// GPIO output drive enable
+const RIO_OE: usize = 0x04;
+// GPIO input value
+const RIO_IN: usize = 0x08;
 
 pub struct GpioMem {
     mem_ptr: *mut u32,
@@ -199,7 +212,7 @@ impl GpioRegisters for GpioMem {
             FSEL_ALT2 => Mode::Alt2,
             FSEL_ALT3 => Mode::Alt3,
             FSEL_ALT4 => Mode::Alt4,
-            FSEL_ALT5 => return self.direction(pin), // GPIO
+            FSEL_ALT5 => self.direction(pin), // GPIO
             FSEL_ALT6 => Mode::Alt6,
             FSEL_ALT7 => Mode::Alt7,
             FSEL_ALT8 => Mode::Alt8,
@@ -229,8 +242,8 @@ impl GpioRegisters for GpioMem {
             Mode::Alt8 => FSEL_ALT8,
         };
 
-        reg_value = (reg_value & !CTRL_OUTOVER_MASK) | ((OUTOVER_PERI as u32) << CTRL_OUTOVER_LSB);
-        reg_value = (reg_value & !CTRL_OEOVER_MASK) | ((OEOVER_PERI as u32) << CTRL_OEOVER_LSB);
+        reg_value = (reg_value & !CTRL_OUTOVER_MASK) | (OUTOVER_PERI << CTRL_OUTOVER_LSB);
+        reg_value = (reg_value & !CTRL_OEOVER_MASK) | (OEOVER_PERI << CTRL_OEOVER_LSB);
         reg_value = (reg_value & !CTRL_FUNCSEL_MASK) | ((fsel_mode as u32) << CTRL_FUNCSEL_LSB);
 
         self.write(offset, reg_value);
@@ -242,7 +255,17 @@ impl GpioRegisters for GpioMem {
     }
 
     fn set_bias(&self, pin: u8, bias: Bias) {
-        unimplemented!()
+        let offset =
+            (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + RW_OFFSET) / REG_SIZE;
+        let mut reg_value = self.read(offset);
+
+        reg_value = match bias {
+            Bias::Off => (reg_value & !PADS_BIAS_MASK) | (PADS_BIAS_OFF << PADS_BIAS_LSB),
+            Bias::PullDown => (reg_value & !PADS_BIAS_MASK) | (PADS_BIAS_DOWN << PADS_BIAS_LSB),
+            Bias::PullUp => (reg_value & !PADS_BIAS_MASK) | (PADS_BIAS_UP << PADS_BIAS_LSB),
+        };
+
+        self.write(offset, reg_value);
     }
 }
 
