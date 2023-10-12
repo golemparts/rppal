@@ -217,14 +217,17 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 #[repr(u8)]
 pub enum Mode {
-    Input = 0b000,
-    Output = 0b001,
-    Alt0 = 0b100,
-    Alt1 = 0b101,
-    Alt2 = 0b110,
-    Alt3 = 0b111,
-    Alt4 = 0b011,
-    Alt5 = 0b010,
+    Input,
+    Output,
+    Alt0,
+    Alt1,
+    Alt2,
+    Alt3,
+    Alt4,
+    Alt5,
+    Alt6,
+    Alt7,
+    Alt8,
 }
 
 impl fmt::Display for Mode {
@@ -238,6 +241,9 @@ impl fmt::Display for Mode {
             Mode::Alt3 => write!(f, "Alt3"),
             Mode::Alt4 => write!(f, "Alt4"),
             Mode::Alt5 => write!(f, "Alt5"),
+            Mode::Alt6 => write!(f, "Alt6"),
+            Mode::Alt7 => write!(f, "Alt7"),
+            Mode::Alt8 => write!(f, "Alt8"),
         }
     }
 }
@@ -385,19 +391,23 @@ impl Gpio {
                 inner: state.clone(),
             })
         } else {
-            let gpio_mem = gpiomem::bcm::GpioMem::open()?;
+            let device_info = DeviceInfo::new().map_err(|_| Error::UnknownModel)?;
+
+            let gpio_mem: Box<dyn gpiomem::GpioRegisters> = match device_info.gpio_interface() {
+                system::GpioInterface::Bcm => Box::new(gpiomem::bcm::GpioMem::open()?),
+                system::GpioInterface::Rp1 => Box::new(gpiomem::rp1::GpioMem::open()?),
+            };
+
             let cdev = ioctl::find_gpiochip()?;
             let sync_interrupts = Mutex::new(interrupt::EventLoop::new(
                 cdev.as_raw_fd(),
                 u8::MAX as usize,
             )?);
             let pins_taken = init_array!(AtomicBool::new(false), u8::MAX as usize);
-            let gpio_lines = DeviceInfo::new()
-                .map_err(|_| Error::UnknownModel)?
-                .gpio_lines();
+            let gpio_lines = device_info.gpio_lines();
 
             let gpio_state = Arc::new(GpioState {
-                gpio_mem: Box::new(gpio_mem),
+                gpio_mem,
                 cdev,
                 sync_interrupts,
                 pins_taken,

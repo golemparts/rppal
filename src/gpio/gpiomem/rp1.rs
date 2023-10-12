@@ -4,14 +4,13 @@ use std::io;
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::io::AsRawFd;
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::time::Duration;
 
-use libc::{self, c_void, off_t, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
+use libc::{self, c_void, size_t, MAP_FAILED, MAP_SHARED, O_SYNC, PROT_READ, PROT_WRITE};
 
 use crate::gpio::{Error, Level, Mode, PullUpDown, Result};
 use crate::system::{DeviceInfo, SoC};
+
+use super::GpioRegisters;
 
 const PATH_DEV_GPIOMEM: &str = "/dev/rp1-gpiomem";
 
@@ -22,6 +21,10 @@ const CLR_OFFSET: usize = 0x3000;
 
 const GPIO_STATUS: usize = 0x0000;
 const GPIO_CTRL: usize = 0x0004;
+const GPIO_OFFSET: usize = 8;
+
+const STATUS_BIT_EVENT_LEVEL_HIGH: u32 = 23;
+const CTRL_MASK_FUNCSEL: u32 = 0x1f;
 
 // rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
 const MEM_SIZE: usize = 0x30000;
@@ -29,6 +32,16 @@ const MEM_SIZE: usize = 0x30000;
 // We'll only be working with IO_BANK0 and PADS_BANK0
 const IO_BANK0_OFFSET: usize = 0x00;
 const PADS_BANK0_OFFSET: usize = 0x20000;
+
+const FSEL_ALT0: u8 = 0;
+const FSEL_ALT1: u8 = 1;
+const FSEL_ALT2: u8 = 2;
+const FSEL_ALT3: u8 = 3;
+const FSEL_ALT4: u8 = 4;
+const FSEL_GPIO: u8 = 5;
+const FSEL_ALT6: u8 = 6;
+const FSEL_ALT7: u8 = 7;
+const FSEL_ALT8: u8 = 8;
 
 pub struct GpioMem {
     mem_ptr: *mut u32,
@@ -55,8 +68,8 @@ impl GpioMem {
     }
 
     fn map_devgpiomem() -> Result<*mut u32> {
-        // Open /dev/gpiomem with read/write/sync flags. This might fail if
-        // /dev/gpiomem doesn't exist (< Raspbian Jessie), or /dev/gpiomem
+        // Open /dev/rp1-gpiomem with read/write/sync flags. This might fail if
+        // /dev/rp1-gpiomem doesn't exist (< Raspbian Jessie), or /dev/rp1-gpiomem
         // doesn't have the appropriate permissions, or the current user is
         // not a member of the gpio group.
         let gpiomem_file = OpenOptions::new()
@@ -95,31 +108,50 @@ impl GpioMem {
             ptr::write_volatile(self.mem_ptr.add(offset), value);
         }
     }
+}
 
+impl GpioRegisters for GpioMem {
     #[inline(always)]
-    pub(crate) fn set_high(&self, pin: u8) {
-        unimplemented!()
-    }
-
-    #[inline(always)]
-    pub(crate) fn set_low(&self, pin: u8) {
+    fn set_high(&self, pin: u8) {
         unimplemented!()
     }
 
     #[inline(always)]
-    pub(crate) fn level(&self, pin: u8) -> Level {
+    fn set_low(&self, pin: u8) {
         unimplemented!()
     }
 
-    pub(crate) fn mode(&self, pin: u8) -> Mode {
+    #[inline(always)]
+    fn level(&self, pin: u8) -> Level {
+        let offset = RW_OFFSET + GPIO_STATUS + (pin as usize * GPIO_OFFSET);
+        let reg_value = self.read(offset);
+
+        unsafe { std::mem::transmute((reg_value >> STATUS_BIT_EVENT_LEVEL_HIGH) as u8 & 0b1) }
+    }
+
+    fn mode(&self, pin: u8) -> Mode {
+        let offset = RW_OFFSET + GPIO_STATUS + (pin as usize * GPIO_OFFSET);
+        let reg_value = self.read(offset);
+
+        match (reg_value & CTRL_MASK_FUNCSEL) as u8 {
+            FSEL_ALT0 => Mode::Alt0,
+            FSEL_ALT1 => Mode::Alt1,
+            FSEL_ALT2 => Mode::Alt2,
+            FSEL_ALT3 => Mode::Alt3,
+            FSEL_ALT4 => Mode::Alt4,
+            FSEL_GPIO => unimplemented!(),
+            FSEL_ALT6 => Mode::Alt6,
+            FSEL_ALT7 => Mode::Alt7,
+            FSEL_ALT8 => Mode::Alt8,
+            _ => Mode::Input,
+        }
+    }
+
+    fn set_mode(&self, pin: u8, mode: Mode) {
         unimplemented!()
     }
 
-    pub(crate) fn set_mode(&self, pin: u8, mode: Mode) {
-        unimplemented!()
-    }
-
-    pub(crate) fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
+    fn set_pullupdown(&self, pin: u8, pud: PullUpDown) {
         unimplemented!()
     }
 }

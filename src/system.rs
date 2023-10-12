@@ -11,8 +11,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::result;
 
-use crate::gpio::Gpio;
-
 // Peripheral base address
 const PERIPHERAL_BASE_RPI: u32 = 0x2000_0000;
 const PERIPHERAL_BASE_RPI2: u32 = 0x3f00_0000;

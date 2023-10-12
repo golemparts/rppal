@@ -29,6 +29,15 @@ const GPPUDCLK0: usize = 0x98 / std::mem::size_of::<u32>();
 // Only available on BCM2711 (RPi4)
 const GPPUD_CNTRL_REG0: usize = 0xe4 / std::mem::size_of::<u32>();
 
+const FSEL_INPUT: u8 = 0b000;
+const FSEL_OUTPUT: u8 = 0b001;
+const FSEL_ALT0: u8 = 0b100;
+const FSEL_ALT1: u8 = 0b101;
+const FSEL_ALT2: u8 = 0b110;
+const FSEL_ALT3: u8 = 0b111;
+const FSEL_ALT4: u8 = 0b011;
+const FSEL_ALT5: u8 = 0b010;
+
 pub struct GpioMem {
     mem_ptr: *mut u32,
     locks: [AtomicBool; GPIO_MEM_REGISTERS],
@@ -192,7 +201,17 @@ impl GpioRegisters for GpioMem {
         let shift = (pin % 10) * 3;
         let reg_value = self.read(offset);
 
-        unsafe { std::mem::transmute((reg_value >> shift) as u8 & 0b111) }
+        match (reg_value >> shift) as u8 & 0b111 {
+            FSEL_INPUT => Mode::Input,
+            FSEL_OUTPUT => Mode::Output,
+            FSEL_ALT0 => Mode::Alt0,
+            FSEL_ALT1 => Mode::Alt1,
+            FSEL_ALT2 => Mode::Alt2,
+            FSEL_ALT3 => Mode::Alt3,
+            FSEL_ALT4 => Mode::Alt4,
+            FSEL_ALT5 => Mode::Alt5,
+            _ => Mode::Input,
+        }
     }
 
     fn set_mode(&self, pin: u8, mode: Mode) {
@@ -208,10 +227,22 @@ impl GpioRegisters for GpioMem {
             }
         }
 
+        let fsel_mode = match mode {
+            Mode::Input => FSEL_INPUT,
+            Mode::Output => FSEL_OUTPUT,
+            Mode::Alt0 => FSEL_ALT0,
+            Mode::Alt1 => FSEL_ALT1,
+            Mode::Alt2 => FSEL_ALT2,
+            Mode::Alt3 => FSEL_ALT3,
+            Mode::Alt4 => FSEL_ALT4,
+            Mode::Alt5 => FSEL_ALT5,
+            _ => FSEL_INPUT,
+        };
+
         let reg_value = self.read(offset);
         self.write(
             offset,
-            (reg_value & !(0b111 << shift)) | ((mode as u32) << shift),
+            (reg_value & !(0b111 << shift)) | ((fsel_mode as u32) << shift),
         );
 
         self.locks[offset].store(false, Ordering::SeqCst);
