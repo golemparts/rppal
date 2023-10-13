@@ -14,7 +14,7 @@ use crate::system::{DeviceInfo, SoC};
 
 use super::GpioRegisters;
 
-const PATH_DEV_GPIOMEM: &str = "/dev/rp1-gpiomem";
+const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem0";
 
 // Each register contains 32 bits
 const REG_SIZE: usize = std::mem::size_of::<u32>();
