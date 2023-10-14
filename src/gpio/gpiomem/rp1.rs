@@ -18,7 +18,7 @@ const PATH_DEV_GPIOMEM: &str = "/dev/gpiomem0";
 
 // Each register contains 32 bits
 const REG_SIZE: usize = std::mem::size_of::<u32>();
-// rp1-gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
+// gpiomem contains IO_BANK0-2, SYS_RIO0-2, PADS_BANK0-2, PADS_ETH
 const MEM_SIZE: usize = 0x30000;
 
 // We're only accessing the first 28 GPIOs. The rest is currently marked
@@ -109,8 +109,8 @@ impl GpioMem {
     }
 
     fn map_devgpiomem() -> Result<*mut u32> {
-        // Open /dev/rp1-gpiomem with read/write/sync flags. This might fail if
-        // /dev/rp1-gpiomem doesn't exist (< Raspbian Jessie), or /dev/rp1-gpiomem
+        // Open gpiomem with read/write/sync flags. This might fail if the
+        // gpiomem cdev doesn't exist (< Raspbian Jessie), or gpiomem
         // doesn't have the appropriate permissions, or the current user is
         // not a member of the gpio group.
         let gpiomem_file = OpenOptions::new()
@@ -119,7 +119,7 @@ impl GpioMem {
             .custom_flags(O_SYNC)
             .open(PATH_DEV_GPIOMEM)?;
 
-        // Memory-map /dev/rp1-gpiomem at offset 0
+        // Memory-map gpiomem at offset 0
         let gpiomem_ptr = unsafe {
             libc::mmap(
                 ptr::null_mut(),

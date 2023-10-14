@@ -8,7 +8,7 @@
 //!
 //! RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution.
 //! Both `gnu` and `musl` libc targets are supported. RPPAL is compatible with the
-//! Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, CM, CM 3, CM 3+, CM 4, 400,
+//! Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, 400,
 //! Zero, Zero W and Zero 2 W. Backwards compatibility for minor revisions isn't
 //! guaranteed until v1.0.0.
 

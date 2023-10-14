@@ -2,8 +2,11 @@
 
 ## 0.15.0 (TBD)
 
+* Add support for Raspberry Pi 5 (thanks @ukscone for all the testing!).
 * **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown` to `set_bias`.
-* **Gpio**: (Breaking change) Add support for new modes `Alt6`, `Alt7` and `Alt8`.
+* **Gpio**: Add support for new modes `Alt6`, `Alt7` and `Alt8`.
+* **I2c**: Implement I2C transactions for `embedded-hal` (contributed by @CBJamo).
+
 
 ## 0.14.1 (November 25, 2022)
 
