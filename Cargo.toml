@@ -1,6 +1,7 @@
 [package]
 name = "rppal"
-version = "0.14.1" # Also update html_root_url in lib.rs
+# Also update html_root_url in lib.rs
+version = "0.15.0"
 edition = "2021"
 rust-version = "1.56"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
@@ -26,5 +27,12 @@ simple-signal = "1.1.1"
 
 [features]
 default = []
-hal = ["nb", "embedded-hal", "embedded-hal-nb", "embedded-hal-0", "spin_sleep", "void"]
+hal = [
+    "nb",
+    "embedded-hal",
+    "embedded-hal-nb",
+    "embedded-hal-0",
+    "spin_sleep",
+    "void",
+]
 hal-unproven = ["nb", "embedded-hal-0/unproven", "hal"]
