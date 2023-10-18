@@ -209,4 +209,4 @@ Always be careful when working with the Raspberry Pi's peripherals, especially i
 
 ## Copyright and license
 
-Copyright (c) 2017-2022 Rene van der Meer. Released under the [MIT license](LICENSE).
+Copyright (c) 2017-2023 Rene van der Meer. Released under the [MIT license](LICENSE).
