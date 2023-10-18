@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.15.0 (TBD)
+## 0.15.0 (October 18, 2023)
 
 * Add support for Raspberry Pi 5 (thanks @ukscone for all the testing!).
 * **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown` to `set_bias`.

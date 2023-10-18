@@ -79,6 +79,7 @@ pub enum Model {
     RaspberryPi3BPlus,
     RaspberryPi4B,
     RaspberryPi400,
+    RaspberryPi5,
     RaspberryPiComputeModule,
     RaspberryPiComputeModule3,
     RaspberryPiComputeModule3Plus,
@@ -87,7 +88,6 @@ pub enum Model {
     RaspberryPiZero,
     RaspberryPiZeroW,
     RaspberryPiZero2W,
-    RaspberryPi5,
 }
 
 impl fmt::Display for Model {
@@ -104,6 +104,7 @@ impl fmt::Display for Model {
             Model::RaspberryPi3APlus => write!(f, "Raspberry Pi 3 A+"),
             Model::RaspberryPi4B => write!(f, "Raspberry Pi 4 B"),
             Model::RaspberryPi400 => write!(f, "Raspberry Pi 400"),
+            Model::RaspberryPi5 => write!(f, "Raspberry Pi 5"),
             Model::RaspberryPiComputeModule => write!(f, "Raspberry Pi Compute Module"),
             Model::RaspberryPiComputeModule3 => write!(f, "Raspberry Pi Compute Module 3"),
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
@@ -112,7 +113,6 @@ impl fmt::Display for Model {
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
             Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
-            Model::RaspberryPi5 => write!(f, "Raspberry Pi 5"),
         }
     }
 }

@@ -11,7 +11,7 @@
 //! with slave devices. The other two buses are used internally as an HDMI
 //! interface, and for HAT identification.
 //!
-//! On the Raspberry Pi 4 B and 400, three additional I2C buses are available,
+//! On the Raspberry Pi 4 B, 400 and 5, three additional I2C buses are available,
 //! depending on your configuration, as explained below.
 //!
 //! ### I2C0 / I2C1
@@ -249,7 +249,7 @@ impl I2c {
     /// bus that's bound to physical pins 3 (SDA) and 5 (SCL). On the Raspberry
     /// Pi B Rev 1, those pins are tied to bus 0. On every other Raspberry
     /// Pi model, they're connected to bus 1. Additional I2C buses are available
-    /// on the Raspberry Pi 4 B and 400.
+    /// on the Raspberry Pi 4 B, 400 and 5.
     ///
     /// More information on configuring the I2C buses can be found [here].
     ///
