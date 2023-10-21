@@ -54,7 +54,7 @@ impl i2c::Error for Error {
     }
 }
 
-/// `I2c` trait implementation for `embedded-hal` v1.0.0-alpha.10.
+/// `I2c` trait implementation for `embedded-hal` v1.0.0.
 impl I2cHal for I2c {
     fn transaction(
         &mut self,

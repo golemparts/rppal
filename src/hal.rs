@@ -16,7 +16,7 @@ use void::Void;
 #[derive(Debug, Default)]
 pub struct Delay;
 
-/// `Delay` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `Delay` trait implementation for `embedded-hal` v1.0.0.
 impl Delay {
     /// Constructs a new `Delay`.
     pub fn new() -> Delay {
@@ -71,7 +71,7 @@ impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     }
 }
 
-/// `DelayUs` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `DelayUs` trait implementation for `embedded-hal` v1.0.0.
 impl DelayUs for Delay {
     fn delay_us(&mut self, us: u32) {
         sleep(Duration::from_micros(us.into()));
