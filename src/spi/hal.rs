@@ -1,4 +1,4 @@
-use embedded_hal::spi::{self, ErrorType, SpiBus, SpiBusFlush, SpiBusRead, SpiBusWrite, SpiDevice};
+use embedded_hal::spi::{self, ErrorType, SpiBus, SpiBusFlush, SpiBusRead, SpiBusWrite, SpiDevice, SpiDeviceWrite, SpiDeviceRead, Operation};
 use embedded_hal_nb::spi::FullDuplex;
 use std::io;
 
@@ -117,28 +117,82 @@ pub struct SimpleHalSpiDevice<B> {
     bus: B,
 }
 
-impl<B> SimpleHalSpiDevice<B> {
+impl<B: SpiBus<u8>> SimpleHalSpiDevice<B> {
     pub fn new(bus: B) -> SimpleHalSpiDevice<B> {
         SimpleHalSpiDevice { bus }
     }
 }
 
-impl<B: ErrorType> SpiDevice for SimpleHalSpiDevice<B> {
-    type Bus = B;
-
-    fn transaction<R>(
+impl<B: SpiBus<u8>> SpiDeviceRead<u8> for SimpleHalSpiDevice<B>
+{
+    fn read_transaction(
         &mut self,
-        f: impl FnOnce(&mut Self::Bus) -> Result<R, <Self::Bus as ErrorType>::Error>,
-    ) -> Result<R, Self::Error> {
-        f(&mut self.bus).map_err(|_| {
-            Error::Io(io::Error::new(
-                io::ErrorKind::Other,
-                "SimpleHalSpiDevice transaction error",
-            ))
-        })
+        operations: &mut [&mut [u8]]
+    ) -> Result<(), Error> {
+        for op in operations {
+            self.transaction(&mut [Operation::Read(op)])?;
+        }
+    	Ok(())
     }
 }
 
-impl<B: ErrorType> ErrorType for SimpleHalSpiDevice<B> {
+impl<B: SpiBus<u8>> SpiDeviceWrite<u8> for SimpleHalSpiDevice<B> {
+    fn write_transaction(
+        &mut self,
+        operations: &[&[u8]]
+    ) -> Result<(), Error> {
+        for op in operations {
+            self.transaction(&mut [Operation::Write(op)])?;
+        }
+    	Ok(())
+    }
+}
+
+impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
+    fn transaction(
+        &mut self,
+        operations: &mut [Operation<'_, u8>]
+    ) -> Result<(), Error> {
+        for op in operations {
+            match op {
+                Operation::Read(read) => {
+                    self.bus.read(read).map_err(|_| {
+                        Error::Io(io::Error::new(
+                            io::ErrorKind::Other,
+                            "SimpleHalSpiDevice read transaction error",
+                        ))
+                    })?;
+                }
+                Operation::Write(write) => {
+                    self.bus.write(write).map_err(|_| {
+                        Error::Io(io::Error::new(
+                            io::ErrorKind::Other,
+                            "SimpleHalSpiDevice write transaction error",
+                        ))
+                    })?;
+                }
+                Operation::Transfer(read, write) => {
+                    self.bus.transfer(read, write).map_err(|_| {
+                        Error::Io(io::Error::new(
+                            io::ErrorKind::Other,
+                            "SimpleHalSpiDevice read/write transaction error",
+                        ))
+                    })?;
+                }
+                Operation::TransferInPlace(words) => {
+                    self.bus.transfer_in_place(words).map_err(|_| {
+                        Error::Io(io::Error::new(
+                            io::ErrorKind::Other,
+                            "SimpleHalSpiDevice in-place read/write transaction error",
+                        ))
+                    })?;
+                }
+            }
+        }
+    	Ok(())
+    }
+}
+
+impl<B: SpiBus<u8>> ErrorType for SimpleHalSpiDevice<B> {
     type Error = Error;
 }

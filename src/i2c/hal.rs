@@ -54,58 +54,8 @@ impl i2c::Error for Error {
     }
 }
 
-/// `I2c` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `I2c` trait implementation for `embedded-hal` v1.0.0-alpha.10.
 impl I2cHal for I2c {
-    fn write(&mut self, address: u8, bytes: &[u8]) -> Result<(), Self::Error> {
-        self.set_slave_address(u16::from(address))?;
-        I2c::write(self, bytes)?;
-
-        Ok(())
-    }
-
-    fn read(&mut self, address: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        self.set_slave_address(u16::from(address))?;
-        I2c::read(self, buffer)?;
-
-        Ok(())
-    }
-
-    fn write_iter<B>(&mut self, address: u8, bytes: B) -> Result<(), Self::Error>
-    where
-        B: IntoIterator<Item = u8>,
-    {
-        let bytes: Vec<_> = bytes.into_iter().collect();
-        I2cHal::write(self, address, &bytes)
-    }
-
-    fn write_read(
-        &mut self,
-        address: u8,
-        bytes: &[u8],
-        buffer: &mut [u8],
-    ) -> Result<(), Self::Error> {
-        self.set_slave_address(u16::from(address))?;
-        I2c::write_read(self, bytes, buffer)?;
-
-        Ok(())
-    }
-
-    fn write_iter_read<B>(
-        &mut self,
-        address: u8,
-        bytes: B,
-        buffer: &mut [u8],
-    ) -> Result<(), Self::Error>
-    where
-        B: IntoIterator<Item = u8>,
-    {
-        let bytes: Vec<_> = bytes.into_iter().collect();
-        self.transaction(
-            address,
-            &mut [I2cOperation::Write(&bytes), I2cOperation::Read(buffer)],
-        )
-    }
-
     fn transaction(
         &mut self,
         address: u8,
@@ -124,13 +74,5 @@ impl I2cHal for I2c {
         }
 
         Ok(())
-    }
-
-    fn transaction_iter<'a, O>(&mut self, address: u8, operations: O) -> Result<(), Self::Error>
-    where
-        O: IntoIterator<Item = I2cOperation<'a>>,
-    {
-        let mut ops: Vec<_> = operations.into_iter().collect();
-        self.transaction(address, &mut ops)
     }
 }

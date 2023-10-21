@@ -6,7 +6,6 @@
 //! This module is only included when either the `hal` or `hal-unproven` feature
 //! flag is enabled.
 
-use core::convert::Infallible;
 use std::time::{Duration, Instant};
 
 use embedded_hal::delay::DelayUs;
@@ -28,21 +27,21 @@ impl Delay {
 /// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
-        DelayUs::delay_ms(self, ms as u32).unwrap()
+        DelayUs::delay_ms(self, ms as u32);
     }
 }
 
 /// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
-        DelayUs::delay_ms(self, ms as u32).unwrap()
+        DelayUs::delay_ms(self, ms as u32);
     }
 }
 
 /// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
     fn delay_ms(&mut self, ms: u32) {
-        DelayUs::delay_ms(self, ms).unwrap()
+        DelayUs::delay_ms(self, ms);
     }
 }
 
@@ -51,46 +50,42 @@ impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
     fn delay_ms(&mut self, mut ms: u64) {
         while ms > (u32::MAX as u64) {
             ms -= u32::MAX as u64;
-            DelayUs::delay_ms(self, u32::MAX).unwrap();
+            DelayUs::delay_ms(self, u32::MAX);
         }
 
-        DelayUs::delay_ms(self, ms as u32).unwrap()
+        DelayUs::delay_ms(self, ms as u32);
     }
 }
 
 /// `DelayUs<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
-        DelayUs::delay_us(self, us as u32).unwrap()
+        DelayUs::delay_us(self, us as u32);
     }
 }
 
 /// `DelayUs<u16>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
-        DelayUs::delay_us(self, us as u32).unwrap()
+        DelayUs::delay_us(self, us as u32);
     }
 }
 
 /// `DelayUs` trait implementation for `embedded-hal` v1.0.0-alpha.9.
 impl DelayUs for Delay {
-    type Error = Infallible;
-
-    fn delay_us(&mut self, us: u32) -> Result<(), Self::Error> {
+    fn delay_us(&mut self, us: u32) {
         sleep(Duration::from_micros(us.into()));
-        Ok(())
     }
 
-    fn delay_ms(&mut self, ms: u32) -> Result<(), Self::Error> {
+    fn delay_ms(&mut self, ms: u32) {
         sleep(Duration::from_millis(u64::from(ms)));
-        Ok(())
     }
 }
 
 /// `DelayUs<u32>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
-        DelayUs::delay_us(self, us).unwrap()
+        DelayUs::delay_us(self, us);
     }
 }
 
@@ -99,10 +94,10 @@ impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
     fn delay_us(&mut self, mut us: u64) {
         while us > (u32::MAX as u64) {
             us -= u32::MAX as u64;
-            DelayUs::delay_us(self, u32::MAX).unwrap();
+            DelayUs::delay_us(self, u32::MAX);
         }
 
-        DelayUs::delay_us(self, us as u32).unwrap()
+        DelayUs::delay_us(self, us as u32);
     }
 }
 
