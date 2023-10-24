@@ -1,8 +1,11 @@
-use embedded_hal::spi::{self, ErrorType, SpiBus, SpiBusFlush, SpiBusRead, SpiBusWrite, SpiDevice, SpiDeviceWrite, SpiDeviceRead, Operation};
+use embedded_hal::{
+    delay::DelayUs,
+    spi::{self, ErrorType, SpiBus, SpiDevice, Operation},
+};
 use embedded_hal_nb::spi::FullDuplex;
 use std::io;
 
-use super::{Error, Spi};
+use super::{super::hal::Delay, Error, Spi};
 
 impl ErrorType for Spi {
     type Error = Error;
@@ -14,17 +17,30 @@ impl spi::Error for Error {
     }
 }
 
-/// `Transfer<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.8.
+/// `SpiBus<u8>` trait implementation for `embedded-hal` v1.0.0.
 impl SpiBus<u8> for Spi {
+    fn read(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
+        Spi::read(self, words)?;
+        Ok(())
+    }
+
+    fn write(&mut self, words: &[u8]) -> Result<(), Self::Error> {
+        Spi::write(self, words)?;
+        Ok(())
+    }
+
     fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
         Spi::transfer(self, read, write)?;
-
         Ok(())
     }
 
     fn transfer_in_place(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
         let write_buffer = buffer.to_vec();
         self.transfer(buffer, &write_buffer)
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
 
@@ -39,41 +55,16 @@ impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     }
 }
 
-/// `SpiBusWrite<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.8.
-impl SpiBusWrite<u8> for Spi {
-    fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
-        Spi::write(self, buffer)?;
-
-        Ok(())
-    }
-}
-
 /// `Write<u8>` trait implementation for `embedded-hal` v0.2.7.
 impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     type Error = Error;
 
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
-        SpiBusWrite::write(self, buffer)
+        SpiBus::write(self, buffer)
     }
 }
 
-/// `SpiBusRead<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.8.
-impl SpiBusRead<u8> for Spi {
-    fn read(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        Spi::read(self, buffer)?;
-
-        Ok(())
-    }
-}
-
-/// `SpiBusFlush` trait implementation for `embedded-hal` v1.0.0-alpha.8.
-impl SpiBusFlush for Spi {
-    fn flush(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
-/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0-alpha.8.
+/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0
 impl FullDuplex<u8> for Spi {
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
         if let Some(last_read) = self.last_read.take() {
@@ -123,31 +114,6 @@ impl<B: SpiBus<u8>> SimpleHalSpiDevice<B> {
     }
 }
 
-impl<B: SpiBus<u8>> SpiDeviceRead<u8> for SimpleHalSpiDevice<B>
-{
-    fn read_transaction(
-        &mut self,
-        operations: &mut [&mut [u8]]
-    ) -> Result<(), Error> {
-        for op in operations {
-            self.transaction(&mut [Operation::Read(op)])?;
-        }
-    	Ok(())
-    }
-}
-
-impl<B: SpiBus<u8>> SpiDeviceWrite<u8> for SimpleHalSpiDevice<B> {
-    fn write_transaction(
-        &mut self,
-        operations: &[&[u8]]
-    ) -> Result<(), Error> {
-        for op in operations {
-            self.transaction(&mut [Operation::Write(op)])?;
-        }
-    	Ok(())
-    }
-}
-
 impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
     fn transaction(
         &mut self,
@@ -186,6 +152,9 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                             "SimpleHalSpiDevice in-place read/write transaction error",
                         ))
                     })?;
+                }
+                Operation::DelayUs(us) => {
+                    Delay::new().delay_us(*us);
                 }
             }
         }

@@ -7,12 +7,12 @@ use embedded_hal::digital::{
 
 use super::{InputPin, IoPin, Level, OutputPin, Pin};
 
-/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0.
 impl ErrorType for Pin {
     type Error = Infallible;
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0.
 impl InputPinHal for Pin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::read(self) == Level::High)
@@ -23,12 +23,12 @@ impl InputPinHal for Pin {
     }
 }
 
-/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0.
 impl ErrorType for InputPin {
     type Error = Infallible;
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0.
 impl InputPinHal for InputPin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_high(self))
@@ -39,12 +39,12 @@ impl InputPinHal for InputPin {
     }
 }
 
-/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0.
 impl ErrorType for IoPin {
     type Error = Infallible;
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0.
 impl InputPinHal for IoPin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_high(self))
@@ -55,12 +55,12 @@ impl InputPinHal for IoPin {
     }
 }
 
-/// `ErrorType` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ErrorType` trait implementation for `embedded-hal` v1.0.0.
 impl ErrorType for OutputPin {
     type Error = Infallible;
 }
 
-/// `InputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `InputPin` trait implementation for `embedded-hal` v1.0.0.
 impl InputPinHal for OutputPin {
     fn is_high(&self) -> Result<bool, Self::Error> {
         Ok(Self::is_set_high(self))
@@ -71,7 +71,7 @@ impl InputPinHal for OutputPin {
     }
 }
 
-/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `OutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl OutputPinHal for OutputPin {
     fn set_low(&mut self) -> Result<(), Self::Error> {
         OutputPin::set_low(self);
@@ -99,7 +99,7 @@ impl embedded_hal_0::digital::v2::OutputPin for OutputPin {
     }
 }
 
-/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl StatefulOutputPinHal for OutputPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(OutputPin::is_set_high(self))
@@ -110,7 +110,7 @@ impl StatefulOutputPinHal for OutputPin {
     }
 }
 
-/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl ToggleableOutputPinHal for OutputPin {
     fn toggle(&mut self) -> Result<(), Self::Error> {
         OutputPin::toggle(self);
@@ -119,7 +119,7 @@ impl ToggleableOutputPinHal for OutputPin {
     }
 }
 
-/// `OutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `OutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl OutputPinHal for IoPin {
     fn set_low(&mut self) -> Result<(), Self::Error> {
         IoPin::set_low(self);
@@ -147,7 +147,7 @@ impl embedded_hal_0::digital::v2::OutputPin for IoPin {
     }
 }
 
-/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `StatefulOutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl StatefulOutputPinHal for IoPin {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(IoPin::is_high(self))
@@ -158,7 +158,7 @@ impl StatefulOutputPinHal for IoPin {
     }
 }
 
-/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0-alpha.9.
+/// `ToggleableOutputPin` trait implementation for `embedded-hal` v1.0.0.
 impl ToggleableOutputPinHal for IoPin {
     fn toggle(&mut self) -> Result<(), Self::Error> {
         IoPin::toggle(self);
