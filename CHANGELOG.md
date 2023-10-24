@@ -1,12 +1,15 @@
 # Changelog
 
+## 0.16.0 (TBD)
+
+* (Breaking change) Update `embedded-hal` to v1.0.0-rc.1 (contributed by @mbuesch).
+
 ## 0.15.0 (October 18, 2023)
 
 * Add support for Raspberry Pi 5 (thanks @ukscone for all the testing!).
 * **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown` to `set_bias`.
 * **Gpio**: Add support for new modes `Alt6`, `Alt7` and `Alt8`.
 * **I2c**: Implement I2C transactions for `embedded-hal` (contributed by @CBJamo).
-
 
 ## 0.14.1 (November 25, 2022)
 
