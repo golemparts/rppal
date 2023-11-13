@@ -253,6 +253,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,3-compute-module-plus" => Model::RaspberryPiComputeModule3Plus,
             "raspberrypi,model-zero-w" => Model::RaspberryPiZeroW,
             "raspberrypi,model-zero-2" => Model::RaspberryPiZero2W,
+            "raspberrypi,model-zero-2-w" => Model::RaspberryPiZero2W,
             "raspberrypi,3-model-b-plus" => Model::RaspberryPi3BPlus,
             "raspberrypi,3-model-a-plus" => Model::RaspberryPi3APlus,
             "raspberrypi,4-model-b" => Model::RaspberryPi4B,
@@ -288,6 +289,7 @@ fn parse_base_model() -> Result<Model> {
     match &base_model[..] {
         "Raspberry Pi Model B Rev 2.0" => return Ok(Model::RaspberryPiBRev2),
         "Raspberry Pi Model B rev2 Rev 2.0" => return Ok(Model::RaspberryPiBRev2),
+        "Raspberry Pi Zero 2 W Rev 1.0" => return Ok(Model::RaspberryPiZero2W),
         _ => (),
     }
 
@@ -313,6 +315,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Compute Module 3 Plus" => Model::RaspberryPiComputeModule3Plus,
         "Raspberry Pi Zero W" => Model::RaspberryPiZeroW,
         "Raspberry Pi Zero 2" => Model::RaspberryPiZero2W,
+        "Raspberry Pi Zero 2 W" => Model::RaspberryPiZero2W,
         "Raspberry Pi 3 Model B+" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model B Plus" => Model::RaspberryPi3BPlus,
         "Raspberry Pi 3 Model A Plus" => Model::RaspberryPi3APlus,
