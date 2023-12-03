@@ -1,5 +1,5 @@
 use embedded_hal::{
-    delay::DelayUs,
+    delay::DelayNs,
     spi::{self, ErrorType, SpiBus, SpiDevice, Operation},
 };
 use embedded_hal_nb::spi::FullDuplex;
@@ -153,7 +153,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                         ))
                     })?;
                 }
-                Operation::DelayUs(us) => {
+                Operation::DelayNs(us) => {
                     Delay::new().delay_us(*us);
                 }
             }

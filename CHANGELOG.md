@@ -2,6 +2,7 @@
 
 ## 0.16.0 (TBD)
 
+* (Breaking change) Update `embedded-hal` to v1.0.0-rc.2 (contributed by @reitermarkus).
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.1 (contributed by @mbuesch).
 * (Breaking change) Change Minimum Supported Rust Version (MSRV) to v1.60.0.
 
