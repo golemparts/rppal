@@ -5,6 +5,7 @@
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.2 (contributed by @reitermarkus).
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.1 (contributed by @mbuesch).
 * (Breaking change) Change Minimum Supported Rust Version (MSRV) to v1.60.0.
+* Fix device recognition for Raspberry PI W2 2021 on Arch Linux (contributed by @denisandroid).
 
 ## 0.15.0 (October 18, 2023)
 
