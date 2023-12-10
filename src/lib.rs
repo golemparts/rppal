@@ -13,7 +13,7 @@
 //! guaranteed until v1.0.0.
 
 // Used by rustdoc to link other crates to rppal's docs
-#![doc(html_root_url = "https://docs.rs/rppal/0.15.0")]
+#![doc(html_root_url = "https://docs.rs/rppal/0.16.0")]
 
 #[macro_use]
 mod macros;
