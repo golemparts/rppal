@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.16.0 (TBD)
+## 0.16.0 (December 10, 2023)
 
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.2 (contributed by @reitermarkus).
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.1 (contributed by @mbuesch).
