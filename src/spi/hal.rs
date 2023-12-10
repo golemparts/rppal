@@ -1,6 +1,6 @@
 use embedded_hal::{
     delay::DelayNs,
-    spi::{self, ErrorType, SpiBus, SpiDevice, Operation},
+    spi::{self, ErrorType, Operation, SpiBus, SpiDevice},
 };
 use embedded_hal_nb::spi::FullDuplex;
 use std::io;
@@ -115,10 +115,7 @@ impl<B: SpiBus<u8>> SimpleHalSpiDevice<B> {
 }
 
 impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
-    fn transaction(
-        &mut self,
-        operations: &mut [Operation<'_, u8>]
-    ) -> Result<(), Error> {
+    fn transaction(&mut self, operations: &mut [Operation<'_, u8>]) -> Result<(), Error> {
         for op in operations {
             match op {
                 Operation::Read(read) => {
@@ -158,7 +155,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                 }
             }
         }
-    	Ok(())
+        Ok(())
     }
 }
 

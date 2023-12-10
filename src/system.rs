@@ -161,23 +161,11 @@ fn parse_proc_cpuinfo() -> Result<Model> {
         Err(_) => return Err(Error::UnknownModel),
     });
 
-    let mut hardware: String = String::new();
     let mut revision: String = String::new();
     for line in proc_cpuinfo.lines().flatten() {
-        if let Some(line_value) = line.strip_prefix("Hardware\t: ") {
-            hardware = String::from(line_value);
-        } else if let Some(line_value) = line.strip_prefix("Revision\t: ") {
+        if let Some(line_value) = line.strip_prefix("Revision\t: ") {
             revision = String::from(line_value).to_lowercase();
         }
-    }
-
-    // Return an error if we don't recognize the SoC. This check is
-    // done to prevent accidentally identifying a non-Pi SBC as a Pi
-    // solely based on the revision field.
-    match &hardware[..] {
-        "BCM2708" | "BCM2835" | "BCM2709" | "BCM2836" | "BCM2710" | "BCM2837" | "BCM2837A1"
-        | "BCM2837B0" | "RP3A0-AU" | "BCM2710A1" | "BCM2711" | "BCM2712" => {}
-        _ => return Err(Error::UnknownModel),
     }
 
     let model = if (revision.len() == 4) || (revision.len() == 8) {
