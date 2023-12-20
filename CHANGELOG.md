@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.1 (December 20, 2023)
+
+* Minor documentation changes.
+
 ## 0.16.0 (December 10, 2023)
 
 * (Breaking change) Update `embedded-hal` to v1.0.0-rc.2 (contributed by @reitermarkus).
