@@ -112,7 +112,11 @@ macro_rules! impl_output {
             }
 
             // Store frequency/duty cycle for the embedded-hal PwmPin implementation.
-            #[cfg(feature = "hal")]
+            #[cfg(any(
+                feature = "embedded-hal-0",
+                feature = "embedded-hal",
+                feature = "embedded-hal-nb"
+            ))]
             {
                 let period_s =
                     period.as_secs() as f64 + (f64::from(period.subsec_nanos()) / NANOS_PER_SEC);
@@ -581,10 +585,18 @@ pub struct OutputPin {
     bias: Bias,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
-    #[cfg(feature = "hal")]
+    #[cfg(any(
+        feature = "embedded-hal-0",
+        feature = "embedded-hal",
+        feature = "embedded-hal-nb"
+    ))]
     pub(crate) frequency: f64,
     // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
-    #[cfg(feature = "hal")]
+    #[cfg(any(
+        feature = "embedded-hal-0",
+        feature = "embedded-hal",
+        feature = "embedded-hal-nb"
+    ))]
     pub(crate) duty_cycle: f64,
 }
 
@@ -605,9 +617,17 @@ impl OutputPin {
             reset_on_drop: true,
             bias: Bias::Off,
             soft_pwm: None,
-            #[cfg(feature = "hal")]
+            #[cfg(any(
+                feature = "embedded-hal-0",
+                feature = "embedded-hal",
+                feature = "embedded-hal-nb"
+            ))]
             frequency: 0.0,
-            #[cfg(feature = "hal")]
+            #[cfg(any(
+                feature = "embedded-hal-0",
+                feature = "embedded-hal",
+                feature = "embedded-hal-nb"
+            ))]
             duty_cycle: 0.0,
         }
     }
@@ -674,10 +694,18 @@ pub struct IoPin {
     bias: Bias,
     pub(crate) soft_pwm: Option<SoftPwm>,
     // Stores the softpwm frequency. Used for embedded_hal::PwmPin.
-    #[cfg(feature = "hal")]
+    #[cfg(any(
+        feature = "embedded-hal-0",
+        feature = "embedded-hal",
+        feature = "embedded-hal-nb"
+    ))]
     pub(crate) frequency: f64,
     // Stores the softpwm duty cycle. Used for embedded_hal::PwmPin.
-    #[cfg(feature = "hal")]
+    #[cfg(any(
+        feature = "embedded-hal-0",
+        feature = "embedded-hal",
+        feature = "embedded-hal-nb"
+    ))]
     pub(crate) duty_cycle: f64,
 }
 
@@ -699,9 +727,17 @@ impl IoPin {
             reset_on_drop: true,
             bias: Bias::Off,
             soft_pwm: None,
-            #[cfg(feature = "hal")]
+            #[cfg(any(
+                feature = "embedded-hal-0",
+                feature = "embedded-hal",
+                feature = "embedded-hal-nb"
+            ))]
             frequency: 0.0,
-            #[cfg(feature = "hal")]
+            #[cfg(any(
+                feature = "embedded-hal-0",
+                feature = "embedded-hal",
+                feature = "embedded-hal-nb"
+            ))]
             duty_cycle: 0.0,
         }
     }

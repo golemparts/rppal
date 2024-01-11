@@ -1,24 +1,21 @@
-use embedded_hal::{
-    delay::DelayNs,
-    spi::{self, ErrorType, Operation, SpiBus, SpiDevice},
-};
-use embedded_hal_nb::spi::FullDuplex;
 use std::io;
 
 use super::{super::hal::Delay, Error, Spi};
 
-impl ErrorType for Spi {
+#[cfg(feature = "embedded-hal")]
+impl embedded_hal::spi::ErrorType for Spi {
     type Error = Error;
 }
 
-impl spi::Error for Error {
-    fn kind(&self) -> spi::ErrorKind {
-        spi::ErrorKind::Other
+#[cfg(feature = "embedded-hal")]
+impl embedded_hal::spi::Error for Error {
+    fn kind(&self) -> embedded_hal::spi::ErrorKind {
+        embedded_hal::spi::ErrorKind::Other
     }
 }
 
-/// `SpiBus<u8>` trait implementation for `embedded-hal` v1.0.0.
-impl SpiBus<u8> for Spi {
+#[cfg(feature = "embedded-hal")]
+impl embedded_hal::spi::SpiBus<u8> for Spi {
     fn read(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
         Spi::read(self, words)?;
         Ok(())
@@ -44,37 +41,37 @@ impl SpiBus<u8> for Spi {
     }
 }
 
-/// `Transfer<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::spi::Transfer<u8> for Spi {
     type Error = Error;
 
     fn transfer<'a>(&mut self, buffer: &'a mut [u8]) -> Result<&'a [u8], Self::Error> {
         let write_buffer = buffer.to_vec();
-        SpiBus::transfer(self, buffer, &write_buffer)?;
+        embedded_hal::spi::SpiBus::transfer(self, buffer, &write_buffer)?;
         Ok(buffer)
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::spi::Write<u8> for Spi {
     type Error = Error;
 
     fn write(&mut self, buffer: &[u8]) -> Result<(), Self::Error> {
-        SpiBus::write(self, buffer)
+        embedded_hal::spi::SpiBus::write(self, buffer)
     }
 }
 
-/// `FullDuplex<u8>` trait implementation for `embedded-hal` v1.0.0
-impl FullDuplex<u8> for Spi {
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+#[cfg(feature = "embedded-hal-nb")]
+impl embedded_hal_nb::spi::FullDuplex<u8> for Spi {
+    fn read(&mut self) -> embedded_hal_nb::nb::Result<u8, Self::Error> {
         if let Some(last_read) = self.last_read.take() {
             Ok(last_read)
         } else {
-            Err(nb::Error::WouldBlock)
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
         }
     }
 
-    fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
+    fn write(&mut self, byte: u8) -> embedded_hal_nb::nb::Result<(), Self::Error> {
         let mut read_buffer: [u8; 1] = [0];
 
         Spi::transfer(self, &mut read_buffer, &[byte])?;
@@ -84,16 +81,16 @@ impl FullDuplex<u8> for Spi {
     }
 }
 
-/// `FullDuplex<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
     type Error = Error;
 
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
-        FullDuplex::read(self)
+        embedded_hal_nb::spi::FullDuplex::read(self)
     }
 
     fn send(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        FullDuplex::write(self, byte)
+        embedded_hal_nb::spi::FullDuplex::write(self, byte)
     }
 }
 
@@ -108,17 +105,22 @@ pub struct SimpleHalSpiDevice<B> {
     bus: B,
 }
 
-impl<B: SpiBus<u8>> SimpleHalSpiDevice<B> {
+#[cfg(feature = "embedded-hal")]
+impl<B: embedded_hal::spi::SpiBus<u8>> SimpleHalSpiDevice<B> {
     pub fn new(bus: B) -> SimpleHalSpiDevice<B> {
         SimpleHalSpiDevice { bus }
     }
 }
 
-impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
-    fn transaction(&mut self, operations: &mut [Operation<'_, u8>]) -> Result<(), Error> {
+#[cfg(feature = "embedded-hal")]
+impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::SpiDevice<u8> for SimpleHalSpiDevice<B> {
+    fn transaction(
+        &mut self,
+        operations: &mut [embedded_hal::spi::Operation<'_, u8>],
+    ) -> Result<(), Error> {
         for op in operations {
             match op {
-                Operation::Read(read) => {
+                embedded_hal::spi::Operation::Read(read) => {
                     self.bus.read(read).map_err(|_| {
                         Error::Io(io::Error::new(
                             io::ErrorKind::Other,
@@ -126,7 +128,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                         ))
                     })?;
                 }
-                Operation::Write(write) => {
+                embedded_hal::spi::Operation::Write(write) => {
                     self.bus.write(write).map_err(|_| {
                         Error::Io(io::Error::new(
                             io::ErrorKind::Other,
@@ -134,7 +136,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                         ))
                     })?;
                 }
-                Operation::Transfer(read, write) => {
+                embedded_hal::spi::Operation::Transfer(read, write) => {
                     self.bus.transfer(read, write).map_err(|_| {
                         Error::Io(io::Error::new(
                             io::ErrorKind::Other,
@@ -142,7 +144,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                         ))
                     })?;
                 }
-                Operation::TransferInPlace(words) => {
+                embedded_hal::spi::Operation::TransferInPlace(words) => {
                     self.bus.transfer_in_place(words).map_err(|_| {
                         Error::Io(io::Error::new(
                             io::ErrorKind::Other,
@@ -150,8 +152,8 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
                         ))
                     })?;
                 }
-                Operation::DelayNs(us) => {
-                    Delay::new().delay_us(*us);
+                embedded_hal::spi::Operation::DelayNs(us) => {
+                    embedded_hal::delay::DelayNs::delay_us(&mut Delay::new(), *us);
                 }
             }
         }
@@ -159,6 +161,7 @@ impl<B: SpiBus<u8>> SpiDevice<u8> for SimpleHalSpiDevice<B> {
     }
 }
 
-impl<B: SpiBus<u8>> ErrorType for SimpleHalSpiDevice<B> {
+#[cfg(feature = "embedded-hal")]
+impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::ErrorType for SimpleHalSpiDevice<B> {
     type Error = Error;
 }

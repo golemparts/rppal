@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use super::Pwm;
 
-/// Unproven `Pwm` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::Pwm for Pwm {
     type Duty = f64;
     type Channel = ();

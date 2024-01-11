@@ -142,13 +142,21 @@ use std::marker::PhantomData;
 use std::os::unix::io::AsRawFd;
 use std::result;
 
-#[cfg(feature = "hal")]
+#[cfg(any(
+    feature = "embedded-hal-0",
+    feature = "embedded-hal",
+    feature = "embedded-hal-nb"
+))]
 mod hal;
 mod ioctl;
 mod segment;
 
 pub use self::segment::Segment;
-#[cfg(feature = "hal")]
+#[cfg(any(
+    feature = "embedded-hal-0",
+    feature = "embedded-hal",
+    feature = "embedded-hal-nb"
+))]
 pub use hal::SimpleHalSpiDevice;
 
 /// Errors that can occur when accessing the SPI peripheral.
@@ -414,7 +422,7 @@ impl fmt::Display for BitOrder {
 pub struct Spi {
     spidev: File,
     // Stores the last read value. Used for embedded_hal::spi::FullDuplex.
-    #[cfg(feature = "hal")]
+    #[cfg(any(feature = "embedded-hal-0", feature = "embedded-hal-nb"))]
     last_read: Option<u8>,
     // The not_sync field is a workaround to force !Sync. Spi isn't safe for
     // Sync because of ioctl() and the underlying drivers. This avoids needing
@@ -459,7 +467,7 @@ impl Spi {
 
         let spi = Spi {
             spidev,
-            #[cfg(feature = "hal")]
+            #[cfg(any(feature = "embedded-hal-0", feature = "embedded-hal-nb"))]
             last_read: None,
             not_sync: PhantomData,
         };

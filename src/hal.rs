@@ -6,17 +6,14 @@
 //! This module is only included when either the `hal` or `hal-unproven` feature
 //! flag is enabled.
 
-use std::time::{Duration, Instant};
-
-use embedded_hal::delay::DelayNs;
-use spin_sleep::sleep;
-use void::Void;
+use std::time::Duration;
+#[cfg(feature = "embedded-hal-0")]
+use std::time::Instant;
 
 /// Implements the `embedded-hal` `DelayMs` and `DelayNs` traits.
 #[derive(Debug, Default)]
 pub struct Delay;
 
-/// `Delay` trait implementation for `embedded-hal` v1.0.0.
 impl Delay {
     /// Constructs a new `Delay`.
     pub fn new() -> Delay {
@@ -24,84 +21,84 @@ impl Delay {
     }
 }
 
-/// `DelayMs<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
-        DelayNs::delay_ms(self, ms as u32);
+        embedded_hal::delay::DelayNs::delay_ms(self, ms as u32);
     }
 }
 
-/// `DelayMs<u16>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
-        DelayNs::delay_ms(self, ms as u32);
+        embedded_hal::delay::DelayNs::delay_ms(self, ms as u32);
     }
 }
 
-/// `DelayMs<u32>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayMs<u32> for Delay {
     fn delay_ms(&mut self, ms: u32) {
-        DelayNs::delay_ms(self, ms);
+        embedded_hal::delay::DelayNs::delay_ms(self, ms);
     }
 }
 
-/// `DelayMs<u64>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayMs<u64> for Delay {
     fn delay_ms(&mut self, mut ms: u64) {
         while ms > (u32::MAX as u64) {
             ms -= u32::MAX as u64;
-            DelayNs::delay_ms(self, u32::MAX);
+            embedded_hal::delay::DelayNs::delay_ms(self, u32::MAX);
         }
 
-        DelayNs::delay_ms(self, ms as u32);
+        embedded_hal::delay::DelayNs::delay_ms(self, ms as u32);
     }
 }
 
-/// `DelayNs<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
-        DelayNs::delay_us(self, us as u32);
+        embedded_hal::delay::DelayNs::delay_us(self, us as u32);
     }
 }
 
-/// `DelayNs<u16>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
-        DelayNs::delay_us(self, us as u32);
+        embedded_hal::delay::DelayNs::delay_us(self, us as u32);
     }
 }
 
-/// `DelayNs` trait implementation for `embedded-hal` v1.0.0.
-impl DelayNs for Delay {
+#[cfg(feature = "embedded-hal")]
+impl embedded_hal::delay::DelayNs for Delay {
     fn delay_ns(&mut self, ns: u32) {
-        sleep(Duration::from_nanos(ns.into()));
+        spin_sleep::sleep(Duration::from_nanos(ns.into()));
     }
 
     fn delay_us(&mut self, us: u32) {
-        sleep(Duration::from_micros(us.into()));
+        spin_sleep::sleep(Duration::from_micros(us.into()));
     }
 
     fn delay_ms(&mut self, ms: u32) {
-        sleep(Duration::from_millis(ms.into()));
+        spin_sleep::sleep(Duration::from_millis(ms.into()));
     }
 }
 
-/// `DelayNs<u32>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
-        DelayNs::delay_us(self, us);
+        embedded_hal::delay::DelayNs::delay_us(self, us);
     }
 }
 
-/// `DelayNs<u64>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::blocking::delay::DelayUs<u64> for Delay {
     fn delay_us(&mut self, mut us: u64) {
         while us > (u32::MAX as u64) {
             us -= u32::MAX as u64;
-            DelayNs::delay_us(self, u32::MAX);
+            embedded_hal::delay::DelayNs::delay_us(self, u32::MAX);
         }
 
-        DelayNs::delay_us(self, us as u32);
+        embedded_hal::delay::DelayNs::delay_us(self, us as u32);
     }
 }
 
@@ -121,12 +118,14 @@ impl From<Hertz> for Duration {
 }
 
 /// Implements the `embedded-hal` `CountDown` trait.
+#[cfg(feature = "embedded-hal-0")]
 #[derive(Debug, Copy, Clone)]
 pub struct Timer {
     start: Instant,
     duration: Duration,
 }
 
+#[cfg(feature = "embedded-hal-0")]
 impl Timer {
     /// Constructs a new `Timer`.
     pub fn new() -> Self {
@@ -137,13 +136,14 @@ impl Timer {
     }
 }
 
+#[cfg(feature = "embedded-hal-0")]
 impl Default for Timer {
     fn default() -> Self {
         Timer::new()
     }
 }
 
-/// `CountDown` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::timer::CountDown for Timer {
     type Time = Duration;
 
@@ -157,7 +157,7 @@ impl embedded_hal_0::timer::CountDown for Timer {
     }
 
     /// Returns `Ok` if the timer has wrapped.
-    fn wait(&mut self) -> nb::Result<(), Void> {
+    fn wait(&mut self) -> nb::Result<(), void::Void> {
         if self.start.elapsed() >= self.duration {
             Ok(())
         } else {

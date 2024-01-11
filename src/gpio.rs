@@ -125,7 +125,11 @@ use std::time::Duration;
 
 mod epoll;
 mod gpiomem;
-#[cfg(feature = "hal")]
+#[cfg(any(
+    feature = "embedded-hal-0",
+    feature = "embedded-hal",
+    feature = "embedded-hal-nb"
+))]
 mod hal;
 #[cfg(feature = "hal-unproven")]
 mod hal_unproven;
