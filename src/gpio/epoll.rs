@@ -9,7 +9,7 @@ use libc::{
     self, c_int, c_void, EFD_NONBLOCK, EFD_SEMAPHORE, EPOLL_CTL_ADD, EPOLL_CTL_DEL, EPOLL_CTL_MOD,
 };
 
-pub use libc::{epoll_event, EPOLLERR, EPOLLET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLLPRI};
+pub use libc::{epoll_event, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 
 pub type Result<T> = result::Result<T, io::Error>;
 
