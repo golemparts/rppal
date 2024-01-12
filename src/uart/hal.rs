@@ -1,64 +1,65 @@
-use embedded_hal_nb::serial::{self, ErrorType, Read, Write};
-
+#[cfg(any(feature = "embedded-hal-0", feature = "embedded-hal-nb"))]
 use super::{Error, Queue, Uart};
 
-impl ErrorType for Uart {
+#[cfg(feature = "embedded-hal-nb")]
+impl embedded_hal_nb::serial::ErrorType for Uart {
     type Error = Error;
 }
 
-impl serial::Error for Error {
-    fn kind(&self) -> serial::ErrorKind {
-        serial::ErrorKind::Other
+#[cfg(feature = "embedded-hal-nb")]
+impl embedded_hal_nb::serial::Error for Error {
+    fn kind(&self) -> embedded_hal_nb::serial::ErrorKind {
+        embedded_hal_nb::serial::ErrorKind::Other
     }
 }
 
-/// `Read<u8>` trait implementation for `embedded-hal` v1.0.0.
-impl Read<u8> for Uart {
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+#[cfg(feature = "embedded-hal-nb")]
+impl embedded_hal_nb::serial::Read<u8> for Uart {
+    fn read(&mut self) -> embedded_hal_nb::nb::Result<u8, Self::Error> {
         let mut buffer = [0u8; 1];
         if Uart::read(self, &mut buffer)? == 0 {
-            Err(nb::Error::WouldBlock)
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
         } else {
             Ok(buffer[0])
         }
     }
 }
 
-/// `Read<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::serial::Read<u8> for Uart {
     type Error = Error;
 
     fn read(&mut self) -> nb::Result<u8, Self::Error> {
-        Read::read(self)
+        embedded_hal_nb::serial::Read::read(self)
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v1.0.0.
-impl Write<u8> for Uart {
-    fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+#[cfg(feature = "embedded-hal-nb")]
+impl embedded_hal_nb::serial::Write<u8> for Uart {
+    fn write(&mut self, word: u8) -> embedded_hal_nb::nb::Result<(), Self::Error> {
         if Uart::write(self, &[word])? == 0 {
-            Err(nb::Error::WouldBlock)
+            Err(embedded_hal_nb::nb::Error::WouldBlock)
         } else {
             Ok(())
         }
     }
 
-    fn flush(&mut self) -> nb::Result<(), Self::Error> {
+    fn flush(&mut self) -> embedded_hal_nb::nb::Result<(), Self::Error> {
         Uart::flush(self, Queue::Output)?;
 
         Ok(())
     }
 }
 
-/// `Write<u8>` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::serial::Write<u8> for Uart {
     type Error = Error;
 
     fn write(&mut self, word: u8) -> nb::Result<(), Self::Error> {
-        Write::write(self, word)
+        embedded_hal_nb::serial::Write::write(self, word)
     }
 
     fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        Write::flush(self)
+        embedded_hal_nb::serial::Write::flush(self)
     }
 }

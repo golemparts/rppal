@@ -19,7 +19,11 @@
 mod macros;
 
 pub mod gpio;
-#[cfg(feature = "hal")]
+#[cfg(any(
+    feature = "embedded-hal-0",
+    feature = "embedded-hal",
+    feature = "embedded-hal-nb"
+))]
 pub mod hal;
 pub mod i2c;
 pub mod pwm;

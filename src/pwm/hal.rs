@@ -1,6 +1,7 @@
+#[cfg(feature = "embedded-hal-0")]
 use super::Pwm;
 
-/// `PwmPin` trait implementation for `embedded-hal` v0.2.7.
+#[cfg(feature = "embedded-hal-0")]
 impl embedded_hal_0::PwmPin for Pwm {
     type Duty = f64;
 

@@ -126,7 +126,11 @@ use libc::c_ulong;
 use crate::system;
 use crate::system::{DeviceInfo, Model};
 
-#[cfg(feature = "hal")]
+#[cfg(any(
+    feature = "embedded-hal-0",
+    feature = "embedded-hal",
+    feature = "embedded-hal-nb"
+))]
 mod hal;
 mod ioctl;
 
