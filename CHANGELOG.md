@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0 (TBD)
+## 0.17.0 (January 15, 2024)
 
 * (Breaking change) Update `embedded-hal` to v1.0.0 (contributed by @reitermarkus).
 

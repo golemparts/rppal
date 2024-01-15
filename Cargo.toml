@@ -1,7 +1,7 @@
 [package]
 name = "rppal"
 # Also update html_root_url in lib.rs
-version = "0.16.1"
+version = "0.17.0"
 edition = "2021"
 rust-version = "1.60"
 authors = ["Rene van der Meer <rene@golemparts.com>"]
@@ -30,9 +30,5 @@ default = []
 embedded-hal-0 = ["dep:embedded-hal-0", "dep:void", "embedded-hal-nb", "nb"]
 embedded-hal = ["dep:embedded-hal", "dep:spin_sleep"]
 embedded-hal-nb = ["dep:embedded-hal-nb", "embedded-hal"]
-hal = [
-    "embedded-hal-0",
-    "embedded-hal",
-    "embedded-hal-nb",
-]
+hal = ["embedded-hal-0", "embedded-hal", "embedded-hal-nb"]
 hal-unproven = ["embedded-hal-0/unproven", "hal"]
