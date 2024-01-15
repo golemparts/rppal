@@ -252,11 +252,9 @@ macro_rules! impl_eq {
 /// various `into_` methods available on `Pin` configures the appropriate mode, and
 /// provides access to additional methods relevant to the selected pin mode.
 ///
-/// The `unproven` `embedded-hal` [`digital::InputPin`] trait implementation for `Pin` can be enabled
-/// by specifying the optional `hal-unproven` feature in the dependency declaration for
-/// the `rppal` crate.
+/// The `embedded-hal` trait implementations for `Pin` can be enabled by specifying
+/// the optional `hal` feature in the dependency declaration for the `rppal` crate.
 ///
-/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
 /// [`Gpio::get`]: struct.Gpio.html#method.get
 /// [`InputPin`]: struct.InputPin.html
 /// [`OutputPin`]: struct.OutputPin.html
@@ -407,18 +405,16 @@ impl_eq!(Pin);
 ///
 /// `InputPin`s are constructed by converting a [`Pin`] using [`Pin::into_input`],
 /// [`Pin::into_input_pullup`] or [`Pin::into_input_pulldown`]. The pin's mode is
-/// automatically set to [`Input`].
+/// automatically set to [`Mode::Input`].
 ///
 /// An `InputPin` can be used to read a pin's logic level, or (a)synchronously poll for
 /// interrupt trigger events.
 ///
-/// The `unproven` `embedded-hal` [`digital::InputPin`] trait implementation for `InputPin` can be enabled
-/// by specifying the optional `hal-unproven` feature in the dependency declaration for
-/// the `rppal` crate.
+/// The `embedded-hal` trait implementations for `InputPin` can be enabled by specifying
+/// the optional `hal` feature in the dependency declaration for the `rppal` crate.
 ///
-/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
 /// [`Pin`]: struct.Pin.html
-/// [`Input`]: enum.Mode.html#variant.Input
+/// [`Mode::Input`]: enum.Mode.html#variant.Input
 /// [`Pin::into_input`]: struct.Pin.html#method.into_input
 /// [`Pin::into_input_pullup`]: struct.Pin.html#method.into_input_pullup
 /// [`Pin::into_input_pulldown`]: struct.Pin.html#method.into_input_pulldown
@@ -562,21 +558,13 @@ impl_eq!(InputPin);
 ///
 /// An `OutputPin` can be used to change a pin's output state.
 ///
-/// The `embedded-hal` [`digital::OutputPin`] and [`PwmPin`] trait implementations for `OutputPin`
-/// can be enabled by specifying the optional `hal` feature in the dependency
-/// declaration for the `rppal` crate.
+/// The `embedded-hal` trait implementations for `OutputPin` can be enabled by specifying
+/// the optional `hal` feature in the dependency declaration for the `rppal` crate.
 ///
-/// The `unproven` `embedded-hal` [`digital::InputPin`], [`digital::StatefulOutputPin`],
-/// [`digital::ToggleableOutputPin`] and [`Pwm`] trait implementations for `OutputPin` can be enabled
-/// by specifying the optional `hal-unproven` feature in the dependency declaration for
-/// the `rppal` crate.
-///
-/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
-/// [`digital::StatefulOutputPin`]: ../../embedded_hal/digital/trait.StatefulOutputPin.html
-/// [`digital::ToggleableOutputPin`]: ../../embedded_hal/digital/trait.ToggleableOutputPin.html
-/// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
-/// [`digital::OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
-/// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
+/// [`Pin`]: struct.Pin.html
+/// [`Mode::Output`]: enum.Mode.html#variant.Output
+/// [`Pin::into_output_low`]: struct.Pin.html#method.into_output_low
+/// [`Pin::into_output_high`]: struct.Pin.html#method.into_output_high
 #[derive(Debug)]
 pub struct OutputPin {
     pin: Pin,
@@ -665,26 +653,14 @@ impl_eq!(OutputPin);
 /// An `IoPin` can be reconfigured for any available mode. Depending on the
 /// mode, some methods may not have any effect. For instance, calling a method that
 /// alters the pin's output state won't cause any changes when the pin's mode is set
-/// to [`Input`].
+/// to [`Mode::Input`].
 ///
-/// The `embedded-hal` [`digital::OutputPin`] and [`PwmPin`] trait implementations for `IoPin`
-/// can be enabled by specifying the optional `hal` feature in the dependency
-/// declaration for the `rppal` crate.
+/// The `embedded-hal` trait implementations for `IoPin` can be enabled by specifying
+/// the optional `hal` feature in the dependency declaration for the `rppal` crate.
 ///
-/// The `unproven` `embedded-hal` [`digital::InputPin`], [`digital::StatefulOutputPin`],
-/// [`digital::ToggleableOutputPin`] and [`Pwm`] trait implementations for `IoPin` can be enabled
-/// by specifying the optional `hal-unproven` feature in the dependency declaration for
-/// the `rppal` crate.
-///
-/// [`digital::InputPin`]: ../../embedded_hal/digital/trait.InputPin.html
-/// [`digital::StatefulOutputPin`]: ../../embedded_hal/digital/trait.StatefulOutputPin.html
-/// [`digital::ToggleableOutputPin`]: ../../embedded_hal/digital/trait.ToggleableOutputPin.html
-/// [`Pwm`]: ../../embedded_hal/trait.Pwm.html
 /// [`Pin`]: struct.Pin.html
-/// [`Input`]: enum.Mode.html#variant.Input
+/// [`Mode::Input`]: enum.Mode.html#variant.Input
 /// [`Pin::into_io`]: struct.Pin.html#method.into_io
-/// [`digital::OutputPin`]: ../../embedded_hal/digital/trait.OutputPin.html
-/// [`PwmPin`]: ../../embedded_hal/trait.PwmPin.html
 #[derive(Debug)]
 pub struct IoPin {
     pin: Pin,

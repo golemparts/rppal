@@ -202,16 +202,11 @@ pub type Result<T> = result::Result<T, Error>;
 /// through its various protocols. More details can be found in the latest SMBus
 /// [specification].
 ///
-/// The `embedded-hal` [`blocking::i2c::Read`], [`blocking::i2c::Write`] and
-/// [`blocking::i2c::WriteRead`] trait implementations for `I2c` can be enabled
-/// by specifying the optional `hal`
-/// feature in the dependency declaration for the `rppal` crate.
+/// The `embedded-hal` trait implementations for `I2c` can be enabled by specifying
+/// the optional `hal` feature in the dependency declaration for the `rppal` crate.
 ///
 /// [here]: index.html#i2c-buses
 /// [specification]: http://smbus.org/specs/SMBus_3_1_20180319.pdf
-/// [`blocking::i2c::Read`]: ../../embedded_hal/blocking/i2c/trait.Read.html
-/// [`blocking::i2c::Write`]: ../../embedded_hal/blocking/i2c/trait.Write.html
-/// [`blocking::i2c::WriteRead`]: ../../embedded_hal/blocking/i2c/trait.WriteRead.html
 #[derive(Debug)]
 pub struct I2c {
     bus: u8,
