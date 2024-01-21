@@ -30,7 +30,7 @@ impl embedded_hal::digital::InputPin for InputPin {
     }
 
     fn is_low(&mut self) -> Result<bool, Self::Error> {
-        Ok((*self).is_high())
+        Ok((*self).is_low())
     }
 }
 
