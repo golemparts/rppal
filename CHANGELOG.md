@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1 (January 21, 2024)
+
+* Fix `is_low` implementation for `embedded_hal::digital::InputPin` (contributed by @TeyKey1).
+
 ## 0.17.0 (January 15, 2024)
 
 * (Breaking change) Update `embedded-hal` to v1.0.0 (contributed by @reitermarkus).
