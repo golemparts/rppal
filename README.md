@@ -7,9 +7,9 @@
 
 RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters.
 
-The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations. Both `embedded-hal` v0.2.7 and v1.0.0 are supported.
+The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations. Both `embedded-hal` v0.2.7 and v1 are supported.
 
-RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution. Both GNU and musl `libc` targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, 400, Zero, Zero W and Zero 2 W. Backwards compatibility for minor revisions isn't guaranteed until v1.0.0.
+RPPAL requires Raspberry Pi OS or any similar, recent, Linux distribution. Both GNU and musl `libc` targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, 400, Zero, Zero W and Zero 2 W. Backwards compatibility for minor revisions isn't guaranteed until v1.
 
 This library is under development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
 
