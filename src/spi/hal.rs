@@ -1,5 +1,3 @@
-use std::io;
-
 use super::{super::hal::Delay, Error, Spi};
 
 #[cfg(feature = "embedded-hal")]
@@ -113,7 +111,10 @@ impl<B: embedded_hal::spi::SpiBus<u8>> SimpleHalSpiDevice<B> {
 }
 
 #[cfg(feature = "embedded-hal")]
-impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::SpiDevice<u8> for SimpleHalSpiDevice<B> {
+impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::SpiDevice<u8> for SimpleHalSpiDevice<B>
+where
+    Error: From<<B as embedded_hal::spi::ErrorType>::Error>,
+{
     fn transaction(
         &mut self,
         operations: &mut [embedded_hal::spi::Operation<'_, u8>],
@@ -121,36 +122,16 @@ impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::SpiDevice<u8> for Simp
         for op in operations {
             match op {
                 embedded_hal::spi::Operation::Read(read) => {
-                    self.bus.read(read).map_err(|_| {
-                        Error::Io(io::Error::new(
-                            io::ErrorKind::Other,
-                            "SimpleHalSpiDevice read transaction error",
-                        ))
-                    })?;
+                    self.bus.read(read)?;
                 }
                 embedded_hal::spi::Operation::Write(write) => {
-                    self.bus.write(write).map_err(|_| {
-                        Error::Io(io::Error::new(
-                            io::ErrorKind::Other,
-                            "SimpleHalSpiDevice write transaction error",
-                        ))
-                    })?;
+                    self.bus.write(write)?;
                 }
                 embedded_hal::spi::Operation::Transfer(read, write) => {
-                    self.bus.transfer(read, write).map_err(|_| {
-                        Error::Io(io::Error::new(
-                            io::ErrorKind::Other,
-                            "SimpleHalSpiDevice read/write transaction error",
-                        ))
-                    })?;
+                    self.bus.transfer(read, write)?;
                 }
                 embedded_hal::spi::Operation::TransferInPlace(words) => {
-                    self.bus.transfer_in_place(words).map_err(|_| {
-                        Error::Io(io::Error::new(
-                            io::ErrorKind::Other,
-                            "SimpleHalSpiDevice in-place read/write transaction error",
-                        ))
-                    })?;
+                    self.bus.transfer_in_place(words)?;
                 }
                 embedded_hal::spi::Operation::DelayNs(us) => {
                     embedded_hal::delay::DelayNs::delay_us(&mut Delay::new(), *us);
