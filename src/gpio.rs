@@ -232,6 +232,7 @@ pub enum Mode {
     Alt6,
     Alt7,
     Alt8,
+    Null,
 }
 
 impl fmt::Display for Mode {
@@ -248,6 +249,7 @@ impl fmt::Display for Mode {
             Mode::Alt6 => write!(f, "Alt6"),
             Mode::Alt7 => write!(f, "Alt7"),
             Mode::Alt8 => write!(f, "Alt8"),
+            Mode::Null => write!(f, "Null"),
         }
     }
 }

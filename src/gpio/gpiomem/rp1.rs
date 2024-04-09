@@ -61,6 +61,7 @@ const FSEL_ALT5: u8 = 5; // GPIO
 const FSEL_ALT6: u8 = 6;
 const FSEL_ALT7: u8 = 7;
 const FSEL_ALT8: u8 = 8;
+const FSEL_NULL: u8 = 31;
 
 // GPIO offset for the PADS_BANK registers (datasheet @ 3.1.4)
 const PADS_GPIO: usize = 0x04;
@@ -177,9 +178,23 @@ impl GpioMem {
         self.write(offset, PADS_IN_ENABLE_MASK);
     }
 
+    fn input_disable(&self, pin: u8) {
+        let offset =
+            (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + CLR_OFFSET) / REG_SIZE;
+
+        self.write(offset, PADS_IN_ENABLE_MASK);
+    }
+
     fn output_enable(&self, pin: u8) {
         let offset =
             (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + CLR_OFFSET) / REG_SIZE;
+
+        self.write(offset, PADS_OUT_DISABLE_MASK);
+    }
+
+    fn output_disable(&self, pin: u8) {
+        let offset =
+            (PADS_BANK0_OFFSET + PADS_GPIO + (pin as usize * PADS_OFFSET) + SET_OFFSET) / REG_SIZE;
 
         self.write(offset, PADS_OUT_DISABLE_MASK);
     }
@@ -223,13 +238,19 @@ impl GpioRegisters for GpioMem {
             FSEL_ALT6 => Mode::Alt6,
             FSEL_ALT7 => Mode::Alt7,
             FSEL_ALT8 => Mode::Alt8,
+            FSEL_NULL => Mode::Null,
             _ => Mode::Input,
         }
     }
 
     fn set_mode(&self, pin: u8, mode: Mode) {
-        self.input_enable(pin);
-        self.output_enable(pin);
+        if mode == Mode::Null {
+            self.input_disable(pin);
+            self.output_disable(pin);
+        } else {
+            self.input_enable(pin);
+            self.output_enable(pin);
+        }
 
         let offset =
             (IO_BANK0_OFFSET + GPIO_CTRL + (pin as usize * GPIO_OFFSET) + RW_OFFSET) / REG_SIZE;
@@ -247,6 +268,7 @@ impl GpioRegisters for GpioMem {
             Mode::Alt6 => FSEL_ALT6,
             Mode::Alt7 => FSEL_ALT7,
             Mode::Alt8 => FSEL_ALT8,
+            Mode::Null => FSEL_NULL,
         };
 
         // Set the actual direction here, since this isn't set in the FSEL register.
