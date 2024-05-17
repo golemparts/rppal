@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.2 (TBD)
+
+* **Gpio**: Fix `InputPin` mode not getting set correctly for uninitialized (FUNCSEL 31 (NULL)) pins on Raspberry Pi 5 (contributed by @lukeburong).
+
 ## 0.17.1 (January 21, 2024)
 
 * Fix `is_low` implementation for `embedded_hal::digital::InputPin` (contributed by @TeyKey1).
