@@ -162,7 +162,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
     });
 
     let mut revision: String = String::new();
-    for line in proc_cpuinfo.lines().flatten() {
+    for line in proc_cpuinfo.lines().map_while(result::Result::ok) {
         if let Some(line_value) = line.strip_prefix("Revision\t: ") {
             revision = String::from(line_value).to_lowercase();
         }
