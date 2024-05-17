@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.17.2 (TBD)
+## 0.18.0 (TBD)
 
 * **Gpio**: Fix `InputPin` mode not getting set correctly for uninitialized (FUNCSEL 31 (NULL)) pins on Raspberry Pi 5 (contributed by @lukeburong).
+* **Pwm**: (Breaking change) Add `Error::UnknownModel`.
+* **Pwm**: Fix support for hardware PWM on Raspberry Pi 5, caused by incorrect PWM chip/channel.
 
 ## 0.17.1 (January 21, 2024)
 

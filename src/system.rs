@@ -331,6 +331,10 @@ pub struct DeviceInfo {
     gpio_lines: u8,
     // GPIO interface through the Broadcom SoC or a separate RP1
     gpio_interface: GpioInterface,
+    // PWM chip # used for hardware PWM on selected GPIO pins
+    pwm_chip: u8,
+    // PWM channels used for hardware PWM on selected GPIO pins
+    pwm_channels: [u8; 2],
 }
 
 impl DeviceInfo {
@@ -360,6 +364,8 @@ impl DeviceInfo {
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
+                pwm_chip: 0,
+                pwm_channels: [0, 1],
             }),
             Model::RaspberryPi2B => Ok(DeviceInfo {
                 model,
@@ -368,6 +374,8 @@ impl DeviceInfo {
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
+                pwm_chip: 0,
+                pwm_channels: [0, 1],
             }),
             Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
                 Ok(DeviceInfo {
@@ -377,6 +385,8 @@ impl DeviceInfo {
                     gpio_offset: GPIO_OFFSET,
                     gpio_lines: GPIO_LINES_BCM283X,
                     gpio_interface: GpioInterface::Bcm,
+                    pwm_chip: 0,
+                    pwm_channels: [0, 1],
                 })
             }
             Model::RaspberryPi3BPlus
@@ -388,6 +398,8 @@ impl DeviceInfo {
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
+                pwm_chip: 0,
+                pwm_channels: [0, 1],
             }),
             Model::RaspberryPi4B
             | Model::RaspberryPi400
@@ -399,6 +411,8 @@ impl DeviceInfo {
                 gpio_offset: GPIO_OFFSET,
                 gpio_lines: GPIO_LINES_BCM2711,
                 gpio_interface: GpioInterface::Bcm,
+                pwm_chip: 0,
+                pwm_channels: [0, 1],
             }),
             Model::RaspberryPi5 => Ok(DeviceInfo {
                 model,
@@ -407,6 +421,8 @@ impl DeviceInfo {
                 gpio_offset: GPIO_OFFSET_RP1,
                 gpio_lines: GPIO_LINES_RP1,
                 gpio_interface: GpioInterface::Rp1,
+                pwm_chip: 2,
+                pwm_channels: [2, 3],
             }),
         }
     }
@@ -439,5 +455,15 @@ impl DeviceInfo {
     /// Returns the GPIO interface type for this model.
     pub(crate) fn gpio_interface(&self) -> GpioInterface {
         self.gpio_interface
+    }
+
+    /// Returns the PWM chip # used for hardware PWM.
+    pub(crate) fn pwm_chip(&self) -> u8 {
+        self.pwm_chip
+    }
+
+    /// Returns the PWM channels used for hardware PWM.
+    pub(crate) fn pwm_channels(&self) -> [u8; 2] {
+        self.pwm_channels
     }
 }

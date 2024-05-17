@@ -76,6 +76,8 @@ mod hal;
 mod hal_unproven;
 mod sysfs;
 
+use crate::system::DeviceInfo;
+
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
 /// Errors that can occur when accessing the PWM peripheral.
@@ -83,12 +85,24 @@ const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 pub enum Error {
     /// I/O error.
     Io(io::Error),
+    /// Unknown model.
+    ///
+    /// The Raspberry Pi model or SoC can't be identified. Support for
+    /// new models is usually added shortly after they are officially
+    /// announced and available to the public. Make sure you're using
+    /// the latest release of RPPAL.
+    ///
+    /// You may also encounter this error if your Linux distribution
+    /// doesn't provide any of the common user-accessible system files
+    /// that are used to identify the model and SoC.
+    UnknownModel,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
+            Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
         }
     }
 }
@@ -152,7 +166,8 @@ impl fmt::Display for Polarity {
 /// [here]: index.html
 #[derive(Debug)]
 pub struct Pwm {
-    channel: Channel,
+    chip: u8,
+    channel: u8,
     reset_on_drop: bool,
 }
 
@@ -164,9 +179,16 @@ impl Pwm {
     ///
     /// [`enable`]: #method.enable
     pub fn new(channel: Channel) -> Result<Pwm> {
-        sysfs::export(channel as u8)?;
+        // Select chip/channel based on Pi model
+        let device_info = DeviceInfo::new().map_err(|_| Error::UnknownModel)?;
+
+        let chip = device_info.pwm_chip();
+        let channel = device_info.pwm_channels()[channel as usize];
+
+        sysfs::export(chip, channel)?;
 
         let pwm = Pwm {
+            chip,
             channel,
             reset_on_drop: true,
         };
@@ -204,20 +226,10 @@ impl Pwm {
         polarity: Polarity,
         enabled: bool,
     ) -> Result<Pwm> {
-        sysfs::export(channel as u8)?;
-
-        let pwm = Pwm {
-            channel,
-            reset_on_drop: true,
-        };
-
-        // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
-        // export may have left "enable" as 1 after unexporting. On the next export,
-        // "enable" is still set to 1, even though the channel isn't enabled.
-        let _ = pwm.disable();
+        let pwm = Pwm::new(channel)?;
 
         // Set pulse width to 0 first in case the new period is shorter than the current pulse width
-        let _ = sysfs::set_pulse_width(channel as u8, 0);
+        let _ = sysfs::set_pulse_width(pwm.chip, pwm.channel, 0);
 
         pwm.set_period(period)?;
         pwm.set_pulse_width(pulse_width)?;
@@ -254,20 +266,10 @@ impl Pwm {
         polarity: Polarity,
         enabled: bool,
     ) -> Result<Pwm> {
-        sysfs::export(channel as u8)?;
-
-        let pwm = Pwm {
-            channel,
-            reset_on_drop: true,
-        };
-
-        // Always reset "enable" to 0. The sysfs pwm interface has a bug where a previous
-        // export may have left "enable" as 1 after unexporting. On the next export,
-        // "enable" is still set to 1, even though the channel isn't enabled.
-        let _ = pwm.disable();
+        let pwm = Pwm::new(channel)?;
 
         // Set pulse width to 0 first in case the new period is shorter than the current pulse width
-        let _ = sysfs::set_pulse_width(channel as u8, 0);
+        let _ = sysfs::set_pulse_width(pwm.chip, pwm.channel, 0);
 
         // Convert to nanoseconds
         let period = if frequency == 0.0 {
@@ -277,8 +279,8 @@ impl Pwm {
         };
         let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
-        sysfs::set_period(channel as u8, period as u64)?;
-        sysfs::set_pulse_width(channel as u8, pulse_width as u64)?;
+        sysfs::set_period(pwm.chip, pwm.channel, period as u64)?;
+        sysfs::set_pulse_width(pwm.chip, pwm.channel, pulse_width as u64)?;
         pwm.set_polarity(polarity)?;
         if enabled {
             pwm.enable()?;
@@ -289,7 +291,10 @@ impl Pwm {
 
     /// Returns the period.
     pub fn period(&self) -> Result<Duration> {
-        Ok(Duration::from_nanos(sysfs::period(self.channel as u8)?))
+        Ok(Duration::from_nanos(sysfs::period(
+            self.chip,
+            self.channel,
+        )?))
     }
 
     /// Sets the period.
@@ -299,7 +304,8 @@ impl Pwm {
     /// This method will fail if `period` is shorter than the current pulse width.
     pub fn set_period(&self, period: Duration) -> Result<()> {
         sysfs::set_period(
-            self.channel as u8,
+            self.chip,
+            self.channel,
             u64::from(period.subsec_nanos())
                 .saturating_add(period.as_secs().saturating_mul(NANOS_PER_SEC as u64)),
         )?;
@@ -310,7 +316,8 @@ impl Pwm {
     /// Returns the pulse width.
     pub fn pulse_width(&self) -> Result<Duration> {
         Ok(Duration::from_nanos(sysfs::pulse_width(
-            self.channel as u8,
+            self.chip,
+            self.channel,
         )?))
     }
 
@@ -322,7 +329,8 @@ impl Pwm {
     /// This method will fail if `pulse_width` is longer than the current period.
     pub fn set_pulse_width(&self, pulse_width: Duration) -> Result<()> {
         sysfs::set_pulse_width(
-            self.channel as u8,
+            self.chip,
+            self.channel,
             u64::from(pulse_width.subsec_nanos())
                 .saturating_add(pulse_width.as_secs().saturating_mul(NANOS_PER_SEC as u64)),
         )?;
@@ -335,7 +343,7 @@ impl Pwm {
     /// `frequency` is a convenience method that calculates the frequency in hertz (Hz)
     /// based on the configured period.
     pub fn frequency(&self) -> Result<f64> {
-        let period = sysfs::period(self.channel as u8)? as f64;
+        let period = sysfs::period(self.chip, self.channel)? as f64;
 
         Ok(if period == 0.0 {
             0.0
@@ -354,7 +362,7 @@ impl Pwm {
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_frequency(&self, frequency: f64, duty_cycle: f64) -> Result<()> {
         // Set duty cycle to 0 first in case the new period is shorter than the current duty cycle
-        let _ = sysfs::set_pulse_width(self.channel as u8, 0);
+        let _ = sysfs::set_pulse_width(self.chip, self.channel, 0);
 
         // Convert to nanoseconds
         let period = if frequency == 0.0 {
@@ -364,8 +372,8 @@ impl Pwm {
         };
         let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
-        sysfs::set_period(self.channel as u8, period as u64)?;
-        sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
+        sysfs::set_period(self.chip, self.channel, period as u64)?;
+        sysfs::set_pulse_width(self.chip, self.channel, pulse_width as u64)?;
 
         Ok(())
     }
@@ -376,8 +384,8 @@ impl Pwm {
     /// floating point value between `0.0` (0%) and `1.0` (100%) based on the configured
     /// period and pulse width.
     pub fn duty_cycle(&self) -> Result<f64> {
-        let period = sysfs::period(self.channel as u8)? as f64;
-        let pulse_width = sysfs::pulse_width(self.channel as u8)? as f64;
+        let period = sysfs::period(self.chip, self.channel)? as f64;
+        let pulse_width = sysfs::pulse_width(self.chip, self.channel)? as f64;
 
         Ok(if period == 0.0 {
             0.0
@@ -393,17 +401,17 @@ impl Pwm {
     ///
     /// `duty_cycle` is specified as a floating point value between `0.0` (0%) and `1.0` (100%).
     pub fn set_duty_cycle(&self, duty_cycle: f64) -> Result<()> {
-        let period = sysfs::period(self.channel as u8)? as f64;
+        let period = sysfs::period(self.chip, self.channel)? as f64;
         let pulse_width = period * duty_cycle.clamp(0.0, 1.0);
 
-        sysfs::set_pulse_width(self.channel as u8, pulse_width as u64)?;
+        sysfs::set_pulse_width(self.chip, self.channel, pulse_width as u64)?;
 
         Ok(())
     }
 
     /// Returns the polarity.
     pub fn polarity(&self) -> Result<Polarity> {
-        Ok(sysfs::polarity(self.channel as u8)?)
+        Ok(sysfs::polarity(self.chip, self.channel)?)
     }
 
     /// Sets the polarity.
@@ -414,26 +422,26 @@ impl Pwm {
     /// [`Normal`]: enum.Polarity.html#variant.Normal
     /// [`Inverse`]: enum.Polarity.html#variant.Inverse
     pub fn set_polarity(&self, polarity: Polarity) -> Result<()> {
-        sysfs::set_polarity(self.channel as u8, polarity)?;
+        sysfs::set_polarity(self.chip, self.channel, polarity)?;
 
         Ok(())
     }
 
     /// Returns `true` if the PWM channel is enabled.
     pub fn is_enabled(&self) -> Result<bool> {
-        Ok(sysfs::enabled(self.channel as u8)?)
+        Ok(sysfs::enabled(self.chip, self.channel)?)
     }
 
     /// Enables the PWM channel.
     pub fn enable(&self) -> Result<()> {
-        sysfs::set_enabled(self.channel as u8, true)?;
+        sysfs::set_enabled(self.chip, self.channel, true)?;
 
         Ok(())
     }
 
     /// Disables the PWM channel.
     pub fn disable(&self) -> Result<()> {
-        sysfs::set_enabled(self.channel as u8, false)?;
+        sysfs::set_enabled(self.chip, self.channel, false)?;
 
         Ok(())
     }
@@ -461,8 +469,8 @@ impl Pwm {
 impl Drop for Pwm {
     fn drop(&mut self) {
         if self.reset_on_drop {
-            let _ = sysfs::set_enabled(self.channel as u8, false);
-            let _ = sysfs::unexport(self.channel as u8);
+            let _ = sysfs::set_enabled(self.chip, self.channel, false);
+            let _ = sysfs::unexport(self.chip, self.channel);
         }
     }
 }

@@ -98,10 +98,11 @@ fn check_permissions(path: &str, gid: u32) -> bool {
     false
 }
 
-pub fn export(channel: u8) -> Result<()> {
+pub fn export(chip: u8, channel: u8) -> Result<()> {
     // Only export if the channel isn't already exported
-    if !Path::new(&format!("/sys/class/pwm/pwmchip0/pwm{}", channel)).exists() {
-        File::create("/sys/class/pwm/pwmchip0/export")?.write_fmt(format_args!("{}", channel))?;
+    if !Path::new(&format!("/sys/class/pwm/pwmchip{}/pwm{}", chip, channel)).exists() {
+        File::create(format!("/sys/class/pwm/pwmchip{}/export", chip))?
+            .write_fmt(format_args!("{}", channel))?;
     }
 
     // If we're logged in as root or effective root, skip the permission checks
@@ -126,11 +127,11 @@ pub fn export(channel: u8) -> Result<()> {
     };
 
     let paths = &[
-        format!("/sys/class/pwm/pwmchip0/pwm{}", channel),
-        format!("/sys/class/pwm/pwmchip0/pwm{}/period", channel),
-        format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel),
-        format!("/sys/class/pwm/pwmchip0/pwm{}/polarity", channel),
-        format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel),
+        format!("/sys/class/pwm/pwmchip{}/pwm{}", chip, channel),
+        format!("/sys/class/pwm/pwmchip{}/pwm{}/period", chip, channel),
+        format!("/sys/class/pwm/pwmchip{}/pwm{}/duty_cycle", chip, channel),
+        format!("/sys/class/pwm/pwmchip{}/pwm{}/polarity", chip, channel),
+        format!("/sys/class/pwm/pwmchip{}/pwm{}/enable", chip, channel),
     ];
 
     let mut counter = 0;
@@ -151,17 +152,21 @@ pub fn export(channel: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn unexport(channel: u8) -> Result<()> {
+pub fn unexport(chip: u8, channel: u8) -> Result<()> {
     // Only unexport if the channel is actually exported
-    if Path::new(&format!("/sys/class/pwm/pwmchip0/pwm{}", channel)).exists() {
-        File::create("/sys/class/pwm/pwmchip0/unexport")?.write_fmt(format_args!("{}", channel))?;
+    if Path::new(&format!("/sys/class/pwm/pwmchip{}/pwm{}", chip, channel)).exists() {
+        File::create(format!("/sys/class/pwm/pwmchip{}/unexport", chip))?
+            .write_fmt(format_args!("{}", channel))?;
     }
 
     Ok(())
 }
 
-pub fn period(channel: u8) -> Result<u64> {
-    let period = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/period", channel))?;
+pub fn period(chip: u8, channel: u8) -> Result<u64> {
+    let period = fs::read_to_string(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/period",
+        chip, channel
+    ))?;
     if let Ok(period) = period.trim().parse() {
         Ok(period)
     } else {
@@ -169,18 +174,23 @@ pub fn period(channel: u8) -> Result<u64> {
     }
 }
 
-pub fn set_period(channel: u8, period: u64) -> Result<()> {
-    File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/period", channel))?
-        .write_fmt(format_args!("{}", period))?;
+pub fn set_period(chip: u8, channel: u8, period: u64) -> Result<()> {
+    File::create(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/period",
+        chip, channel
+    ))?
+    .write_fmt(format_args!("{}", period))?;
 
     Ok(())
 }
 
-pub fn pulse_width(channel: u8) -> Result<u64> {
+pub fn pulse_width(chip: u8, channel: u8) -> Result<u64> {
     // The sysfs PWM interface specifies the duty cycle in nanoseconds, which
     // means it's actually the pulse width.
-    let duty_cycle =
-        fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel))?;
+    let duty_cycle = fs::read_to_string(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/duty_cycle",
+        chip, channel
+    ))?;
 
     if let Ok(duty_cycle) = duty_cycle.trim().parse() {
         Ok(duty_cycle)
@@ -189,17 +199,23 @@ pub fn pulse_width(channel: u8) -> Result<u64> {
     }
 }
 
-pub fn set_pulse_width(channel: u8, pulse_width: u64) -> Result<()> {
+pub fn set_pulse_width(chip: u8, channel: u8, pulse_width: u64) -> Result<()> {
     // The sysfs PWM interface specifies the duty cycle in nanoseconds, which
     // means it's actually the pulse width.
-    File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/duty_cycle", channel))?
-        .write_fmt(format_args!("{}", pulse_width))?;
+    File::create(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/duty_cycle",
+        chip, channel
+    ))?
+    .write_fmt(format_args!("{}", pulse_width))?;
 
     Ok(())
 }
 
-pub fn polarity(channel: u8) -> Result<Polarity> {
-    let polarity = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/polarity", channel))?;
+pub fn polarity(chip: u8, channel: u8) -> Result<Polarity> {
+    let polarity = fs::read_to_string(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/polarity",
+        chip, channel
+    ))?;
 
     match polarity.trim() {
         "normal" => Ok(Polarity::Normal),
@@ -207,20 +223,26 @@ pub fn polarity(channel: u8) -> Result<Polarity> {
     }
 }
 
-pub fn set_polarity(channel: u8, polarity: Polarity) -> Result<()> {
+pub fn set_polarity(chip: u8, channel: u8, polarity: Polarity) -> Result<()> {
     let b_polarity: &[u8] = match polarity {
         Polarity::Normal => b"normal",
         Polarity::Inverse => b"inversed",
     };
 
-    File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/polarity", channel))?
-        .write_all(b_polarity)?;
+    File::create(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/polarity",
+        chip, channel
+    ))?
+    .write_all(b_polarity)?;
 
     Ok(())
 }
 
-pub fn enabled(channel: u8) -> Result<bool> {
-    let enabled = fs::read_to_string(format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel))?;
+pub fn enabled(chip: u8, channel: u8) -> Result<bool> {
+    let enabled = fs::read_to_string(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/enable",
+        chip, channel
+    ))?;
 
     match enabled.trim() {
         "0" => Ok(false),
@@ -228,19 +250,22 @@ pub fn enabled(channel: u8) -> Result<bool> {
     }
 }
 
-pub fn set_enabled(channel: u8, enabled: bool) -> Result<()> {
-    File::create(format!("/sys/class/pwm/pwmchip0/pwm{}/enable", channel))?
-        .write_fmt(format_args!("{}", enabled as u8))
-        .map_err(|e| {
-            if e.kind() == io::ErrorKind::InvalidInput {
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "Make sure you have set either a period or frequency before enabling PWM",
-                )
-            } else {
-                e
-            }
-        })?;
+pub fn set_enabled(chip: u8, channel: u8, enabled: bool) -> Result<()> {
+    File::create(format!(
+        "/sys/class/pwm/pwmchip{}/pwm{}/enable",
+        chip, channel
+    ))?
+    .write_fmt(format_args!("{}", enabled as u8))
+    .map_err(|e| {
+        if e.kind() == io::ErrorKind::InvalidInput {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Make sure you have set either a period or frequency before enabling PWM",
+            )
+        } else {
+            e
+        }
+    })?;
 
     Ok(())
 }
