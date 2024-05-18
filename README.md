@@ -71,7 +71,7 @@ let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 16_000_000, Mode::Mode0)?;
 let uart = Uart::new(115_200, Parity::None, 8, 1)?;
 ```
 
-Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/config.txt`. Refer to the relevant module's documentation for any required steps.
+Access to some peripherals may need to be enabled first through `sudo raspi-config` or by editing `/boot/firmware/config.txt`. Refer to the relevant module's documentation for any required steps.
 
 ## Examples
 

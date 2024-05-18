@@ -16,7 +16,7 @@
 //!
 //! SPI0 is disabled by default. You can enable it by running
 //! `sudo raspi-config`, or by manually adding `dtparam=spi=on` to
-//! `/boot/config.txt`. The associated pins are listed below.
+//! `/boot/firmware/config.txt`. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 9 (physical pin 21)
 //! * MOSI: BCM GPIO 10 (physical pin 19)
@@ -29,7 +29,7 @@
 //! to the BCM2835 documentation, using higher clock speeds on SPI1 requires
 //! additional CPU time compared to SPI0, caused by smaller FIFOs and no DMA
 //! support. It doesn't support [`Mode1`] or [`Mode3`]. SPI1 can be enabled by
-//! adding `dtoverlay=spi1-1cs` to `/boot/config.txt`. Replace `1cs` with
+//! adding `dtoverlay=spi1-1cs` to `/boot/firmware/config.txt`. Replace `1cs` with
 //! either `2cs` or `3cs` if you require 2 or 3 Slave Select pins.
 //! The associated pins are listed below.
 //!
@@ -41,7 +41,7 @@
 //! ### SPI2
 //!
 //! SPI2 shares the same characteristics and limitations as SPI1. It can be
-//! enabled by adding `dtoverlay=spi2-1cs` to `/boot/config.txt`. Replace
+//! enabled by adding `dtoverlay=spi2-1cs` to `/boot/firmware/config.txt`. Replace
 //! `1cs` with either `2cs` or `3cs` if you require 2 or 3 Slave Select
 //! pins. The associated pins are listed below.
 //!
@@ -52,7 +52,7 @@
 //!
 //! ### SPI3
 //!
-//! SPI3 can be enabled by adding `dtoverlay=spi3-1cs` to `/boot/config.txt`. Replace
+//! SPI3 can be enabled by adding `dtoverlay=spi3-1cs` to `/boot/firmware/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 1 (physical pin 28)
@@ -62,7 +62,7 @@
 //!
 //! ### SPI4
 //!
-//! SPI4 can be enabled by adding `dtoverlay=spi4-1cs` to `/boot/config.txt`. Replace
+//! SPI4 can be enabled by adding `dtoverlay=spi4-1cs` to `/boot/firmware/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 5 (physical pin 29)
@@ -72,7 +72,7 @@
 //!
 //! ### SPI5
 //!
-//! SPI5 can be enabled by adding `dtoverlay=spi5-1cs` to `/boot/config.txt`. Replace
+//! SPI5 can be enabled by adding `dtoverlay=spi5-1cs` to `/boot/firmware/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 13 (physical pin 33)
@@ -82,7 +82,7 @@
 //!
 //! ### SPI6
 //!
-//! SPI6 can be enabled by adding `dtoverlay=spi6-1cs` to `/boot/config.txt`. Replace
+//! SPI6 can be enabled by adding `dtoverlay=spi6-1cs` to `/boot/firmware/config.txt`. Replace
 //! `1cs` with `2cs` if you require 2 Slave Select pins. The associated pins are listed below.
 //!
 //! * MISO: BCM GPIO 19 (physical pin 35)
@@ -103,7 +103,7 @@
 //!
 //! By default, `spidev` can handle up to 4096 bytes in a single transfer. You
 //! can increase this limit to a maximum of 65536 bytes by appending
-//! `spidev.bufsiz=65536` to the single line of parameters in `/boot/cmdline.txt`.
+//! `spidev.bufsiz=65536` to the single line of parameters in `/boot/firmware/cmdline.txt`.
 //! Remember to reboot the Raspberry Pi afterwards. The current value of bufsiz
 //! can be checked with `cat /sys/module/spidev/parameters/bufsiz`.
 //!
@@ -235,7 +235,7 @@ pub fn reverse_bits(buffer: &mut [u8]) {
 /// SPI buses.
 ///
 /// The Raspberry Pi exposes up to five SPI buses, depending on the model and
-/// your `/boot/config.txt` configuration. More information can be found [here].
+/// your `/boot/firmware/config.txt` configuration. More information can be found [here].
 ///
 /// [here]: index.html
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -273,7 +273,7 @@ impl fmt::Display for Bus {
 /// to `Ss0`, `Ss1`, and `Ss2`.
 ///
 /// The number of available Slave Select pins for the selected SPI bus depends
-/// on your `/boot/config.txt` configuration. More information can be found
+/// on your `/boot/firmware/config.txt` configuration. More information can be found
 /// [here].
 ///
 /// [here]: index.html

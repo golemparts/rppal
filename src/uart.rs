@@ -31,22 +31,22 @@
 //!
 //! Disable the Linux serial console by either deactivating it through
 //! `sudo raspi-config`, or manually removing the parameter
-//! `console=serial0,115200` from `/boot/cmdline.txt`.
+//! `console=serial0,115200` from `/boot/firmware/cmdline.txt`.
 //!
 //! Remove any lines containing `enable_uart=0` or `enable_uart=1` from
-//! `/boot/config.txt`.
+//! `/boot/firmware/config.txt`.
 //!
 //! On Raspberry Pi models with a Bluetooth module, an extra step is required
 //! to either disable Bluetooth or move it to `/dev/ttyS0`, so `/dev/ttyAMA0`
 //! becomes available for serial communication.
 //!
-//! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/config.txt`.
+//! To disable Bluetooth, add `dtoverlay=pi3-disable-bt` to `/boot/firmware/config.txt`.
 //! You'll also need to disable the service that initializes Bluetooth with
 //! `sudo systemctl disable hciuart`.
 //!
 //! To move the Bluetooth module to `/dev/ttyS0`, instead of disabling it with
 //! the above-mentioned steps, add `dtoverlay=pi3-miniuart-bt` and
-//! `core_freq=250` to `/boot/config.txt`.
+//! `core_freq=250` to `/boot/firmware/config.txt`.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
 //!
@@ -57,9 +57,9 @@
 //!
 //! Disable the Linux serial console by either deactivating it through
 //! `sudo raspi-config`, or manually removing the parameter
-//! `console=serial0,115200` from `/boot/cmdline.txt`.
+//! `console=serial0,115200` from `/boot/firmware/cmdline.txt`.
 //!
-//! Add the line `enable_uart=1` to `/boot/config.txt` to enable serial
+//! Add the line `enable_uart=1` to `/boot/firmware/config.txt` to enable serial
 //! communication on `/dev/ttyS0`, which also sets a fixed core frequency.
 //!
 //! Remember to reboot the Raspberry Pi after making any changes.
