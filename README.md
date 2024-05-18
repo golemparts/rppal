@@ -45,14 +45,14 @@ Add a dependency for `rppal` to your `Cargo.toml` using `cargo add rppal`, or by
 
 ```toml
 [dependencies]
-rppal = "0.17.1"
+rppal = "0.18.0"
 ```
 
 If your project requires `embedded-hal` trait implementations, specify either the `hal` or `hal-unproven` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
-rppal = { version = "0.17.1", features = ["hal"] }
+rppal = { version = "0.18.0", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
@@ -186,7 +186,7 @@ Install the relevant target using `rustup`.
 rustup target install armv7-unknown-linux-gnueabihf
 ```
 
-In the root directory of your project, create a `.cargo` subdirectory, and save the following snippet to `.cargo/config`.
+In the root directory of your project, create a `.cargo` subdirectory, and save the following snippet to `.cargo/config.toml`.
 
 ```toml
 [build]
