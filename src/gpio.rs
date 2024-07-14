@@ -121,7 +121,7 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, Once, Weak};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 mod epoll;
 mod gpiomem;
@@ -340,6 +340,17 @@ impl fmt::Display for Trigger {
     }
 }
 
+/// Interrupt trigger event.
+#[derive(Debug, Copy, Clone)]
+pub struct Event {
+    /// Best estimate of time of event occurrence.
+    pub timestamp: SystemTime,
+    /// Sequence number for this event in the sequence of interrupt trigger events for this pin.
+    pub seqno: u32,
+    /// Pin level that triggered the interrupt.
+    pub level: Level,
+}
+
 // Store Gpio's state separately, so we can conveniently share it through
 // a cloned Arc.
 pub(crate) struct GpioState {
@@ -475,21 +486,21 @@ impl Gpio {
     /// `timeout` can be set to `None` to wait indefinitely.
     ///
     /// When an interrupt event is triggered, `poll_interrupts` returns
-    /// `Ok((&`[`InputPin`]`, `[`Level`]`))` containing the corresponding pin and logic level. If multiple events trigger
-    /// at the same time, only the first one is returned. The remaining events are cached and will be returned
+    /// `Ok((&`[`InputPin`]`, `[`Event`]`))` containing the corresponding pin and trigger event details. If multiple events
+    /// trigger at the same time, only the first one is returned. The remaining events are cached and will be returned
     /// the next time [`InputPin::poll_interrupt`] or `poll_interrupts` is called.
     ///
     /// [`InputPin::set_interrupt`]: struct.InputPin.html#method.set_interrupt
     /// [`InputPin::poll_interrupt`]: struct.InputPin.html#method.poll_interrupt
     /// [`InputPin::set_async_interrupt`]: struct.InputPin.html#method.set_async_interrupt
     /// [`InputPin`]: struct.InputPin.html
-    /// [`Level`]: enum.Level.html
+    /// [`Event`]: enum.Event.html
     pub fn poll_interrupts<'a>(
         &self,
         pins: &[&'a InputPin],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(&'a InputPin, Level)>> {
+    ) -> Result<Option<(&'a InputPin, Event)>> {
         (*self.inner.sync_interrupts.lock().unwrap()).poll(pins, reset, timeout)
     }
 }

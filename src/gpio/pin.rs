@@ -4,7 +4,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::soft_pwm::SoftPwm;
-use crate::gpio::{interrupt::AsyncInterrupt, Bias, GpioState, Level, Mode, Result, Trigger};
+use crate::gpio::{
+    interrupt::AsyncInterrupt, Bias, Event, GpioState, Level, Mode, Result, Trigger,
+};
 
 const NANOS_PER_SEC: f64 = 1_000_000_000.0;
 
@@ -497,7 +499,7 @@ impl InputPin {
         &mut self,
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<Level>> {
+    ) -> Result<Option<Event>> {
         let opt =
             (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).poll(&[self], reset, timeout)?;
 

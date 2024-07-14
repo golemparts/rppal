@@ -2,12 +2,19 @@
 
 use std::fmt;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use crate::gpio::ioctl;
 use crate::gpio::pin::InputPin;
-use crate::gpio::{Error, Level, Result, Trigger};
+use crate::gpio::{Error, Event, Level, Result, Trigger};
+
+pub(crate) struct EventLoop {
+    poll: Epoll,
+    events: Vec<epoll_event>,
+    trigger_status: Vec<TriggerStatus>,
+    cdev_fd: i32,
+}
 
 #[derive(Debug)]
 struct Interrupt {
@@ -66,13 +73,6 @@ struct TriggerStatus {
     level: Level,
 }
 
-pub struct EventLoop {
-    poll: Epoll,
-    events: Vec<epoll_event>,
-    trigger_status: Vec<TriggerStatus>,
-    cdev_fd: i32,
-}
-
 impl fmt::Debug for EventLoop {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("EventLoop")
@@ -110,7 +110,7 @@ impl EventLoop {
         pins: &[&'a InputPin],
         reset: bool,
         timeout: Option<Duration>,
-    ) -> Result<Option<(&'a InputPin, Level)>> {
+    ) -> Result<Option<(&'a InputPin, Event)>> {
         for pin in pins {
             let trigger_status = &mut self.trigger_status[pin.pin() as usize];
 
@@ -119,7 +119,14 @@ impl EventLoop {
                 trigger_status.triggered = false;
 
                 if !reset {
-                    return Ok(Some((pin, trigger_status.level)));
+                    return Ok(Some((
+                        pin,
+                        Event {
+                            timestamp: SystemTime::now(), // TODO: Finish implementation
+                            seqno: 0,
+                            level: trigger_status.level,
+                        },
+                    )));
                 }
             }
 
@@ -165,7 +172,14 @@ impl EventLoop {
 
                 if trigger_status.triggered {
                     trigger_status.triggered = false;
-                    return Ok(Some((pin, trigger_status.level)));
+                    return Ok(Some((
+                        pin,
+                        Event {
+                            timestamp: SystemTime::now(), // TODO: Finish implementation
+                            seqno: 0,
+                            level: trigger_status.level,
+                        },
+                    )));
                 }
             }
 
