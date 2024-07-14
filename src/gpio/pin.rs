@@ -513,16 +513,16 @@ impl InputPin {
     /// Configures an asynchronous interrupt trigger, which executes the callback on a
     /// separate thread when the interrupt is triggered.
     ///
-    /// The callback closure or function pointer is called with a single [`Level`] argument.
+    /// The callback closure or function pointer is called with a single [`Event`] argument.
     ///
     /// Any previously configured (a)synchronous interrupt triggers for this pin are cleared
     /// when `set_async_interrupt` is called, or when `InputPin` goes out of scope.
     ///
     /// [`clear_async_interrupt`]: #method.clear_async_interrupt
-    /// [`Level`]: enum.Level.html
+    /// [`Event`]: enum.Event.html
     pub fn set_async_interrupt<C>(&mut self, trigger: Trigger, callback: C) -> Result<()>
     where
-        C: FnMut(Level) + Send + 'static,
+        C: FnMut(Event) + Send + 'static,
     {
         self.clear_interrupt()?;
         self.clear_async_interrupt()?;

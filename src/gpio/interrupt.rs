@@ -244,7 +244,7 @@ pub struct AsyncInterrupt {
 impl AsyncInterrupt {
     pub fn new<C>(fd: i32, pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
     where
-        C: FnMut(Level) + Send + 'static,
+        C: FnMut(Event) + Send + 'static,
     {
         let tx = EventFd::new()?;
         let rx = tx.fd();
@@ -267,8 +267,11 @@ impl AsyncInterrupt {
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
                         } else if fd == interrupt.fd() {
-                            let level = interrupt.event()?.level();
-                            callback(level);
+                            callback(Event {
+                                timestamp: SystemTime::now(), // TODO: Finish implementation
+                                seqno: 0,
+                                level: interrupt.event()?.level(),
+                            });
                         }
                     }
                 }
