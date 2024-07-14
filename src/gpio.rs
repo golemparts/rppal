@@ -111,6 +111,7 @@
 //! [`IoPin`]: struct.IoPin.html
 //! [`IoPin::set_reset_on_drop(false)`]: struct.IoPin.html#method.set_reset_on_drop
 //! [`Pwm`]: ../pwm/struct.Pwm.html
+#![allow(clippy::missing_transmute_annotations)]
 
 use std::error;
 use std::fmt;

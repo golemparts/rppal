@@ -120,11 +120,7 @@ pub fn export(chip: u8, channel: u8) -> Result<()> {
     // manually adding rules, since they don't seem to be part of the latest release yet. The
     // patched drivers/pwm/sysfs.c was included in raspberrypi-kernel_1.20180417-1 (4.14.34).
     // See: https://github.com/raspberrypi/linux/issues/1983
-    let gid_gpio = if let Some(gid) = group_to_gid("gpio") {
-        gid
-    } else {
-        0
-    };
+    let gid_gpio = group_to_gid("gpio").unwrap_or_default();
 
     let paths = &[
         format!("/sys/class/pwm/pwmchip{}/pwm{}", chip, channel),
