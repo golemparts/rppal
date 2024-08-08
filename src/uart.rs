@@ -805,20 +805,20 @@ impl Uart {
     /// `min_length` and `timeout` values:
     ///
     /// * **Non-blocking read** (`min_length` = 0, `timeout` = 0). [`read`]
-    /// retrieves any available data and returns immediately.
+    ///   retrieves any available data and returns immediately.
     /// * **Blocking read** (`min_length` > 0, `timeout` = 0). [`read`] blocks
-    /// until at least `min_length` bytes are available, or the provided buffer
-    /// is full.
+    ///   until at least `min_length` bytes are available, or the provided buffer
+    ///   is full.
     /// * **Read with timeout** (`min_length` = 0, `timeout` > 0). [`read`]
-    /// blocks until at least one byte is available, or the `timeout` duration
-    /// elapses.
+    ///   blocks until at least one byte is available, or the `timeout` duration
+    ///   elapses.
     /// * **Read with inter-byte timeout** (`min_length` > 0, `timeout` > 0).
-    /// [`read`] blocks until at least `min_length` bytes are available, the
-    /// provided buffer is full, or the `timeout` duration elapses
-    /// after receiving one or more bytes. The timer is started after an
-    /// initial byte becomes available, and is restarted after each additional
-    /// byte. That means [`read`] will block indefinitely until at least one
-    /// byte has been received.
+    ///   [`read`] blocks until at least `min_length` bytes are available, the
+    ///   provided buffer is full, or the `timeout` duration elapses
+    ///   after receiving one or more bytes. The timer is started after an
+    ///   initial byte becomes available, and is restarted after each additional
+    ///   byte. That means [`read`] will block indefinitely until at least one
+    ///   byte has been received.
     ///
     /// By default, [`read`] is configured as non-blocking.
     ///
@@ -851,12 +851,12 @@ impl Uart {
     /// `blocking` value:
     ///
     /// * **Non-blocking write**. [`write`] returns immediately after
-    /// copying as much of the contents of the provided buffer to the output queue
-    /// as it's able to fit.
+    ///   copying as much of the contents of the provided buffer to the output queue
+    ///   as it's able to fit.
     /// * **Blocking write**. [`write`] blocks until the entire contents of the provided buffer
-    /// can be copied to the output queue. If flow control is enabled and the
-    /// external device has sent a stop request, the transmission of any waiting data
-    /// in the output queue is paused until a start request has been received.
+    ///   can be copied to the output queue. If flow control is enabled and the
+    ///   external device has sent a stop request, the transmission of any waiting data
+    ///   in the output queue is paused until a start request has been received.
     ///
     /// By default, [`write`] is configured as non-blocking.
     ///
