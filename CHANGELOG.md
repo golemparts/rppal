@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.0 (TBD)
+
+* **Gpio**: (Breaking change) Add optional `debounce` argument to `set_interrupt` and `set_async_interrupt`.
+* **Gpio**: (Breaking change) Return an `Event` struct when an interrupt is triggered, instead of `Level`.
+
 ## 0.18.0 (May 18, 2024)
 
 * **Gpio**: (Breaking change) Add support for mode `Null` for uninitialized (FUNCSEL 31 (NULL)) pins on Raspberry Pi 5 (contributed by @lukeburong).
