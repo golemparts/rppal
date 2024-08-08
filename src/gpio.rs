@@ -348,7 +348,7 @@ pub struct Event {
     pub timestamp: Duration,
     /// Sequence number for this event in the sequence of interrupt trigger events for this pin.
     pub seqno: u32,
-    /// Interrupt trigger.
+    /// Interrupt trigger. This will contain either [Trigger::RisingEdge] or [Trigger::FallingEdge].
     pub trigger: Trigger,
 }
 
