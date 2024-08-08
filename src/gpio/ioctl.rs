@@ -412,22 +412,6 @@ impl fmt::Debug for LineConfig {
     }
 }
 
-impl LineConfig {
-    fn set_debounce(&mut self, duration: u32) {
-        self.num_attrs = 1;
-        self.attrs[0] = LineConfigAttribute {
-            attr: LineAttribute {
-                id: LINE_ATTR_ID_DEBOUNCE,
-                padding: 0,
-                value: LineAttributeValue {
-                    debounce_period_us: duration,
-                },
-            },
-            mask: 1,
-        };
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub struct LineRequest {
@@ -617,10 +601,19 @@ impl EventRequest {
             ..Default::default()
         };
 
+        // Configure optional debounce
         if let Some(debounce) = debounce {
-            line_request
-                .config
-                .set_debounce(debounce.as_micros() as u32);
+            line_request.config.num_attrs = 1;
+            line_request.config.attrs[0] = LineConfigAttribute {
+                attr: LineAttribute {
+                    id: LINE_ATTR_ID_DEBOUNCE,
+                    padding: 0,
+                    value: LineAttributeValue {
+                        debounce_period_us: debounce.as_micros() as u32,
+                    },
+                },
+                mask: 1,
+            };
         }
 
         parse_retval!(unsafe { libc::ioctl(cdev_fd, GPIO_V2_GET_LINE_IOCTL, &mut line_request) })?;
