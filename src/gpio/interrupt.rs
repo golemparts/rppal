@@ -2,12 +2,12 @@
 
 use std::fmt;
 use std::thread;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 use crate::gpio::epoll::{epoll_event, Epoll, EventFd, EPOLLERR, EPOLLET, EPOLLIN, EPOLLPRI};
 use crate::gpio::ioctl;
 use crate::gpio::pin::InputPin;
-use crate::gpio::{Error, Event, Level, Result, Trigger};
+use crate::gpio::{Error, Event, Result, Trigger};
 
 pub(crate) struct EventLoop {
     poll: Epoll,
@@ -20,17 +20,24 @@ pub(crate) struct EventLoop {
 struct Interrupt {
     pin: u8,
     trigger: Trigger,
+    debounce: Option<Duration>,
     cdev_fd: i32,
     event_request: ioctl::EventRequest,
 }
 
 impl Interrupt {
-    fn new(cdev_fd: i32, pin: u8, trigger: Trigger) -> Result<Interrupt> {
+    fn new(
+        cdev_fd: i32,
+        pin: u8,
+        trigger: Trigger,
+        debounce: Option<Duration>,
+    ) -> Result<Interrupt> {
         Ok(Interrupt {
             pin,
             trigger,
+            debounce,
             cdev_fd,
-            event_request: ioctl::EventRequest::new(cdev_fd, pin, trigger)?,
+            event_request: ioctl::EventRequest::new(cdev_fd, pin, trigger, debounce)?,
         })
     }
 
@@ -39,7 +46,7 @@ impl Interrupt {
     }
 
     fn fd(&self) -> i32 {
-        self.event_request.fd
+        self.event_request.fd()
     }
 
     fn pin(&self) -> u8 {
@@ -52,15 +59,16 @@ impl Interrupt {
         self.reset()
     }
 
-    fn event(&mut self) -> Result<ioctl::Event> {
+    fn event(&mut self) -> Result<Event> {
         // This might block if there are no events waiting
-        ioctl::get_event(self.event_request.fd)
+        Ok(ioctl::LineEvent::new(self.event_request.fd())?.into_event())
     }
 
     fn reset(&mut self) -> Result<()> {
         // Close the old event fd before opening a new one
         self.event_request.close();
-        self.event_request = ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger)?;
+        self.event_request =
+            ioctl::EventRequest::new(self.cdev_fd, self.pin, self.trigger, self.debounce)?;
 
         Ok(())
     }
@@ -70,7 +78,7 @@ impl Interrupt {
 struct TriggerStatus {
     interrupt: Option<Interrupt>,
     triggered: bool,
-    level: Level,
+    event: Event,
 }
 
 impl fmt::Debug for EventLoop {
@@ -93,7 +101,7 @@ impl EventLoop {
             trigger_status.push(TriggerStatus {
                 interrupt: None,
                 triggered: false,
-                level: Level::Low,
+                event: Event::default(),
             });
         }
 
@@ -119,14 +127,7 @@ impl EventLoop {
                 trigger_status.triggered = false;
 
                 if !reset {
-                    return Ok(Some((
-                        pin,
-                        Event {
-                            timestamp: SystemTime::now(), // TODO: Finish implementation
-                            seqno: 0,
-                            level: trigger_status.level,
-                        },
-                    )));
+                    return Ok(Some((pin, trigger_status.event)));
                 }
             }
 
@@ -160,7 +161,7 @@ impl EventLoop {
                 let trigger_status = &mut self.trigger_status[pin];
 
                 if let Some(ref mut interrupt) = trigger_status.interrupt {
-                    trigger_status.level = interrupt.event()?.level();
+                    trigger_status.event = interrupt.event()?;
                     trigger_status.triggered = true;
                 };
             }
@@ -172,14 +173,7 @@ impl EventLoop {
 
                 if trigger_status.triggered {
                     trigger_status.triggered = false;
-                    return Ok(Some((
-                        pin,
-                        Event {
-                            timestamp: SystemTime::now(), // TODO: Finish implementation
-                            seqno: 0,
-                            level: trigger_status.level,
-                        },
-                    )));
+                    return Ok(Some((pin, trigger_status.event)));
                 }
             }
 
@@ -195,7 +189,12 @@ impl EventLoop {
         }
     }
 
-    pub fn set_interrupt(&mut self, pin: u8, trigger: Trigger) -> Result<()> {
+    pub fn set_interrupt(
+        &mut self,
+        pin: u8,
+        trigger: Trigger,
+        debounce: Option<Duration>,
+    ) -> Result<()> {
         let trigger_status = &mut self.trigger_status[pin as usize];
 
         trigger_status.triggered = false;
@@ -214,7 +213,7 @@ impl EventLoop {
         }
 
         // Register a new interrupt
-        let interrupt = Interrupt::new(self.cdev_fd, pin, trigger)?;
+        let interrupt = Interrupt::new(self.cdev_fd, pin, trigger, debounce)?;
         self.poll
             .add(interrupt.fd(), u64::from(pin), EPOLLIN | EPOLLPRI)?;
         trigger_status.interrupt = Some(interrupt);
@@ -242,7 +241,13 @@ pub struct AsyncInterrupt {
 }
 
 impl AsyncInterrupt {
-    pub fn new<C>(fd: i32, pin: u8, trigger: Trigger, mut callback: C) -> Result<AsyncInterrupt>
+    pub fn new<C>(
+        fd: i32,
+        pin: u8,
+        trigger: Trigger,
+        debounce: Option<Duration>,
+        mut callback: C,
+    ) -> Result<AsyncInterrupt>
     where
         C: FnMut(Event) + Send + 'static,
     {
@@ -255,7 +260,7 @@ impl AsyncInterrupt {
             // rx becomes readable when the main thread calls notify()
             poll.add(rx, rx as u64, EPOLLERR | EPOLLET | EPOLLIN)?;
 
-            let mut interrupt = Interrupt::new(fd, pin, trigger)?;
+            let mut interrupt = Interrupt::new(fd, pin, trigger, debounce)?;
             poll.add(interrupt.fd(), interrupt.fd() as u64, EPOLLIN | EPOLLPRI)?;
 
             let mut events = [epoll_event { events: 0, u64: 0 }; 2];
@@ -267,11 +272,7 @@ impl AsyncInterrupt {
                         if fd == rx {
                             return Ok(()); // The main thread asked us to stop
                         } else if fd == interrupt.fd() {
-                            callback(Event {
-                                timestamp: SystemTime::now(), // TODO: Finish implementation
-                                seqno: 0,
-                                level: interrupt.event()?.level(),
-                            });
+                            callback(interrupt.event()?);
                         }
                     }
                 }

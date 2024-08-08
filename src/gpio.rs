@@ -122,7 +122,7 @@ use std::os::unix::io::AsRawFd;
 use std::result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, Once, Weak};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 mod epoll;
 mod gpiomem;
@@ -344,12 +344,22 @@ impl fmt::Display for Trigger {
 /// Interrupt trigger event.
 #[derive(Debug, Copy, Clone)]
 pub struct Event {
-    /// Best estimate of time of event occurrence.
-    pub timestamp: SystemTime,
+    /// Best estimate of time of event occurrence, measured in elapsed time since the system was booted.
+    pub timestamp: Duration,
     /// Sequence number for this event in the sequence of interrupt trigger events for this pin.
     pub seqno: u32,
-    /// Pin level that triggered the interrupt.
-    pub level: Level,
+    /// Interrupt trigger.
+    pub trigger: Trigger,
+}
+
+impl Default for Event {
+    fn default() -> Self {
+        Self {
+            timestamp: Duration::default(),
+            seqno: 0,
+            trigger: Trigger::Both,
+        }
+    }
 }
 
 // Store Gpio's state separately, so we can conveniently share it through

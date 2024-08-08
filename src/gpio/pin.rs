@@ -456,6 +456,8 @@ impl InputPin {
 
     /// Configures a synchronous interrupt trigger.
     ///
+    /// An optional debounce duration can be specified to filter unwanted input noise.
+    ////
     /// After configuring a synchronous interrupt trigger, call [`poll_interrupt`] or
     /// [`Gpio::poll_interrupts`] to block while waiting for a trigger event.
     ///
@@ -463,11 +465,15 @@ impl InputPin {
     ///
     /// [`poll_interrupt`]: #method.poll_interrupt
     /// [`Gpio::poll_interrupts`]: struct.Gpio.html#method.poll_interrupts
-    pub fn set_interrupt(&mut self, trigger: Trigger) -> Result<()> {
+    pub fn set_interrupt(&mut self, trigger: Trigger, debounce: Option<Duration>) -> Result<()> {
         self.clear_async_interrupt()?;
 
         // Each pin can only be configured for a single trigger type
-        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).set_interrupt(self.pin(), trigger)
+        (*self.pin.gpio_state.sync_interrupts.lock().unwrap()).set_interrupt(
+            self.pin(),
+            trigger,
+            debounce,
+        )
     }
 
     /// Removes a previously configured synchronous interrupt trigger.
@@ -513,6 +519,8 @@ impl InputPin {
     /// Configures an asynchronous interrupt trigger, which executes the callback on a
     /// separate thread when the interrupt is triggered.
     ///
+    /// An optional debounce duration can be specified to filter unwanted input noise.
+    ///
     /// The callback closure or function pointer is called with a single [`Event`] argument.
     ///
     /// Any previously configured (a)synchronous interrupt triggers for this pin are cleared
@@ -520,7 +528,12 @@ impl InputPin {
     ///
     /// [`clear_async_interrupt`]: #method.clear_async_interrupt
     /// [`Event`]: enum.Event.html
-    pub fn set_async_interrupt<C>(&mut self, trigger: Trigger, callback: C) -> Result<()>
+    pub fn set_async_interrupt<C>(
+        &mut self,
+        trigger: Trigger,
+        debounce: Option<Duration>,
+        callback: C,
+    ) -> Result<()>
     where
         C: FnMut(Event) + Send + 'static,
     {
@@ -531,6 +544,7 @@ impl InputPin {
             self.pin.gpio_state.cdev.as_raw_fd(),
             self.pin(),
             trigger,
+            debounce,
             callback,
         )?);
 
