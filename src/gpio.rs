@@ -505,7 +505,7 @@ impl Gpio {
     /// [`InputPin::poll_interrupt`]: struct.InputPin.html#method.poll_interrupt
     /// [`InputPin::set_async_interrupt`]: struct.InputPin.html#method.set_async_interrupt
     /// [`InputPin`]: struct.InputPin.html
-    /// [`Event`]: enum.Event.html
+    /// [`Event`]: struct.Event.html
     pub fn poll_interrupts<'a>(
         &self,
         pins: &[&'a InputPin],

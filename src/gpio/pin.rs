@@ -527,7 +527,7 @@ impl InputPin {
     /// when `set_async_interrupt` is called, or when `InputPin` goes out of scope.
     ///
     /// [`clear_async_interrupt`]: #method.clear_async_interrupt
-    /// [`Event`]: enum.Event.html
+    /// [`Event`]: struct.Event.html
     pub fn set_async_interrupt<C>(
         &mut self,
         trigger: Trigger,
