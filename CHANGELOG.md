@@ -2,6 +2,7 @@
 
 ## 0.19.0 (TBD)
 
+* **Gpio**: Add 'Event' struct, containing interrupt event details.
 * **Gpio**: (Breaking change) Add optional `debounce` argument to `set_interrupt` and `set_async_interrupt`.
 * **Gpio**: (Breaking change) Return an `Event` struct when an interrupt is triggered, instead of `Level`.
 
