@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.19.0 (TBD)
+## 0.19.0 (Aug 14, 2024)
 
 * **Gpio**: Add 'Event' struct, containing interrupt event details.
 * **Gpio**: (Breaking change) Add optional `debounce` argument to `set_interrupt` and `set_async_interrupt`.
