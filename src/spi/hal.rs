@@ -1,4 +1,4 @@
-use super::{super::hal::Delay, Error, Spi};
+use super::{Error, Segment, Spi};
 
 #[cfg(feature = "embedded-hal")]
 impl embedded_hal::spi::ErrorType for Spi {
@@ -99,50 +99,54 @@ impl embedded_hal_0::spi::FullDuplex<u8> for Spi {
 /// Slave-select is currently handled at the bus level.
 /// This no-op device implementation can be used to satisfy the trait.
 // TODO: The underlying crate::spi::Spi shall be split up to support proper slave-select handling here.
-pub struct SimpleHalSpiDevice<B> {
-    bus: B,
+pub struct SimpleHalSpiDevice {
+    bus: Spi,
 }
 
 #[cfg(feature = "embedded-hal")]
-impl<B: embedded_hal::spi::SpiBus<u8>> SimpleHalSpiDevice<B> {
-    pub fn new(bus: B) -> SimpleHalSpiDevice<B> {
+impl SimpleHalSpiDevice {
+    pub fn new(bus: Spi) -> SimpleHalSpiDevice {
         SimpleHalSpiDevice { bus }
     }
 }
 
 #[cfg(feature = "embedded-hal")]
-impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::SpiDevice<u8> for SimpleHalSpiDevice<B>
-where
-    Error: From<<B as embedded_hal::spi::ErrorType>::Error>,
-{
+impl embedded_hal::spi::SpiDevice<u8> for SimpleHalSpiDevice {
     fn transaction(
         &mut self,
         operations: &mut [embedded_hal::spi::Operation<'_, u8>],
     ) -> Result<(), Error> {
-        for op in operations {
-            match op {
-                embedded_hal::spi::Operation::Read(read) => {
-                    self.bus.read(read)?;
+        let clock_speed = self.bus.clock_speed()?;
+        let bits_per_word = self.bus.bits_per_word()?;
+
+        // Map the hal spi operations to segments, so they all can be executed together as one transaction
+        let segments = operations
+            .into_iter()
+            .map(|op| match op {
+                embedded_hal::spi::Operation::Read(read_buff) => Segment::with_read(read_buff),
+                embedded_hal::spi::Operation::Write(write_buff) => Segment::with_write(write_buff),
+                embedded_hal::spi::Operation::Transfer(read_buff, write_buff) => {
+                    Segment::new(read_buff, write_buff)
                 }
-                embedded_hal::spi::Operation::Write(write) => {
-                    self.bus.write(write)?;
+                embedded_hal::spi::Operation::TransferInPlace(buff) => {
+                    Segment::with_settings(Some(buff), None, clock_speed, 0, bits_per_word, false)
                 }
-                embedded_hal::spi::Operation::Transfer(read, write) => {
-                    self.bus.transfer(read, write)?;
-                }
-                embedded_hal::spi::Operation::TransferInPlace(words) => {
-                    self.bus.transfer_in_place(words)?;
-                }
-                embedded_hal::spi::Operation::DelayNs(us) => {
-                    embedded_hal::delay::DelayNs::delay_us(&mut Delay::new(), *us);
-                }
-            }
-        }
-        Ok(())
+                // Map a segment with no read or write buffer, just to handle the delay
+                embedded_hal::spi::Operation::DelayNs(delay_ns) => Segment::with_settings(
+                    None,
+                    None,
+                    clock_speed,
+                    (*delay_ns / 1000) as u16,
+                    bits_per_word,
+                    false,
+                ),
+            })
+            .collect::<Vec<Segment>>();
+        self.bus.transfer_segments(&segments)
     }
 }
 
 #[cfg(feature = "embedded-hal")]
-impl<B: embedded_hal::spi::SpiBus<u8>> embedded_hal::spi::ErrorType for SimpleHalSpiDevice<B> {
+impl embedded_hal::spi::ErrorType for SimpleHalSpiDevice {
     type Error = Error;
 }
