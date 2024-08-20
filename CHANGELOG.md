@@ -1,9 +1,14 @@
 # Changelog
 
+## 0.20.0 (TBD)
+
+* **Spi**: Fix embedded HAL `SimpleHalSpiDevice` transactions to keep CS low between operations (contributed by @whatisbyandby).
+* **Spi**: (Breaking change) Change `SimpleHalSpiDevice::new()` to require an `Spi` instance, instead of a generic HAL bus (contributed by @whatisbyandby).
+
 ## 0.19.0 (Aug 14, 2024)
 
 * **Gpio**: Add `Event` struct, containing interrupt event details.
-* **Gpio**: (Breaking change) Add optional `debounce` argument to `set_interrupt` and `set_async_interrupt`.
+* **Gpio**: (Breaking change) Add optional `debounce` argument to `set_interrupt()` and `set_async_interrupt()`.
 * **Gpio**: (Breaking change) Return an `Event` struct when an interrupt is triggered, instead of `Level`.
 
 ## 0.18.0 (May 18, 2024)
@@ -36,7 +41,7 @@
 ## 0.15.0 (October 18, 2023)
 
 * Add support for Raspberry Pi 5 (thanks @ukscone for all the testing!).
-* **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown` to `set_bias`.
+* **Gpio**: (Breaking change) Rename `PullUpDown` enum to `Bias`, and `set_pullupdown()` to `set_bias()`.
 * **Gpio**: Add support for new modes `Alt6`, `Alt7` and `Alt8`.
 * **I2c**: Implement I2C transactions for `embedded-hal` (contributed by @CBJamo).
 
