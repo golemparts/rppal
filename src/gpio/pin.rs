@@ -45,6 +45,13 @@ macro_rules! impl_input {
         pub fn is_high(&self) -> bool {
             self.pin.read() == Level::High
         }
+
+        /// Configures the built-in pull-up/pull-down resistors.
+        #[inline]
+        pub fn set_bias(&mut self, bias: Bias) {
+            self.pin.set_bias(bias);
+            self.bias = bias;
+        }
     };
 }
 
@@ -756,12 +763,6 @@ impl IoPin {
         self.pin.set_mode(mode);
     }
 
-    /// Configures the built-in pull-up/pull-down resistors.
-    #[inline]
-    pub fn set_bias(&mut self, bias: Bias) {
-        self.pin.set_bias(bias);
-        self.bias = bias;
-    }
 
     impl_input!();
     impl_output!();
