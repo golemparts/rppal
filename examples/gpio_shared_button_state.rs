@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let shared_state = Arc::new(Mutex::new(0));
 
     // Configure the input pin.
-    let mut input_pin = Gpio::new()?.get(INPUT_PIN_GPIO)?.into_input_pullup();
+    let mut input_pin = Gpio::new()?.get(INPUT_PIN_GPIO)?.into_input_pulldown();
 
     // We need to clone this as set_async_interrupt will move it and cant be used afterward if so
     let shared_state_hold = shared_state.clone();
