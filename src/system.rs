@@ -85,6 +85,7 @@ pub enum Model {
     RaspberryPiComputeModule3Plus,
     RaspberryPiComputeModule4,
     RaspberryPiComputeModule4S,
+    RaspberryPiComputeModule5,
     RaspberryPiZero,
     RaspberryPiZeroW,
     RaspberryPiZero2W,
@@ -110,6 +111,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule3Plus => write!(f, "Raspberry Pi Compute Module 3+"),
             Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
             Model::RaspberryPiComputeModule4S => write!(f, "Raspberry Pi Compute Module 4S"),
+            Model::RaspberryPiComputeModule5 => write!(f, "Raspberry Pi Compute Module 5"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
             Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
@@ -249,6 +251,7 @@ fn parse_base_compatible() -> Result<Model> {
             "raspberrypi,4-compute-module" => Model::RaspberryPiComputeModule4,
             "raspberrypi,4-compute-module-s" => Model::RaspberryPiComputeModule4S,
             "raspberrypi,5-model-b" => Model::RaspberryPi5,
+            "raspberrypi,5-compute-module" => Model::RaspberryPiComputeModule5,
             _ => continue,
         };
 
@@ -312,6 +315,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Compute Module 4" => Model::RaspberryPiComputeModule4,
         "Raspberry Pi Compute Module 4S" => Model::RaspberryPiComputeModule4S,
         "Raspberry Pi 5 Model B" => Model::RaspberryPi5,
+        "Raspberry Pi Compute Module 5" => Model::RaspberryPiComputeModule5,
         _ => return Err(Error::UnknownModel),
     };
 
@@ -414,7 +418,7 @@ impl DeviceInfo {
                 pwm_chip: 0,
                 pwm_channels: [0, 1],
             }),
-            Model::RaspberryPi5 => Ok(DeviceInfo {
+            Model::RaspberryPi5 | Model::RaspberryPiComputeModule5 => Ok(DeviceInfo {
                 model,
                 soc: SoC::Bcm2712,
                 peripheral_base: PERIPHERAL_BASE_RP1,
