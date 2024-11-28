@@ -210,6 +210,7 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             0x14 => Model::RaspberryPiComputeModule4,
             0x15 => Model::RaspberryPiComputeModule4S,
             0x17 => Model::RaspberryPi5,
+            0x18 => Model::RaspberryPiComputeModule5,
             _ => return Err(Error::UnknownModel),
         }
     } else {

@@ -9,7 +9,7 @@ RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART periphe
 
 The library can be used in conjunction with a variety of platform-agnostic drivers through its `embedded-hal` trait implementations. Both `embedded-hal` v0.2.7 and v1 are supported.
 
-RPPAL requires a recent release of Raspberry Pi OS. Similar Linux distributions may work, but are unsupported. Both GNU and musl `libc` targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, 400, Zero, Zero W and Zero 2 W.
+RPPAL requires a recent release of Raspberry Pi OS. Similar Linux distributions may work, but are unsupported. Both GNU and musl `libc` targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, CM 5, 400, Zero, Zero W and Zero 2 W.
 
 This library is currently in 'maintenance mode'. RPPAL will still receive updates for bugfixes and to add support for new Pi devices. A 1.0 release is planned as well. If you have a feature request you're willing to implement yourself, please open an issue first to discuss the details.
 
