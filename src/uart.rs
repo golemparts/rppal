@@ -419,7 +419,22 @@ impl Uart {
     ///
     /// [`with_path`]: #method.with_path
     pub fn new(baud_rate: u32, parity: Parity, data_bits: u8, stop_bits: u8) -> Result<Uart> {
-        Self::with_path("/dev/serial0", baud_rate, parity, data_bits, stop_bits)
+        // On the Raspberry Pi 5, by default /dev/serial0 will point to the UART on the debug header,
+        // which is /dev/ttyAMA10. Check if /dev/ttyAMA0 exists first, which would mean the user
+        // enabled UART on GPIO14/15 and likely wants to use that one instead.
+        let path = match DeviceInfo::new()?.model() {
+            Model::RaspberryPi5 | Model::RaspberryPiComputeModule5 => {
+                if Path::new("/dev/ttyAMA0").exists() {
+                    "/dev/ttyAMA0"
+                } else {
+                    "/dev/serial0"
+                }
+            }
+            // Older models should use whatever /dev/serial0 points to.
+            _ => "/dev/serial0",
+        };
+
+        Self::with_path(path, baud_rate, parity, data_bits, stop_bits)
     }
 
     /// Constructs a new `Uart` connected to the serial character device

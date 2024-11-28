@@ -7,6 +7,7 @@
 * **Gpio**: Add shared state button example (contributed by @CosminPerRam).
 * **Spi**: Fix embedded HAL `SimpleHalSpiDevice` transactions to keep CS low between operations (contributed by @whatisbyandby).
 * **Spi**: (Breaking change) Change `SimpleHalSpiDevice::new()` to require an `Spi` instance, instead of a generic HAL bus (contributed by @whatisbyandby).
+* **Uart**: Check if `/dev/ttyAMA0` exists and fall back to `/dev/serial0` when calling `new()` on Raspberry Pi 5 or Compute Module 5.
 
 ## 0.19.0 (Aug 14, 2024)
 
