@@ -4,6 +4,7 @@
 
 * Add support for Raspberry Pi Compute Module 5.
 * **Gpio**: Add `set_bias` to `InputPin` (contributed by @KronsyC).
+* **Gpio**: Add shared state button example (contributed by @CosminPerRam).
 * **Spi**: Fix embedded HAL `SimpleHalSpiDevice` transactions to keep CS low between operations (contributed by @whatisbyandby).
 * **Spi**: (Breaking change) Change `SimpleHalSpiDevice::new()` to require an `Spi` instance, instead of a generic HAL bus (contributed by @whatisbyandby).
 
