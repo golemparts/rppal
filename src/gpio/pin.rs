@@ -763,7 +763,6 @@ impl IoPin {
         self.pin.set_mode(mode);
     }
 
-
     impl_input!();
     impl_output!();
     impl_reset_on_drop!();
