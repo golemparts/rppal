@@ -12,9 +12,9 @@ Before running any examples that interface with external components, read throug
 
 `gpio_servo_softpwm.rs` - Rotates a servo using software-based PWM.
 
-`gpio_status.rs` - Retrieves the mode and logic level for each of the pins on the 26-pin or 40-pin GPIO header, and displays the results in an ASCII table.
-
 `gpio_shared_button_state.rs` - Shares a state with an input interrupt, stops the program until N event changes.
+
+`gpio_status.rs` - Retrieves the mode and logic level for each of the pins on the 26-pin or 40-pin GPIO header, and displays the results in an ASCII table.
 
 `i2c_ds3231.rs` - Sets and retrieves the time on a Maxim Integrated DS3231 RTC using I2C.
 
