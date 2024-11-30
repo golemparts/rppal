@@ -1,9 +1,10 @@
 # RPPAL - Raspberry Pi Peripheral Access Library
 
 [![Build status](https://github.com/golemparts/rppal/actions/workflows/ci.yml/badge.svg)](https://github.com/golemparts/rppal/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/rppal)](https://crates.io/crates/rppal)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/crates/v/rppal)](https://crates.io/crates/rppal)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.60.0-lightgray.svg)](https://blog.rust-lang.org/2022/04/07/Rust-1.60.0.html)
+[![Documentation](https://docs.rs/rppal/badge.svg)](https://docs.rs/rppal)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters.
 
@@ -17,7 +18,6 @@ RPPAL is under development on the [master branch](https://github.com/golemparts/
 
 ## Table of contents
 
-- [Documentation](#documentation)
 - [Usage](#usage)
 - [Examples](#examples)
 - [Optional features](#optional-features)
@@ -32,14 +32,6 @@ RPPAL is under development on the [master branch](https://github.com/golemparts/
   - [Visual Studio Code](#visual-studio-code)
 - [Caution](#caution)
 - [Copyright and license](#copyright-and-license)
-
-## Documentation
-
-Online documentation is available for the latest release, older releases, and the version currently in development.
-
-* Latest release: [docs.golemparts.com/rppal](https://docs.golemparts.com/rppal)
-* Older releases: [docs.rs/rppal](https://docs.rs/rppal)
-* In development: [docs.golemparts.com/rppal-dev](https://docs.golemparts.com/rppal-dev)
 
 ## Usage
 
