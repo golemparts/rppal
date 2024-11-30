@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.20.0 (TBD)
+## 0.20.0 (November 30, 2024)
 
 * Add support for Raspberry Pi Compute Module 5.
 * **Gpio**: Add `set_bias` to `InputPin` (contributed by @KronsyC).
