@@ -233,7 +233,14 @@ impl I2c {
         match DeviceInfo::new()?.model() {
             // Pi B Rev 1 uses I2C0
             Model::RaspberryPiBRev1 => I2c::with_bus(0),
-            Model::RaspberryPi4B | Model::RaspberryPi400 | Model::RaspberryPi5 => {
+            Model::RaspberryPi4B
+            | Model::RaspberryPi400
+            | Model::RaspberryPiComputeModule4
+            | Model::RaspberryPiComputeModule4S
+            | Model::RaspberryPi5
+            | Model::RaspberryPi500
+            | Model::RaspberryPiComputeModule5
+            | Model::RaspberryPiComputeModule5Lite => {
                 // Pi 4B/400 could have I2C3 enabled on pins 3 and 5
                 I2c::with_bus(1).or_else(|_| I2c::with_bus(3))
             }

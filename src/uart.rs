@@ -145,7 +145,7 @@ use libc::{c_int, O_NOCTTY, O_NONBLOCK};
 use libc::{TIOCM_CAR, TIOCM_CTS, TIOCM_DSR, TIOCM_DTR, TIOCM_RNG, TIOCM_RTS};
 
 use crate::gpio::{self, Gpio, IoPin, Mode};
-use crate::system::{self, DeviceInfo, Model};
+use crate::system::{self, DeviceInfo, Model, SoC};
 
 #[cfg(any(
     feature = "embedded-hal-0",
@@ -422,8 +422,8 @@ impl Uart {
         // On the Raspberry Pi 5, by default /dev/serial0 will point to the UART on the debug header,
         // which is /dev/ttyAMA10. Check if /dev/ttyAMA0 exists first, which would mean the user
         // enabled UART on GPIO14/15 and likely wants to use that one instead.
-        let path = match DeviceInfo::new()?.model() {
-            Model::RaspberryPi5 | Model::RaspberryPiComputeModule5 => {
+        let path = match DeviceInfo::new()?.soc() {
+            SoC::Bcm2712 => {
                 if Path::new("/dev/ttyAMA0").exists() {
                     "/dev/ttyAMA0"
                 } else {

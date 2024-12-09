@@ -87,6 +87,7 @@ pub enum Model {
     RaspberryPiComputeModule4,
     RaspberryPiComputeModule4S,
     RaspberryPiComputeModule5,
+    RaspberryPiComputeModule5Lite,
     RaspberryPiZero,
     RaspberryPiZeroW,
     RaspberryPiZero2W,
@@ -114,6 +115,7 @@ impl fmt::Display for Model {
             Model::RaspberryPiComputeModule4 => write!(f, "Raspberry Pi Compute Module 4"),
             Model::RaspberryPiComputeModule4S => write!(f, "Raspberry Pi Compute Module 4S"),
             Model::RaspberryPiComputeModule5 => write!(f, "Raspberry Pi Compute Module 5"),
+            Model::RaspberryPiComputeModule5Lite => write!(f, "Raspberry Pi Compute Module 5 Lite"),
             Model::RaspberryPiZero => write!(f, "Raspberry Pi Zero"),
             Model::RaspberryPiZeroW => write!(f, "Raspberry Pi Zero W"),
             Model::RaspberryPiZero2W => write!(f, "Raspberry Pi Zero 2 W"),
@@ -212,7 +214,9 @@ fn parse_proc_cpuinfo() -> Result<Model> {
             0x14 => Model::RaspberryPiComputeModule4,
             0x15 => Model::RaspberryPiComputeModule4S,
             0x17 => Model::RaspberryPi5,
+            0x18 => Model::RaspberryPiComputeModule5,
             0x19 => Model::RaspberryPi500,
+            0x1a => Model::RaspberryPiComputeModule5Lite,
             _ => return Err(Error::UnknownModel),
         }
     } else {
@@ -320,6 +324,7 @@ fn parse_base_model() -> Result<Model> {
         "Raspberry Pi Compute Module 4S" => Model::RaspberryPiComputeModule4S,
         "Raspberry Pi 5 Model B" => Model::RaspberryPi5,
         "Raspberry Pi Compute Module 5" => Model::RaspberryPiComputeModule5,
+        "Raspberry Pi Compute Module 5 Lite" => Model::RaspberryPiComputeModule5Lite,
         "Raspberry Pi 500" => Model::RaspberryPi500,
         _ => return Err(Error::UnknownModel),
     };
@@ -423,18 +428,19 @@ impl DeviceInfo {
                 pwm_chip: 0,
                 pwm_channels: [0, 1],
             }),
-            Model::RaspberryPi5 | Model::RaspberryPi500 | Model::RaspberryPiComputeModule5 => {
-                Ok(DeviceInfo {
-                    model,
-                    soc: SoC::Bcm2712,
-                    peripheral_base: PERIPHERAL_BASE_RP1,
-                    gpio_offset: GPIO_OFFSET_RP1,
-                    gpio_lines: GPIO_LINES_RP1,
-                    gpio_interface: GpioInterface::Rp1,
-                    pwm_chip: 2,
-                    pwm_channels: [2, 3],
-                })
-            }
+            Model::RaspberryPi5
+            | Model::RaspberryPi500
+            | Model::RaspberryPiComputeModule5
+            | Model::RaspberryPiComputeModule5Lite => Ok(DeviceInfo {
+                model,
+                soc: SoC::Bcm2712,
+                peripheral_base: PERIPHERAL_BASE_RP1,
+                gpio_offset: GPIO_OFFSET_RP1,
+                gpio_lines: GPIO_LINES_RP1,
+                gpio_interface: GpioInterface::Rp1,
+                pwm_chip: 2,
+                pwm_channels: [2, 3],
+            }),
         }
     }
 

@@ -142,19 +142,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             print_header(&header_rev1[..MAX_PINS_SHORT])
         }
         Model::RaspberryPiA | Model::RaspberryPiBRev2 => print_header(&HEADER[..MAX_PINS_SHORT]),
-        Model::RaspberryPiAPlus
-        | Model::RaspberryPiBPlus
-        | Model::RaspberryPi2B
-        | Model::RaspberryPi3APlus
-        | Model::RaspberryPi3B
-        | Model::RaspberryPi3BPlus
-        | Model::RaspberryPi4B
-        | Model::RaspberryPi5
-        | Model::RaspberryPiZero
-        | Model::RaspberryPiZeroW => print_header(&HEADER[..MAX_PINS_LONG]),
-        model => {
-            eprintln!("Error: No GPIO header information available for {}", model);
-            process::exit(1);
-        }
+        _ => print_header(&HEADER[..MAX_PINS_LONG]),
     }
 }
