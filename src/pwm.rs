@@ -16,6 +16,9 @@
 //! The Raspberry Pi's analog audio output uses both PWM channels. Playing audio and
 //! simultaneously accessing a PWM channel may cause issues.
 //!
+//! The Raspberry Pi 5 and other recent models support more than two PWM channels. Consult
+//! the official documentation on how to configure these.
+//!
 //! Some of the GPIO pins capable of supporting hardware PWM can also be configured for
 //! use with other peripherals. Be careful not to enable two peripherals on the same pin
 //! at the same time.
@@ -104,6 +107,8 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
+    Pwm2 = 2,
+    Pwm3 = 3,
 }
 
 impl fmt::Display for Channel {
@@ -111,6 +116,8 @@ impl fmt::Display for Channel {
         match *self {
             Channel::Pwm0 => write!(f, "Pwm0"),
             Channel::Pwm1 => write!(f, "Pwm1"),
+            Channel::Pwm2 => write!(f, "Pwm2"),
+            Channel::Pwm3 => write!(f, "Pwm3"),
         }
     }
 }
