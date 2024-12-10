@@ -75,6 +75,14 @@ pub enum Error {
     /// doesn't provide any of the common user-accessible system files
     /// that are used to identify the model and SoC.
     UnknownModel,
+    /// Invalid channel.
+    ///
+    /// The selected PWM channel is not available on this device. You may
+    /// encounter this error if the Raspberry Pi model only has a limited
+    /// number of channels, the selected channel hasn't been properly
+    /// configured in `/boot/firmware/config.txt`, or the channel isn't
+    /// supported by RPPAL.
+    InvalidChannel,
 }
 
 impl fmt::Display for Error {
@@ -82,6 +90,7 @@ impl fmt::Display for Error {
         match *self {
             Error::Io(ref err) => write!(f, "I/O error: {}", err),
             Error::UnknownModel => write!(f, "Unknown Raspberry Pi model"),
+            Error::InvalidChannel => write!(f, "Invalid PWM channel"),
         }
     }
 }
@@ -114,6 +123,18 @@ impl fmt::Display for Channel {
         match *self {
             Channel::Pwm0 => write!(f, "Pwm0"),
             Channel::Pwm1 => write!(f, "Pwm1"),
+        }
+    }
+}
+
+impl TryFrom<u8> for Channel {
+    type Error = Error;
+
+    fn try_from(value: u8) -> result::Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Channel::Pwm0),
+            1 => Ok(Channel::Pwm1),
+            _ => Err(Error::InvalidChannel),
         }
     }
 }

@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.21.0 (TBD)
+## 0.21.0 (December 10, 2024)
 
 * Add support for Raspberry Pi Compute Module 5 Lite.
 * Add support for Raspberry Pi 500.
+* **Pwm**: (Breaking change) Add `InvalidChannel` error.
+* **Pwm**: Add `TryFrom<u8>` implementation for `Channel`.
 
 ## 0.20.0 (November 30, 2024)
 
