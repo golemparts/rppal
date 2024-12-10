@@ -4,7 +4,6 @@
 
 * Add support for Raspberry Pi Compute Module 5 Lite.
 * Add support for Raspberry Pi 500.
-* **Pwm**: (Breaking change) Add support for two additional PWM channels.
 
 ## 0.20.0 (November 30, 2024)
 

@@ -107,8 +107,6 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
-    Pwm2 = 2,
-    Pwm3 = 3,
 }
 
 impl fmt::Display for Channel {
@@ -116,8 +114,6 @@ impl fmt::Display for Channel {
         match *self {
             Channel::Pwm0 => write!(f, "Pwm0"),
             Channel::Pwm1 => write!(f, "Pwm1"),
-            Channel::Pwm2 => write!(f, "Pwm2"),
-            Channel::Pwm3 => write!(f, "Pwm3"),
         }
     }
 }
