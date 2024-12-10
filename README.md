@@ -39,14 +39,14 @@ Add a dependency for `rppal` to your `Cargo.toml` using `cargo add rppal`, or by
 
 ```toml
 [dependencies]
-rppal = "0.21.0"
+rppal = "0.22.0"
 ```
 
 If your project requires `embedded-hal` trait implementations, specify either the `hal` or `hal-unproven` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
-rppal = { version = "0.21.0", features = ["hal"] }
+rppal = { version = "0.22.0", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
@@ -136,7 +136,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interfa
 
 #### Features
 
-* Up to two hardware PWM channels
+* Up to four hardware PWM channels depending on the Raspberry Pi model
 * Configurable frequency, duty cycle and polarity
 * Optional `embedded-hal` trait implementations
 
