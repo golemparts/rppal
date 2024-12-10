@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.0 (December 10, 2024)
+
+* **Pwm**: (Breaking change) Add support for `Pwm2` and `Pwm3`.
+* **Pwm**: On Raspberry Pi 5 and later models, the PWM channel mapping has changed to be consistent with sysfs numbering. `Pwm0` = GPIO12, `Pwm1` = GPIO13, `Pwm2` = GPIO18, `Pwm3` = GPIO19.
+* **Pwm**: Add `with_pwmchip` to address PWM channels outside of the default configuration.
+
 ## 0.21.0 (December 10, 2024)
 
 * Add support for Raspberry Pi Compute Module 5 Lite.
