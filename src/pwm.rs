@@ -49,8 +49,8 @@
 //! ### Not found
 //!
 //! If [`new`] returns an `io::ErrorKind::NotFound` error, you may have
-//! forgotten to enable the selected PWM channel. The configuration options
-//! to enable either of the two PWM channels are listed above.
+//! forgotten to enable the selected PWM channel. Consult the official Raspberry Pi documentation
+//! to correctly configure the needed channel(s).
 //!
 //! [`new`]: struct.Pwm.html#method.new
 
