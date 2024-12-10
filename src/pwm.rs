@@ -222,7 +222,7 @@ impl Pwm {
     ///
     /// [`enable`]: #method.enable
     pub fn with_pwmchip(pwmchip: u8, index: u8) -> Result<Pwm> {
-        sysfs::export(pwmchip, index as u8)?;
+        sysfs::export(pwmchip, index)?;
 
         let pwm = Pwm {
             chip: pwmchip,

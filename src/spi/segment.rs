@@ -243,7 +243,7 @@ impl<'a, 'b> Segment<'a, 'b> {
     }
 }
 
-impl<'a, 'b> fmt::Debug for Segment<'a, 'b> {
+impl fmt::Debug for Segment<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Segment")
             .field("tx_buf", &self.tx_buf)
