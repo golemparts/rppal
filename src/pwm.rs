@@ -5,19 +5,34 @@
 //!
 //! ## PWM channels
 //!
-//! The BCM283x SoC supports two hardware PWM channels. By default, both channels
-//! are disabled. To enable only PWM0 on its default pin (BCM GPIO 18, physical pin 12),
-//! add `dtoverlay=pwm` to `/boot/firmware/config.txt` on Raspberry Pi OS or `/boot/firmware/usercfg.txt` on
-//! Ubuntu. If you need both PWM channels, replace `pwm` with `pwm-2chan`, which enables PWM0 on BCM
-//! GPIO 18 (physical pin 12), and PWM1 on BCM GPIO 19 (physical pin 35). More details on enabling
-//! and configuring PWM on other GPIO pins than the default ones can be found in
-//! `/boot/overlays/README`.
+//! ### Older models (older than Raspberry Pi 5)
+//!
+//! The BCM283x SoC supports 2 hardware PWM channels. By default, the channels are
+//! mapped as follows:
+//!
+//! PWM0 = GPIO12/GPIO18
+//! PWM1 = GPIO13/GPIO19
+//!
+//! Consult the official documentation on how to enable and configure these.
 //!
 //! The Raspberry Pi's analog audio output uses both PWM channels. Playing audio and
 //! simultaneously accessing a PWM channel may cause issues.
 //!
-//! The Raspberry Pi 5 and other recent models support more than two PWM channels. Consult
-//! the official documentation on how to configure these.
+//! Some of the GPIO pins capable of supporting hardware PWM can also be configured for
+//! use with other peripherals. Be careful not to enable two peripherals on the same pin
+//! at the same time.
+//!
+//! ### Newer models (Raspberry Pi 5 and later)
+//!
+//! The Raspberry Pi 5 and other recent models support 4 hardware PWM channels. By
+//! default, the channels are mapped as follows:
+//!
+//! PWM0 = GPIO12
+//! PWM1 = GPIO13
+//! PWM2 = GPIO18
+//! PWM3 = GPIO19
+//!
+//! Consult the official documentation on how to enable and configure these.
 //!
 //! Some of the GPIO pins capable of supporting hardware PWM can also be configured for
 //! use with other peripherals. Be careful not to enable two peripherals on the same pin
@@ -116,6 +131,8 @@ pub type Result<T> = result::Result<T, Error>;
 pub enum Channel {
     Pwm0 = 0,
     Pwm1 = 1,
+    Pwm2 = 2,
+    Pwm3 = 3,
 }
 
 impl fmt::Display for Channel {
@@ -123,6 +140,8 @@ impl fmt::Display for Channel {
         match *self {
             Channel::Pwm0 => write!(f, "Pwm0"),
             Channel::Pwm1 => write!(f, "Pwm1"),
+            Channel::Pwm2 => write!(f, "Pwm2"),
+            Channel::Pwm3 => write!(f, "Pwm3"),
         }
     }
 }
@@ -134,6 +153,8 @@ impl TryFrom<u8> for Channel {
         match value {
             0 => Ok(Channel::Pwm0),
             1 => Ok(Channel::Pwm1),
+            2 => Ok(Channel::Pwm2),
+            3 => Ok(Channel::Pwm3),
             _ => Err(Error::InvalidChannel),
         }
     }
@@ -174,6 +195,9 @@ pub struct Pwm {
 impl Pwm {
     /// Constructs a new `Pwm`.
     ///
+    /// `new` attempts to select the correct pwmchip device and channel index based
+    /// on the Raspberry Pi model. Use `with_pwmchip` for non-standard configurations.
+    ///
     /// `new` doesn't change the channel's period, pulse width or polarity. The channel
     /// will remain disabled until [`enable`] is called.
     ///
@@ -182,14 +206,27 @@ impl Pwm {
         // Select chip/channel based on Pi model
         let device_info = DeviceInfo::new().map_err(|_| Error::UnknownModel)?;
 
-        let chip = device_info.pwm_chip();
-        let channel = device_info.pwm_channels()[channel as usize];
+        let pwmchip = device_info.pwm_chip();
+        let index = channel as u8;
 
-        sysfs::export(chip, channel)?;
+        Self::with_pwmchip(pwmchip, index)
+    }
+
+    /// Constructs a new `Pwm` using the specified pwmchip and channel index.
+    ///
+    /// Use this method to address PWM channels with non-standard configurations on
+    /// different pwmchip devices, or that fall outside the standard 4 PWM channel range.
+    ///
+    /// `with_pwmchip` doesn't change the channel's period, pulse width or polarity. The channel
+    /// will remain disabled until [`enable`] is called.
+    ///
+    /// [`enable`]: #method.enable
+    pub fn with_pwmchip(pwmchip: u8, index: u8) -> Result<Pwm> {
+        sysfs::export(pwmchip, index as u8)?;
 
         let pwm = Pwm {
-            chip,
-            channel,
+            chip: pwmchip,
+            channel: index,
             reset_on_drop: true,
         };
 
