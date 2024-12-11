@@ -15,7 +15,7 @@ use std::time::Duration;
 use rppal::pwm::{Channel, Polarity, Pwm};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Enable PWM channel 0 (BCM GPIO 18, physical pin 12) at 2 Hz with a 25% duty cycle.
+    // Enable PWM channel 0 (BCM GPIO 12, physical pin 32) at 2 Hz with a 25% duty cycle.
     let pwm = Pwm::with_frequency(Channel::Pwm0, 2.0, 0.25, Polarity::Normal, true)?;
 
     // Sleep for 2 seconds while the LED blinks.

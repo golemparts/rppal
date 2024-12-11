@@ -29,7 +29,7 @@ const PULSE_NEUTRAL_US: u64 = 1500;
 const PULSE_MAX_US: u64 = 1800;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Enable PWM channel 0 (BCM GPIO 18, physical pin 12) with the specified period,
+    // // Enable PWM channel 0 (BCM GPIO 12, physical pin 32) with the specified period,
     // and rotate the servo by setting the pulse width to its maximum value.
     let pwm = Pwm::with_period(
         Channel::Pwm0,
