@@ -10,8 +10,8 @@
 //! The BCM283x SoC supports 2 hardware PWM channels. By default, the channels are
 //! mapped as follows:
 //!
-//! PWM0 = GPIO12/GPIO18
-//! PWM1 = GPIO13/GPIO19
+//! * PWM0 = GPIO12/GPIO18
+//! * PWM1 = GPIO13/GPIO19
 //!
 //! Consult the official documentation on how to enable and configure these.
 //!
@@ -27,10 +27,10 @@
 //! The Raspberry Pi 5 and other recent models support 4 hardware PWM channels. By
 //! default, the channels are mapped as follows:
 //!
-//! PWM0 = GPIO12
-//! PWM1 = GPIO13
-//! PWM2 = GPIO18
-//! PWM3 = GPIO19
+//! * PWM0 = GPIO12
+//! * PWM1 = GPIO13
+//! * PWM2 = GPIO18
+//! * PWM3 = GPIO19
 //!
 //! Consult the official documentation on how to enable and configure these.
 //!
