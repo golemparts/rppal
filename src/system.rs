@@ -347,6 +347,8 @@ pub struct DeviceInfo {
     gpio_interface: GpioInterface,
     // PWM chip # used for hardware PWM on selected GPIO pins
     pwm_chip: u8,
+    // Total number of supported hardware PWM channels
+    pwm_channels: u8,
 }
 
 impl DeviceInfo {
@@ -377,6 +379,7 @@ impl DeviceInfo {
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
                 pwm_chip: 0,
+                pwm_channels: 2,
             }),
             Model::RaspberryPi2B => Ok(DeviceInfo {
                 model,
@@ -386,6 +389,7 @@ impl DeviceInfo {
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
                 pwm_chip: 0,
+                pwm_channels: 2,
             }),
             Model::RaspberryPi3B | Model::RaspberryPiComputeModule3 | Model::RaspberryPiZero2W => {
                 Ok(DeviceInfo {
@@ -396,6 +400,7 @@ impl DeviceInfo {
                     gpio_lines: GPIO_LINES_BCM283X,
                     gpio_interface: GpioInterface::Bcm,
                     pwm_chip: 0,
+                    pwm_channels: 2,
                 })
             }
             Model::RaspberryPi3BPlus
@@ -408,6 +413,7 @@ impl DeviceInfo {
                 gpio_lines: GPIO_LINES_BCM283X,
                 gpio_interface: GpioInterface::Bcm,
                 pwm_chip: 0,
+                pwm_channels: 2,
             }),
             Model::RaspberryPi4B
             | Model::RaspberryPi400
@@ -420,6 +426,7 @@ impl DeviceInfo {
                 gpio_lines: GPIO_LINES_BCM2711,
                 gpio_interface: GpioInterface::Bcm,
                 pwm_chip: 0,
+                pwm_channels: 2,
             }),
             Model::RaspberryPi5
             | Model::RaspberryPi500
@@ -432,6 +439,7 @@ impl DeviceInfo {
                 gpio_lines: GPIO_LINES_RP1,
                 gpio_interface: GpioInterface::Rp1,
                 pwm_chip: 2,
+                pwm_channels: 4,
             }),
         }
     }
@@ -444,6 +452,11 @@ impl DeviceInfo {
     /// Returns the Raspberry Pi's SoC.
     pub fn soc(&self) -> SoC {
         self.soc
+    }
+
+    /// Returns the number of hardware PWM channels supported by this Raspberry Pi model.
+    pub fn pwm_channels(&self) -> u8 {
+        self.pwm_channels
     }
 
     /// Returns the peripheral base memory address.
