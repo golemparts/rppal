@@ -3,7 +3,6 @@
 
 use std::error::Error;
 use std::fmt;
-use std::process;
 
 use rppal::gpio::Gpio;
 use rppal::system::{DeviceInfo, Model};

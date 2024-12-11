@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1 (December 10, 2024)
+
+* Update example documentation to be compatible with both older and newer Pi models.
+
 ## 0.22.0 (December 10, 2024)
 
 * **Pwm**: (Breaking change) Add support for `Pwm2` and `Pwm3`.
