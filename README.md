@@ -39,14 +39,14 @@ Add a dependency for `rppal` to your `Cargo.toml` using `cargo add rppal`, or by
 
 ```toml
 [dependencies]
-rppal = "0.22.0"
+rppal = "0.22.1"
 ```
 
 If your project requires `embedded-hal` trait implementations, specify either the `hal` or `hal-unproven` feature flag in the dependency declaration.
 
 ```toml
 [dependencies]
-rppal = { version = "0.22.0", features = ["hal"] }
+rppal = { version = "0.22.1", features = ["hal"] }
 ```
 
 Call `new()` on any of the peripherals to construct a new instance.
