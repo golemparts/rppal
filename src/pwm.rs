@@ -10,8 +10,8 @@
 //! The BCM283x SoC supports 2 hardware PWM channels. By default, the channels are
 //! mapped as follows:
 //!
-//! * PWM0 = GPIO12/GPIO18
-//! * PWM1 = GPIO13/GPIO19
+//! * [Pwm0](Channel::Pwm0) = GPIO12/GPIO18
+//! * [Pwm1](Channel::Pwm1) = GPIO13/GPIO19
 //!
 //! Consult the official documentation on how to enable and configure these.
 //!
@@ -27,10 +27,10 @@
 //! The Raspberry Pi 5 and other recent models support 4 hardware PWM channels. By
 //! default, the channels are mapped as follows:
 //!
-//! * PWM0 = GPIO12
-//! * PWM1 = GPIO13
-//! * PWM2 = GPIO18
-//! * PWM3 = GPIO19
+//! * [Pwm0](Channel::Pwm0) = GPIO12
+//! * [Pwm1](Channel::Pwm1) = GPIO13
+//! * [Pwm2](Channel::Pwm2) = GPIO18
+//! * [Pwm3](Channel::Pwm3) = GPIO19
 //!
 //! Consult the official documentation on how to enable and configure these.
 //!
@@ -195,7 +195,7 @@ pub struct Pwm {
 impl Pwm {
     /// Constructs a new `Pwm`.
     ///
-    /// `new` attempts to select the correct pwmchip device and channel index based
+    /// `new` attempts to select the correct pwmchip device and channel based
     /// on the Raspberry Pi model. Use `with_pwmchip` for non-standard configurations.
     ///
     /// `new` doesn't change the channel's period, pulse width or polarity. The channel
@@ -215,7 +215,7 @@ impl Pwm {
     /// Constructs a new `Pwm` using the specified pwmchip and channel index.
     ///
     /// Use this method to address PWM channels with non-standard configurations on
-    /// different pwmchip devices, or that fall outside the standard 4 PWM channel range.
+    /// different pwmchip devices, or that fall outside the standard PWM channel range.
     ///
     /// `with_pwmchip` doesn't change the channel's period, pulse width or polarity. The channel
     /// will remain disabled until [`enable`] is called.
