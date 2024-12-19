@@ -108,7 +108,7 @@ By default, all optional features are disabled. You can enable a feature by spec
 
 ## Supported peripherals
 
-### [GPIO](https://docs.golemparts.com/rppal/latest/gpio)
+### [GPIO](https://docs.rs/rppal/latest/rppal/gpio)
 
 To ensure fast performance, RPPAL controls the GPIO peripheral by directly accessing the registers through either `/dev/gpiomem` or `/dev/mem`. GPIO interrupts are configured using the `gpiochip` character device.
 
@@ -120,7 +120,7 @@ To ensure fast performance, RPPAL controls the GPIO peripheral by directly acces
 * Software-based PWM implementation
 * Optional `embedded-hal` trait implementations
 
-### [I2C](https://docs.golemparts.com/rppal/latest/i2c)
+### [I2C](https://docs.rs/rppal/latest/rppal/i2c)
 
 The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compliant with the I2C bus/interface. RPPAL communicates with the BSC using the `i2cdev` character device.
 
@@ -131,7 +131,7 @@ The Broadcom Serial Controller (BSC) peripheral controls a proprietary bus compl
 * SMBus protocols: Quick Command, Send/Receive Byte, Read/Write Byte/Word, Process Call, Block Write, PEC
 * Optional `embedded-hal` trait implementations
 
-### [PWM](https://docs.golemparts.com/rppal/latest/pwm)
+### [PWM](https://docs.rs/rppal/latest/rppal/pwm)
 
 RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interface.
 
@@ -141,7 +141,7 @@ RPPAL controls the Raspberry Pi's PWM peripheral through the `pwm` sysfs interfa
 * Configurable frequency, duty cycle and polarity
 * Optional `embedded-hal` trait implementations
 
-### [SPI](https://docs.golemparts.com/rppal/latest/spi)
+### [SPI](https://docs.rs/rppal/latest/rppal/spi)
 
 RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the `spidev` character device.
 
@@ -154,7 +154,7 @@ RPPAL controls the Raspberry Pi's main and auxiliary SPI peripherals through the
 * Reverse bit order helper function
 * Optional `embedded-hal` trait implementations
 
-### [UART](https://docs.golemparts.com/rppal/latest/uart)
+### [UART](https://docs.rs/rppal/latest/rppal/uart)
 
 RPPAL controls the Raspberry Pi's UART peripherals through the `ttyAMA0` (PL011) and `ttyS0` (mini UART) character devices. USB to serial adapters are controlled using the `ttyUSBx` and `ttyACMx` character devices.
 
