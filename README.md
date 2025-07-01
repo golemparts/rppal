@@ -40,10 +40,6 @@ The library can be used in conjunction with a variety of platform-agnostic drive
 
 RPPAL requires a recent release of Raspberry Pi OS. Similar Linux distributions may work, but are unsupported. Both GNU and musl `libc` targets are supported. RPPAL is compatible with the Raspberry Pi A, A+, B, B+, 2B, 3A+, 3B, 3B+, 4B, 5, CM, CM 3, CM 3+, CM 4, CM 5, CM 5 Lite, 400, 500, Zero, Zero W and Zero 2 W.
 
-This library is currently in 'maintenance mode'. RPPAL will still receive updates for bugfixes and to add support for new Pi devices. A 1.0 release is planned as well. If you have a feature request you're willing to implement yourself, please open an issue first to discuss the details.
-
-RPPAL is under development on the [master branch](https://github.com/golemparts/rppal/tree/master) of the repository on GitHub. If you're looking for the `README.md` or the `examples` directory for the latest release or any of the earlier releases, visit [crates.io](https://crates.io/crates/rppal), download an archived release from the GitHub [releases](https://github.com/golemparts/rppal/releases) page, or clone and checkout the relevant release tag.
-
 ## Table of contents
 
 - [Usage](#usage)
