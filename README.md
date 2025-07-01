@@ -5,7 +5,34 @@
 [![Minimum rustc version](https://img.shields.io/badge/rustc-v1.60.0-lightgray.svg)](https://blog.rust-lang.org/2022/04/07/Rust-1.60.0.html)
 [![Documentation](https://docs.rs/rppal/badge.svg)](https://docs.rs/rppal)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Sponsor](https://img.shields.io/static/v1?label=sponsor&message=golemparts&logo=githubsponsors&color=%23db61a2)](https://github.com/sponsors/golemparts)
+
+## This project is no longer maintained
+
+As of July 1, 2025, I have decided to retire RPPAL. This means:
+* No new features will be added.
+* Bug fixes will no longer be provided.
+* Support for new hardware is not planned.
+* Pull requests and issues will no longer be reviewed or addressed.
+
+I want to express my sincere gratitude to everyone who contributed to, used, and supported RPPAL over the years. Your contributions and feedback were invaluable.
+
+### Why have I retired RPPAL?
+
+RPPAL began as a passion project in 2016, nearly nine years ago, when I first started working with electronics and needed a project to work on my Rust skills. Initially, it started out as the GPIO module of my Blinkt library. As the scope expanded to include support for other peripherals, RPPAL was spun off into its own distinct project, evolving into the comprehensive library it is today.
+
+However, over the past several years, my personal interests and professional focus have shifted away from electronics. As a result, I haven't actively used RPPAL myself for quite some time. I no longer have a dedicated hardware test setup, nor do I plan on adding new Raspberry Pi models to my collection. This makes it impractical to thoroughly test changes or ensure compatibility with new hardware releases.
+
+Maintaining a project requires significant dedication, and without active personal use or the necessary testing environment, it's become challenging to provide the level of attention this project deserves.
+
+### What does this mean for you?
+
+You are welcome to continue using RPPAL. However, please be aware you will not receive any further updates or support. RPPAL works with all Raspberry Pi models released before July 1, 2025, up to and including the Raspberry Pi 5.
+
+#### Forking the project
+
+If you wish to continue its development, you may fork this project under the terms and conditions of the MIT License.
+
+## RPPAL
 
 RPPAL provides access to the Raspberry Pi's GPIO, I2C, PWM, SPI and UART peripherals through a user-friendly interface. In addition to peripheral access, RPPAL also offers support for USB to serial adapters.
 
@@ -204,4 +231,4 @@ Always be careful when working with the Raspberry Pi's peripherals, especially i
 
 ## Copyright and license
 
-Copyright (c) 2017-2024 Rene van der Meer. Released under the [MIT license](LICENSE).
+Copyright (c) 2017-2025 Rene van der Meer. Released under the [MIT license](LICENSE).
